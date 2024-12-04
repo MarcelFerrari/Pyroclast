@@ -1,0 +1,29 @@
+[options]
+grid = "staggered2D.BasicStaggered2D"
+pool = "inclusion2D.CircularInclusion"
+model = "stokes_continuity_markers.StokesContinuity2D"
+checkpoint_interval = 100
+
+[params]
+# Time integration options
+max_iter=230
+
+# Grid options
+xsize = 100000 # Hortizontal size, m
+ysize = 100000 # Vertical size, m
+nx = 101        # Horizontal resolution
+ny = 131        # Vertical resolution
+gy = 10.0      # Vertical gravity, m/s^2
+
+# Marker options
+# Boundary conditions: no slip=1, free slip=-1
+BC = -1
+dispmax = 0.5
+
+# Marker options
+nmpcx = 8 # Number of markers per cell in x direction
+nmpcy = 8 # Number of markers per cell in y direction
+
+# Inclusion options
+r = 20000 # Inclusion radius, m
+
