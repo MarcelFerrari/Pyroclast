@@ -11,7 +11,7 @@ Copyright (c) 2024 Marcel Ferrari. All rights reserved.
 
 See LICENSE file in the project root for full license information.
 """
-import pickle
+
 import weakref
 
 class Context:
