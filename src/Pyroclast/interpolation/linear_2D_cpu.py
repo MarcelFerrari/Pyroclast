@@ -8,9 +8,12 @@ Description: This file implements 2D linear interpolation functions for CPU.
 Author: Marcel Ferrari
 Copyright (c) 2024 Marcel Ferrari. All rights reserved.
 
-See LICENSE file in the project root for full license information.
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+import warnings
 import numba as nb
 import numpy as np
 from Pyroclast.profiling import timer
@@ -71,7 +74,6 @@ def reduce_marker_values(x, y, xm, ym, xidx, yidx, vals, grid_values, grid_weigh
                     grid_weights[t, gy, gx] += w
     
     return grid_values, grid_weights
-
 
 def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weights=False, ghost_nodes=True, real=np.float64):
     """
@@ -145,17 +147,18 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
     grid_values = tuple(np.sum(v, axis=0) for v in grid_values)
     grid_weights = np.sum(grid_weights, axis=0)
 
-    # Assert that grid_weights is not zero
-    # assert np.all(grid_weights > 0), "Some grid nodes have zero weight. Check marker positions."
-
     if return_weights: # We are done
         return grid_values, grid_weights
     else: # Normalize grid values
-        rax = tuple(v / grid_weights for v in grid_values)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # Ignore division by zero!
+            # This is correct and represents values outside the grid!
+            rax = tuple(v / grid_weights for v in grid_values)
         return rax if len(rax) > 1 else rax[0] # Return a single value if only one quantity is interpolated
 
 @nb.njit(parallel=True, cache=True)
-def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values, marker_weights, num_threads):
+def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values):
     """
     Reduces the grid values to the markers using distance-weighted linear interpolation.
 
@@ -178,38 +181,124 @@ def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values, mar
     q = len(grid_values)
 
     # Loop over each marker in parallel
-    for t in nb.prange(num_threads):
-        # Get thread-specific marker indices
-        start = t * n_markers // num_threads
-        end = (t + 1) * n_markers // num_threads if t != num_threads - 1 \
-                                                   else n_markers
+    for m in nb.prange(n_markers):
+        # Read marker coordinates and reference node indices
+        mx, my = xm[m], ym[m]
+        mj, mi = xidx[m], yidx[m]
 
-        for m in range(start, end):
-            # Read marker coordinates and reference node indices
-            mx, my = xm[m], ym[m]
-            mj, mi = xidx[m], yidx[m]
+        for x_offset in range(2):
+            for y_offset in range(2):
 
-            for x_offset in range(2):
-                for y_offset in range(2):
+                    # Determine grid node indices
+                    gx, gy = mj + x_offset, mi + y_offset
 
-                        # Determine grid node indices
-                        gx, gy = mj + x_offset, mi + y_offset
+                    # Calculate distances from marker to current grid node
+                    rx = np.abs(mx - x[gx])
+                    ry = np.abs(my - y[gy])
 
-                        # Calculate distances from marker to current grid node
-                        rx = np.abs(mx - x[gx])
-                        ry = np.abs(my - y[gy])
+                    # Calculate weight based on distance to this nodal point
+                    w = (1 - rx / dx) * (1 - ry / dy)
 
-                        # Calculate weight based on distance to this nodal point
-                        w = (1 - rx / dx) * (1 - ry / dy)
+                    # Update weighted sums for quantities and weights at this grid point
+                    for q in range(len(grid_values)):
+                        marker_values[q][m] += w * grid_values[q][gy, gx]
+    return marker_values
 
-                        # Update weighted sums for quantities and weights at this grid point
-                        for q in range(len(grid_values)):
-                            marker_values[q][m] += w * grid_values[q][gy, gx]
-                        marker_weights[m] += w
 
-    return marker_values, marker_weights
+@nb.njit(parallel=True, cache=True)
+def apply_x_continuity_correction(x, y, xm, ym, xidx, yidx, vx, vxm, d2dx2):
+    """
+    Applies continuity correction in x to the interpolated values at the markers.
 
-def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", return_weights=False, ghost_nodes=True, real=np.float64):
+    Parameters:
+    - x, y: 1D arrays defining the coordinates of the regular grid in 2D
+    - xm, ym: 1D arrays of shape (n_markers,) containing marker coordinates
+    - xidx, yidx: 1D arrays of shape (n_markers,) containing the index of the reference node for each marker
+    - vx: 2D array of shape (len(x), len(y)) describing velocity in x direction
+    - vxm: 1D array of shape (n_markers,) with interpolated velocities values at markers
+    - d2dx2: 2D array of shape (len(x), len(y)) with second derivative of velocity in x direction
+
+    Returns:
+    - marker_values: tuple of 1D arrays of shape (n_markers,) with corrected values at markers
+    """
+     # Get dimensions of tensors
+    n_markers = len(xm)
+    nx, ny = len(x), len(y)
+    dx, dy = x[1] - x[0], y[1] - y[0]
+
+    # Precompute second derivative of velocity in x direction
+    for i in nb.prange(ny):
+        for j in nb.prange(1, nx-1):
+            d2dx2[i, j] = vx[i, j-1] - 2*vx[i, j] + vx[i, j+1]
+
+    # Loop over each marker in parallel
+    for m in nb.prange(n_markers):
+        mi, mj = yidx[m], xidx[m]
+        mx, my = xm[m], ym[m]
+
+        # Magic correction term
+        if (mj > 1 and mx <= (dx/2 + x[mj])) or (mj < nx-2 and mx > (dx/2 + x[mj])):
+            # Calculate distances from marker to current grid node
+            rx = np.abs(mx - x[mj])
+            ry = np.abs(my - y[mi])
+
+            if xm[m] > (dx/2 + x[mj]): # right side of cell
+                vxm[m] += (1 - ry/dy) * (rx/dx - 0.5)**2 * 1/2 * d2dx2[mi, mj+1] \
+                          + (ry/dy) * (rx/dx - 0.5)**2 * 1/2 * d2dx2[mi+1, mj+1]
+            else: # left side of cell
+                vxm[m] += (1 - ry/dy) * (rx/dx - 0.5)**2 * 1/2 * d2dx2[mi, mj] \
+                          + (ry/dy) * (rx/dx - 0.5)**2 * 1/2 * d2dx2[mi+1, mj]
+    
+    return (vxm,)
+    
+
+@nb.njit(parallel=True, cache=True)
+def apply_y_continuity_correction(x, y, xm, ym, xidx, yidx, vy, vym, d2dy2):
+    """
+    Applies continuity correction in y to the interpolated values at the markers.
+
+    Parameters:
+    - x, y: 1D arrays defining the coordinates of the regular grid in 2D
+    - xm, ym: 1D arrays of shape (n_markers,) containing marker coordinates
+    - xidx, yidx: 1D arrays of shape (n_markers,) containing the index of the reference node for each marker
+    - vy: 2D array of shape (len(x), len(y)) describing velocity in y direction
+    - vym: 1D array of shape (n_markers,) with interpolated velocities values at markers
+    - d2dy2: 2D array of shape (len(x), len(y)) with second derivative of velocity in y direction
+
+    Returns:
+    - marker_values: tuple of 1D arrays of shape (n_markers,) with corrected values at markers
+    """
+     # Get dimensions of tensors
+    n_markers = len(xm)
+    nx, ny = len(x), len(y)
+    dx, dy = x[1] - x[0], y[1] - y[0]
+
+    # Precompute second derivative of velocity in x direction
+    for i in nb.prange(1, ny-1):
+        for j in nb.prange(nx):
+            d2dy2[i, j] = vy[i+1, j] - 2*vy[i, j] + vy[i-1, j]
+
+    # Loop over each marker in parallel
+    for m in nb.prange(n_markers):
+        mi, mj = yidx[m], xidx[m]
+        mx, my = xm[m], ym[m]
+
+        if (mi > 1 and ym[m] <= (dy/2 + y[mi])) or (mi < ny-2 and ym[m] > (dy/2 + y[mi])):
+            #% Add correction term
+            rx = np.abs(mx - x[mj])
+            ry = np.abs(my - y[mi])
+
+            # Magic correction term
+            if ym[m] > (dy/2 + y[mi]): # top side of cell
+                vym[m] += (1 - rx/dx) * (ry/dy - 0.5)**2 * 1/2 * d2dy2[mi+1, mj] \
+                          + (rx/dx) * (ry/dy - 0.5)**2 * 1/2 * d2dy2[mi+1, mj+1]
+            else: # bottom side of cell
+                vym[m] += (1 - rx/dx) * (ry/dy - 0.5)**2 * 1/2 * d2dy2[mi, mj] \
+                          + (rx/dx) * (ry/dy - 0.5)**2 * 1/2 * d2dy2[mi, mj+1]
+    
+    return (vym,)
+
+def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", cont_corr = None, real=np.float64):
     """
     Interpolates grid values to the markers using distance-weighted trilinear interpolation.
     
@@ -219,6 +308,7 @@ def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", retur
     - indexing: str, optional, default: "bisect". Indexing mode for grid nodes.
                 "equidistant": grid nodes are equidistantly spaced
                 "bisect": grid nodes are non-equidistantly spaced and indices are computed by bisection
+    - cont_corr: apply continuity correction for velocity based interpolation (None, "x" or "y")
     - return_weights: bool, optional, default: False. If True, returns the accumulated weights at each marker
                 as well as the non-normalized interpolated values.
     - real: np.dtype, optional, default: np.float64. Real type for the arrays
@@ -237,6 +327,7 @@ def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", retur
     assert isinstance(xm, np.ndarray)
     assert isinstance(ym, np.ndarray)
     assert isinstance(grid_values, tuple)
+    assert cont_corr in [None, "x", "y"]
 
     # Grid dimensions and grid spacing
     nx, ny = len(x), len(y)
@@ -246,20 +337,11 @@ def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", retur
     q = len(grid_values)
 
     marker_values = tuple(np.zeros((n_markers,), dtype=real) for _ in range(q))
-    marker_weights = np.zeros((n_markers,), dtype=real)
-
-    # Get number of threads
-    n_threads = nb.get_num_threads()
 
     # 1) Compute grid indices for each marker
     if indexing == "equidistant":
-        dx = x[1] - x[0]
-        dy = y[1] - y[0]
-        # xidx = ((xm - x[0]) / dx).astype(np.int32)
-        # yidx = ((ym - y[0]) / dy).astype(np.int32)
         xidx = compute_idx(x, xm)
         yidx = compute_idx(y, ym)
-        assert np.all(xidx >= 0) and np.all(xidx < nx), "Some markers are outside the grid."
     elif indexing == "bisect":
         xidx = bisect_idx(x, xm, nx)
         yidx = bisect_idx(y, ym, ny)
@@ -267,18 +349,32 @@ def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", retur
         raise ValueError("Invalid indexing mode. Choose 'equidistant' or 'bisect'.")
     
     # 2) Loop over markers and accumulate weighted values and weights
-    marker_values, marker_weights = reduce_grid_values(x, y,
-                                                       xm, ym,
-                                                       xidx, yidx,
-                                                       grid_values, marker_values,
-                                                       marker_weights,
-                                                       n_threads)
+    marker_values = reduce_grid_values(x, y,
+                                       xm, ym,
+                                       xidx, yidx,
+                                       grid_values,
+                                       marker_values)
     
-    # Assert that all weights are positive
-    # assert np.all(marker_weights > 0), "Some markers have zero weight. Check grid positions."
+    # If necessary, apply continuity correction
+    if cont_corr == "x": # Apply continuity correction in x
+        d2dx2 = np.zeros((ny, nx), dtype=real)
+        marker_values = apply_x_continuity_correction(x, y,
+                                                      xm, ym,
+                                                      xidx, yidx,
+                                                      grid_values[0],
+                                                      marker_values[0],
+                                                      d2dx2)    
+    elif cont_corr == "y": # Apply continuity correction in y
+        d2dy2 = np.zeros((ny, nx), dtype=real)
+        marker_values = apply_y_continuity_correction(x, y,
+                                                      xm, ym,
+                                                      xidx, yidx,
+                                                      grid_values[0],
+                                                      marker_values[0],
+                                                      d2dy2)
 
-    if return_weights:
-        return marker_values, marker_weights
+    # Unpack the marker_values tuple if only one quantity is interpolated
+    if len(marker_values) > 1:
+        return marker_values
     else:
-        rax = tuple(v / marker_weights for v in marker_values)
-        return rax if len(rax) > 1 else rax[0] # Return a single value if only one quantity is interpolated
+        return marker_values[0]

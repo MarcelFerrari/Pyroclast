@@ -8,7 +8,9 @@ Description: This file implements utility functions for interpolation.
 Author: Marcel Ferrari
 Copyright (c) 2024 Marcel Ferrari. All rights reserved.
 
-See LICENSE file in the project root for full license information.
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 import numba as nb
@@ -62,6 +64,15 @@ def bisect_idx(x, xm, nx):
     
     return idx
 
+@nb.njit(cache=True)
+def clip(x, xmin, xmax):
+    if x < xmin:
+        return xmin
+    elif x > xmax:
+        return xmax
+    else:
+        return x
+
 @nb.njit(parallel=True, cache=True)
 def compute_idx(x, xm):
     """
@@ -78,6 +89,7 @@ def compute_idx(x, xm):
     nm = len(xm)
     idx = np.empty((nm, ), dtype=np.int32)
     dx = x[1] - x[0]
+    nx = len(x)
     for m in nb.prange(nm):
-        idx[m] = int((xm[m] - x[0]) / dx)
+        idx[m] = clip(int((xm[m] - x[0]) / dx), 0, nx - 2)
     return idx

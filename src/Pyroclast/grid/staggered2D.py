@@ -8,7 +8,9 @@ Description: This file implements 2D staggered grids with uniform spacing in eac
 Author: Marcel Ferrari
 Copyright (c) 2024 Marcel Ferrari. All rights reserved.
 
-See LICENSE file in the project root for full license information.
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 import numpy as np
@@ -86,31 +88,13 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
         # Create the pressure nodes
         self.xp = self.x - self.dx/2
         self.yp = self.y - self.dy/2
-
-        # Create additional nodes
-        # It is fine to copy additional arrays for clarity as they are not
-        # actually stored in memory, but are just references to the same data.
-        # Density nodes
-        self.xrho_vx = self.xvx
-        self.yrho_vx = self.yvx
-
-        self.xrho_vy = self.xvy
-        self.yrho_vy = self.yvy
-        
-        # Basic viscosity nodes
-        self.xeta_b = self.x
-        self.yeta_b = self.y
-
-        # Pressure viscosity nodes
-        self.xeta_p = self.xp
-        self.yeta_p = self.yp
         
     def info(self):
         print(10*"-" + " Grid Information " + 10*"-")
         print("Basic staggered 2D grid initialized.")
-        print(f"Domain size: {self.xsize} x {self.ysize}")
+        print(f"Domain size: {self.xsize:.1f} x {self.ysize:.1f}")
         print(f"Grid size: {self.nx} x {self.ny}")
-        print(f"Grid spacing: {self.dx} x {self.dy}")
+        print(f"Grid spacing: {self.dx:.1f} x {self.dy:.1f}")
         print(f"Total nodes: {self.nx1 * self.ny1}")
         print(38*"-")
         
