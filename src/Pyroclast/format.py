@@ -6,7 +6,7 @@ File: format.py
 Description: Utility functions for pretty formatting of numbers and strings.
 
 Author: Marcel Ferrari
-Copyright (c) 2024 Marcel Ferrari. All rights reserved.
+Copyright (c) 2024 Marcel Ferrari.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

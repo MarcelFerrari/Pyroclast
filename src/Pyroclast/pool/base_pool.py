@@ -8,7 +8,7 @@ Description: Base pool class for Pyroclast, which handles the pool of markers.
              serves to implement the required methods for the pool class.
 
 Author: Marcel Ferrari
-Copyright (c) 2024 Marcel Ferrari. All rights reserved.
+Copyright (c) 2024 Marcel Ferrari.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

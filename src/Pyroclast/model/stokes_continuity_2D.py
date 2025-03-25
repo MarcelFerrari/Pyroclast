@@ -7,7 +7,7 @@ Description: This file implements basic Stokes flow and continuity equations
              for boyancy-driven flow with marker-in-cell method.
 
 Author: Marcel Ferrari
-Copyright (c) 2024 Marcel Ferrari. All rights reserved.
+Copyright (c) 2024 Marcel Ferrari.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
