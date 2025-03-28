@@ -1,3 +1,19 @@
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: gmg_routines.py
+Description: This file implements restriction and prolongation operators for
+             multigrid methods.
+
+Author: Marcel Ferrari
+Copyright (c) 2024 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
 import numba as nb
 import numpy as np
 

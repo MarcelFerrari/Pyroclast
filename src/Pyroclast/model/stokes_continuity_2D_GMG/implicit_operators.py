@@ -2,11 +2,9 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: smoother.py
-Description: This file implements jacobi and red-black Gauss-Seidel smoothers
-             for the Stokes flow and continuity equations in 2D.
-             The pressure update is done using the Uzawa method.
-
+File: implicit_operators.py
+Description: This file implements the implicit operators for the Stokes flow
+             and continuity equations in 2D.
 Author: Marcel Ferrari
 Copyright (c) 2024 Marcel Ferrari.
 
