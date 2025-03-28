@@ -1,0 +1,357 @@
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: GMG.py
+Description: This file implements coupled pressure-velocity multigrid solver based
+             on Uzawa's iteration for the Stokes equations.
+
+Author: Marcel Ferrari
+Copyright (c) 2024 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
+from Pyroclast.interpolation.linear_2D_cpu \
+    import interpolate_markers2grid as interpolate
+
+import numpy as np
+from .smoother import *
+from .implicit_operators import *
+from .utils import *
+from .gmg_routines import *
+
+# Class to store each grid level
+class Grid:
+    def __init__(self, shape, xmin, xmax, ymin, ymax, level, BC):
+        self.level = level
+        self.ny1 = shape[0]
+        self.nx1 = shape[1]
+
+        self.x = np.linspace(xmin, xmax, self.nx1)
+        self.y = np.linspace(ymin, ymax, self.ny1)
+        self.dx = self.x[1] - self.x[0]
+        self.dy = self.y[1] - self.y[0]
+
+        # Create additional staggered grid nodes
+        self.xvx = self.x
+        self.yvx = self.y - self.dy/2
+        self.xvy = self.x - self.dx/2
+        self.yvy = self.y
+        self.xp = self.x - self.dx/2
+        self.yp = self.y - self.dy/2
+
+        # Material properties
+        self.etab = None # Computational viscosity in basic nodes
+        self.etap = None # Computational viscosity in pressure nodes
+        self.rho = None # True density in vy nodes
+
+        # Pressure reference
+        self.p_ref = None
+
+        # Store local solution
+        self.p = np.zeros((self.ny1, self.nx1))
+        self.vx = np.zeros((self.ny1, self.nx1))
+        self.vy = np.zeros((self.ny1, self.nx1))
+
+        # Store local rhs
+        self.p_rhs = None
+        self.vx_rhs = None
+        self.vy_rhs = None
+
+        # Store local residual
+        self.p_res = np.zeros((self.ny1, self.nx1))
+        self.vx_res = np.zeros((self.ny1, self.nx1))
+        self.vy_res = np.zeros((self.ny1, self.nx1))
+
+        # Boundary conditions
+        self.BC = BC
+
+    def update_residual(self):
+        # Update residual vectors in-place
+        vx_residual(self.nx1,
+                    self.ny1,
+                    self.dx,self.dy,
+                    self.etap, self.etab,
+                    self.vx, self.vy, self.p,
+                    self.vx_res, self.vx_rhs)
+        
+        vy_residual(self.nx1, self.ny1,
+                    self.dx,self.dy,
+                    self.etap, self.etab,
+                    self.vx, self.vy, self.p,
+                    self.vy_res, self.vy_rhs)
+        
+        p_residual(self.nx1, self.ny1,
+                   self.dx, self.dy,
+                   self.vx, self.vy,
+                   self.p_res, self.p_rhs)
+        
+    def residual_norm(self):
+        # Average L2 residual over all cells
+        p_res_norm = np.linalg.norm(self.p_res.reshape(-1))/(self.nx1*self.ny1)
+        vx_res_norm = np.linalg.norm(self.vx_res.reshape(-1))/(self.nx1*self.ny1)
+        vy_res_norm = np.linalg.norm(self.vy_res.reshape(-1))/(self.nx1*self.ny1)
+        return p_res_norm, vx_res_norm, vy_res_norm
+    
+    def update_bc(self):
+        apply_BC(self.p, self.vx, self.vy, self.BC)
+            
+
+class Multigrid:
+    def __init__(self, ctx, levels, grid_scaling=2.0):
+        self.ctx = ctx
+        self.levels = levels
+        self.grids = []
+
+        # Grab domain limits directly from finest grid
+        self.xmin = self.ctx.grid.x[0]
+        self.xmax = self.ctx.grid.x[-1]
+        self.ymin = self.ctx.grid.y[0]
+        self.ymax = self.ctx.grid.y[-1]
+        self.p_ref = self.ctx.params.p_ref
+        self.grid_scaling = grid_scaling
+        
+        # Store some constants
+        self.gy = self.ctx.model.gy
+        self.BC = self.ctx.model.BC
+        self.p_ref = self.ctx.params.p_ref
+        self.relax_v = 0.8
+        self.relax_p = 0.8
+
+        # Initialize grids
+        self.init_grids()
+
+        # self.bicg = ph.matfree.Eigen_BiCGSTAB()
+        # self.bicg.set_max_iterations(200)
+        # self.bicg.set_tolerance(0.0)
+
+    def make_grid(self, shape, level):
+        return Grid(shape, self.xmin, self.xmax, self.ymin, self.ymax, level, self.ctx.model.BC)
+    
+    def init_grids(self):
+        # Initialize finest level
+        gh = self.make_grid((self.ctx.grid.ny1, self.ctx.grid.nx1), level=0)
+        
+        # Copy over material properties from the context
+        gh.etab = np.nan_to_num(self.ctx.model.etab)
+        gh.etap = np.nan_to_num(self.ctx.model.etap)
+        gh.rho = np.nan_to_num(self.ctx.model.rho)
+
+        # Init hydrostatic pressure
+        gh.p_ref = self.p_ref
+        gh.p = compute_hydrostatic_pressure(gh.nx1, gh.ny1, gh.dy, self.ctx.model.rhop, self.gy, gh.p_ref)
+        
+        # Init rhs arrays
+        gh.vx_rhs = np.zeros((gh.ny1, gh.nx1))
+        gh.vy_rhs = -self.gy * gh.rho
+        gh.p_rhs = np.zeros((gh.ny1, gh.nx1))
+
+        # Append to list of grids
+        self.grids.append(gh)
+
+        print(f"Grid 1: {gh.nx1} x {gh.ny1} – Fine grid")
+
+        # Initialize coarser levels
+        for l in range(1, self.levels):
+            # Initialize new coarse level grid
+            nx = int((gh.nx1 - 1) / (self.grid_scaling**l))
+            ny = int((gh.ny1 - 1) / (self.grid_scaling**l))
+            
+            shape = (ny+1, nx+1)
+
+            # Create grid
+            gH = self.make_grid(shape, level=l)
+            
+            # Interpolate material properties from marker to grid
+            # We need to use markers for this as it greatly improves the accuracy
+            # of the PDE discretization
+            gH.rho  = interpolate(gH.xvy,           # Density on y-velocity nodes
+                                  gH.yvy, 
+                                  self.ctx.pool.xm,             # Marker x positions
+                                  self.ctx.pool.ym,             # Marker y positions
+                                  (self.ctx.pool.rhom,),        # Marker density
+                                  indexing="equidistant",       # Equidistant grid spacing
+                                  return_weights=False)         # Do not return weights
+  
+            gH.etab = interpolate(gH.x,                         # Basic viscosity on grid nodes
+                                  gH.y,   
+                                  self.ctx.pool.xm,             # Marker x positions
+                                  self.ctx.pool.ym,             # Marker y positions
+                                  (self.ctx.pool.etam,),        # Marker viscosity
+                                  indexing="equidistant",       # Equidistant grid spacing
+                                  return_weights=False)         # Do not return weights
+              
+            gH.etap = interpolate(gH.xp,                        # Pressure viscosity on grid nodes
+                                       gH.yp,  
+                                       self.ctx.pool.xm,        # Marker x positions
+                                       self.ctx.pool.ym,        # Marker y positions
+                                       (self.ctx.pool.etam,),   # Marker viscosity
+                                       indexing="equidistant",  # Equidistant grid spacing
+                                       return_weights=False)    # Do not return weights
+
+            # Append to list of grids
+            self.grids.append(gH)
+            print(f"Grid {l+1}: {gH.nx1} x {gH.ny1}")
+
+    def smooth(self, g, max_iter):
+        # if g.level > 0: # Use red-black Gauss-Seidel for coarse levels
+        red_black_gs(g.nx1, g.ny1,
+                    g.dx, g.dy,
+                    g.etap, g.etab,
+                    g.vx, g.vy, g.p,
+                    self.relax_v, self.relax_p,
+                    g.p_ref, g.BC, g.p_rhs, g.vx_rhs, g.vy_rhs,
+                    max_iter)
+        # else: # Use BiCGSTAB for the finest level
+        #     # Build rhs vector for velocity assuming constant pressure
+        #     rhs = assemble_momentum(g.nx1, g.ny1, g.dx, g.dy, g.rho, self.gy, g.p)
+
+        #     rows = 2 * g.ny1 * g.nx1
+            
+        #     # Build operator
+        #     def closure(u, u_new):
+        #         u = u.reshape(2, g.ny1, g.nx1)
+        #         u_new = u_new.reshape(2, g.ny1, g.nx1)
+                
+        #         vx = np.zeros((g.ny1, g.nx1))
+        #         vy = np.zeros((g.ny1, g.nx1))
+                
+        #         vx[...] = u[0, ...]
+        #         vy[...] = u[1, ...]
+
+        #         apply_vx_BC(vx, g.BC)
+        #         apply_vy_BC(vy, g.BC)
+
+        #         # Allocate memory for operator result
+        #         Avx = np.zeros_like(vx)
+        #         Avy = np.zeros_like(vy)
+                
+        #         # Compute operator
+        #         fixed_p_vx_operator(g.nx1, g.ny1, g.dx, g.dy, g.etap, g.etab, vx, vy, Avx, g.BC)
+        #         fixed_p_vy_operator(g.nx1, g.ny1, g.dx, g.dy, g.etap, g.etab, vx, vy, Avy, g.BC)
+
+        #         u_new[0, ...] = Avx[...]
+        #         u_new[1, ...] = Avy[...]
+            
+        #     # Copy current solution to u
+        #     u = np.zeros((2, g.ny1, g.nx1))
+        #     u[0, ...] = g.vx
+        #     u[1, ...] = g.vy
+
+        #     u_new = self.bicg.solve(closure, rows, rows, rhs.reshape(-1), u.reshape(-1))
+        #     u_new = u_new.reshape(2, g.ny1, g.nx1)
+
+        #     # Print solve error
+        #     # print("BiCGSTAB error: ", self.bicg.error(), " iterations: ", self.bicg.iterations())
+            
+        #     # Update velocity
+        #     g.vx = u_new[0, ...]
+        #     g.vy = u_new[1, ...]
+
+        #     # # Fix boundary conditions
+        #     apply_vx_BC(g.vx, g.BC)
+        #     apply_vy_BC(g.vy, g.BC)
+
+        #     # Pressure update
+        #     pressure_uzawa_sweep(g.nx1, g.ny1, g.dx, g.dy, g.vx, g.vy,
+        #                          g.p, g.etap, self.relax_p, g.p_rhs, p_ref = g.p_ref)
+            
+        #     # Fix pressure boundary conditions
+        #     apply_p_BC(g.p)
+
+    def vcycle(self, level, nu1, nu2, gamma):
+        # Extract grid information
+        gh = self.grids[level] # Fine grid
+
+        # Pre-smoothing: Perform nu1 smoothing steps on the fine grid
+        if nu1 > 0:
+            self.smooth(gh, max_iter=nu1)
+        
+        # Solve the coarse grid problem using recursive V-cycle
+        if level + 1 < self.levels:
+            gH = self.grids[level+1] # Coarse grid
+            
+            # Update residuals on the fine grid
+            gh.update_residual()
+            
+            # Restrict the residual to the coarse grid
+            # Pressure must be scaled by viscosity to get a smoother result
+            rH_p = restrict(gh.xp, gh.yp, gh.p_res*gh.etap, gH.xp, gH.yp)
+            rH_p /= gH.etap
+            rH_vx = restrict(gh.xvx, gh.yvx, gh.vx_res, gH.xvx, gH.yvx)
+            rH_vy = restrict(gh.xvy, gh.yvy, gh.vy_res, gH.xvy, gH.yvy)
+
+            # Overwrite the rhs on the coarse grid
+            gH.p_rhs = rH_p
+            gH.vx_rhs = rH_vx
+            gH.vy_rhs = rH_vy
+
+            for _ in range(gamma):
+                self.vcycle(level+1, 2*nu1, 2*nu2, gamma)
+
+            # Interpolate the correction to the fine grid
+            uH_p = gH.p
+            uH_vx = gH.vx
+            uH_vy = gH.vy
+            
+            # Interpolate the correction to the fine grid
+            eh_p = prolong(gh.xp, gh.yp, gH.xp, gH.yp, uH_p*gH.etap)
+            eh_p /= gh.etap
+            eh_vx = prolong(gh.xvx, gh.yvx, gH.xvx, gH.yvx, uH_vx)
+            eh_vy = prolong(gh.xvy, gh.yvy, gH.xvy, gH.yvy, uH_vy)
+            
+            # Update the solution on the fine grid
+            gh.p += eh_p
+            gh.vx += eh_vx
+            gh.vy += eh_vy
+
+            # Apply boundary conditions
+            if level == 0:
+                gh.update_bc()
+
+            # Reset coarse grid solution
+            gH.p[:, :] = 0.0
+            gH.vx[:, :] = 0.0
+            gH.vy[:, :] = 0.0
+        
+        # Post-smoothing: Perform nu2 smoothing steps on the fine grid
+        if nu2 > 0:
+            self.smooth(gh, max_iter=nu2)
+
+        # Update residuals
+        gh.update_residual()
+
+        return gh.residual_norm() if level == 0 else None
+
+    def solve(self, max_cycles = 50, tol = 1e-4, nu1=3, nu2=3, gamma=1, pre_smooth=0, p_guess = None, vx_guess=None, vy_guess=None):
+        
+        if p_guess is not None:
+            self.grids[0].p[...] = p_guess[...]
+
+        if vx_guess is not None:
+            self.grids[0].vx[...] = vx_guess[...]
+
+        if vy_guess is not None:
+            self.grids[0].vy[...] = vy_guess[...]
+
+        if pre_smooth > 0:
+            self.smooth(self.grids[0], max_iter=pre_smooth)
+
+        for c in range(max_cycles):
+            print("Cycle: ", c)
+
+            # Perform V-cycles
+            p_res, vx_res, vy_res = self.vcycle(0, nu1, nu2, gamma)
+
+            print("Continuity residual: ", p_res)
+            print("X-momentum residual: ", vx_res)
+            print("Y-momentum residual: ", vy_res)
+
+            # Check convergence
+            if max(p_res, vx_res, vy_res) < tol:
+                break
+
+        return self.grids[0].p, self.grids[0].vx, self.grids[0].vy
