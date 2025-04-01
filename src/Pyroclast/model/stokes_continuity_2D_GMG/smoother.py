@@ -167,8 +167,7 @@ def pressure_uzawa_sweep(nx1, ny1, dx, dy,
     # 1) Update only interior cells
     for i in nb.prange(1, ny1 - 1):
         for j in nb.prange(1, nx1 - 1):
-
-            # The continuity residual (sign depends on your convention)
+            # The continuity residual
             res = rhs[i, j] - ((vx[i, j] - vx[i, j - 1])/dx +
                                (vy[i, j] - vy[i - 1, j])/dy)
 
@@ -179,7 +178,7 @@ def pressure_uzawa_sweep(nx1, ny1, dx, dy,
     if p_ref is not None:
         dp = p_ref - p[1, 1]
         p += dp
-
+    
     # Apply pressure boundary conditions
     apply_p_BC(p)
 
@@ -197,62 +196,63 @@ def _vx_rb_gs_sweep(nx1, ny1,
     #  Red pass: (i + j) % 2 == 0
     #----------------------------
     for i in nb.prange(1, ny1 - 1):
-        for j in range(1, nx1 - 2):
-            if (i + j) % 2 == 0:
-                # 1) Gather local viscosities
-                etaA = etap[i,   j]
-                etaB = etap[i,   j+1]
-                eta1 = etab[i-1, j]
-                eta2 = etab[i,   j]
+        j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
+        for j in range(j_start, nx1 - 2, 2):
+            # 1) Gather local viscosities
+            etaA = etap[i,   j]
+            etaB = etap[i,   j+1]
+            eta1 = etab[i-1, j]
+            eta2 = etab[i,   j]
 
-                
-                # 2) Construct coefficients for x-momentum
-                vx1_coeff = 2.0 * etaA / (dx * dx)
-                vx2_coeff = eta1     / (dy * dy)
-                vx3_coeff = -(eta1 + eta2) / (dy * dy) \
-                            - 2.0*(etaA + etaB)/(dx * dx)
-                vx4_coeff = eta2 / (dy * dy)
-                vx5_coeff = 2.0 * etaB / (dx * dx)
+            
+            # 2) Construct coefficients for x-momentum
+            vx1_coeff = 2.0 * etaA / (dx * dx)
+            vx2_coeff = eta1     / (dy * dy)
+            vx3_coeff = -(eta1 + eta2) / (dy * dy) \
+                        - 2.0*(etaA + etaB)/(dx * dx)
+            vx4_coeff = eta2 / (dy * dy)
+            vx5_coeff = 2.0 * etaB / (dx * dx)
 
-                # Cross terms with vy
-                vy1_coeff =  eta1 / (dx * dy)
-                vy2_coeff = -eta2 / (dx * dy)
-                vy3_coeff = -eta1 / (dx * dy)
-                vy4_coeff =  eta2 / (dx * dy)
+            # Cross terms with vy
+            vy1_coeff =  eta1 / (dx * dy)
+            vy2_coeff = -eta2 / (dx * dy)
+            vy3_coeff = -eta1 / (dx * dy)
+            vy4_coeff =  eta2 / (dx * dy)
 
-                # Pressure difference terms
-                dp_right = -1.0 / dx * p[i, j+1]
-                dp_left  = +1.0 / dx * p[i, j]
+            # Pressure difference terms
+            dp_right = -1.0 / dx * p[i, j+1]
+            dp_left  = +1.0 / dx * p[i, j]
 
-                
-                # 3) Sum neighbor contributions
-                sum_neighbors = (
-                    vx1_coeff * vx[i,   j-1] +
-                    vx2_coeff * vx[i-1, j  ] +
-                    vx4_coeff * vx[i+1, j  ] +
-                    vx5_coeff * vx[i,   j+1]
-                    +
-                    vy1_coeff * vy[i-1, j  ] +
-                    vy2_coeff * vy[i,   j  ] +
-                    vy3_coeff * vy[i-1, j+1] +
-                    vy4_coeff * vy[i,   j+1]
-                    +
-                    dp_right + dp_left
-                )
+            
+            # 3) Sum neighbor contributions
+            sum_neighbors = (
+                vx1_coeff * vx[i,   j-1] +
+                vx2_coeff * vx[i-1, j  ] +
+                vx4_coeff * vx[i+1, j  ] +
+                vx5_coeff * vx[i,   j+1]
+                +
+                vy1_coeff * vy[i-1, j  ] +
+                vy2_coeff * vy[i,   j  ] +
+                vy3_coeff * vy[i-1, j+1] +
+                vy4_coeff * vy[i,   j+1]
+                +
+                dp_right + dp_left
+            )
 
-                diag = vx3_coeff
+            diag = vx3_coeff
 
-                # Gauss-Seidel in-place update
-                vx[i, j] = (1.0 - relax_v)*vx[i, j] \
-                           + relax_v*(rhs[i, j] - sum_neighbors)/diag
-
+            # Gauss-Seidel in-place update
+            vx[i, j] = (1.0 - relax_v)*vx[i, j] \
+                        + relax_v*(rhs[i, j] - sum_neighbors)/diag
+    # Apply vx boundary conditions
+    apply_vx_BC(vx, BC)
+    
     #----------------------------
     #  Black pass: (i + j) % 2 == 1
     #----------------------------
     for i in nb.prange(1, ny1 - 1):
-        for j in range(1, nx1 - 2):
-            if (i + j) % 2 == 1:
-                
+        j_start = 2 if i % 2 == 0 else 1  # Black pass starts on odd (i+j)
+        for j in range(j_start, nx1 - 2, 2):                
                 # 1) Gather local viscosities
                 etaA = etap[i,   j]
                 etaB = etap[i,   j+1]
@@ -369,6 +369,8 @@ def _vy_red_black_gs_sweep(nx1, ny1,
                 # 4) Gauss-Seidel in-place update
                 vy[i, j] = (1.0 - relax_v)*vy[i, j] \
                            + relax_v*(rhs[i, j] - sum_neighbors)/diag
+    # Apply vy boundary conditions
+    apply_vy_BC(vy, BC)
 
     #----------------------------
     #  Black pass
@@ -426,6 +428,7 @@ def _vy_red_black_gs_sweep(nx1, ny1,
     # Apply vy boundary conditions
     apply_vy_BC(vy, BC)
 
+
 @nb.njit(cache=True)
 def red_black_gs(nx1, ny1,
                  dx, dy,
@@ -446,6 +449,230 @@ def red_black_gs(nx1, ny1,
                             relax_v, vx_rhs, BC)
             
             _vy_red_black_gs_sweep(nx1, ny1,
+                                dx, dy,
+                                etap, etab,
+                                vx, vy, p,
+                                relax_v, vy_rhs, BC)
+        
+        # Apply Uzawa pressure update
+        pressure_uzawa_sweep(nx1, ny1, dx, dy,
+                            vx, vy, p, etap,
+                            relax_p, p_rhs, p_ref)
+        
+
+@nb.njit(cache=True, parallel=True)
+def _vx_rb_gs_sweep_chunked(nx1, ny1,
+                            dx, dy,
+                            etap, etab,
+                            vx, vy, p,
+                            relax_v, rhs, BC,
+                            block_size_i=64, block_size_j=64):
+    """
+    Red-Black Gauss-Seidel update for vx with chunked blocks for better parallel scalability.
+    """
+    # Red pass
+    n_tile_i = (ny1 - 2) // block_size_i + 1
+    for tile_i in nb.prange(n_tile_i):
+        ii = 1 + tile_i * block_size_i
+        for jj in range(1, nx1 - 2, block_size_j):
+            for i in range(ii, min(ii + block_size_i, ny1 - 1)):
+                j_start = 1 if i % 2 == 0 else 2
+                for j in range(jj + (j_start - jj) % 2, min(jj + block_size_j, nx1 - 2), 2):
+                    etaA = etap[i, j]
+                    etaB = etap[i, j+1]
+                    eta1 = etab[i-1, j]
+                    eta2 = etab[i, j]
+
+                    vx1_coeff = 2.0 * etaA / (dx * dx)
+                    vx2_coeff = eta1 / (dy * dy)
+                    vx3_coeff = -(eta1 + eta2) / (dy * dy) - 2.0 * (etaA + etaB) / (dx * dx)
+                    vx4_coeff = eta2 / (dy * dy)
+                    vx5_coeff = 2.0 * etaB / (dx * dx)
+
+                    vy1_coeff = eta1 / (dx * dy)
+                    vy2_coeff = -eta2 / (dx * dy)
+                    vy3_coeff = -eta1 / (dx * dy)
+                    vy4_coeff = eta2 / (dx * dy)
+
+                    dp_right = -1.0 / dx * p[i, j+1]
+                    dp_left = +1.0 / dx * p[i, j]
+
+                    sum_neighbors = (
+                        vx1_coeff * vx[i, j-1] +
+                        vx2_coeff * vx[i-1, j] +
+                        vx4_coeff * vx[i+1, j] +
+                        vx5_coeff * vx[i, j+1] +
+                        vy1_coeff * vy[i-1, j] +
+                        vy2_coeff * vy[i, j] +
+                        vy3_coeff * vy[i-1, j+1] +
+                        vy4_coeff * vy[i, j+1] +
+                        dp_right + dp_left
+                    )
+
+                    vx[i, j] = (1.0 - relax_v) * vx[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / vx3_coeff
+
+    apply_vx_BC(vx, BC)
+
+    # Black pass
+    n_tile_i = (ny1 - 2) // block_size_i + 1
+    for tile_i in nb.prange(n_tile_i):
+        ii = 1 + tile_i * block_size_i
+        for jj in range(1, nx1 - 2, block_size_j):
+            for i in range(ii, min(ii + block_size_i, ny1 - 1)):
+                j_start = 2 if i % 2 == 0 else 1
+                for j in range(jj + (j_start - jj) % 2, min(jj + block_size_j, nx1 - 2), 2):
+                    etaA = etap[i, j]
+                    etaB = etap[i, j+1]
+                    eta1 = etab[i-1, j]
+                    eta2 = etab[i, j]
+
+                    vx1_coeff = 2.0 * etaA / (dx * dx)
+                    vx2_coeff = eta1 / (dy * dy)
+                    vx3_coeff = -(eta1 + eta2) / (dy * dy) - 2.0 * (etaA + etaB) / (dx * dx)
+                    vx4_coeff = eta2 / (dy * dy)
+                    vx5_coeff = 2.0 * etaB / (dx * dx)
+
+                    vy1_coeff = eta1 / (dx * dy)
+                    vy2_coeff = -eta2 / (dx * dy)
+                    vy3_coeff = -eta1 / (dx * dy)
+                    vy4_coeff = eta2 / (dx * dy)
+
+                    dp_right = -1.0 / dx * p[i, j+1]
+                    dp_left = +1.0 / dx * p[i, j]
+
+                    sum_neighbors = (
+                        vx1_coeff * vx[i, j-1] +
+                        vx2_coeff * vx[i-1, j] +
+                        vx4_coeff * vx[i+1, j] +
+                        vx5_coeff * vx[i, j+1] +
+                        vy1_coeff * vy[i-1, j] +
+                        vy2_coeff * vy[i, j] +
+                        vy3_coeff * vy[i-1, j+1] +
+                        vy4_coeff * vy[i, j+1] +
+                        dp_right + dp_left
+                    )
+
+                    vx[i, j] = (1.0 - relax_v) * vx[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / vx3_coeff
+
+    apply_vx_BC(vx, BC)
+
+
+@nb.njit(cache=True, parallel=True)
+def _vy_red_black_gs_sweep_chunked(nx1, ny1,
+                                   dx, dy,
+                                   etap, etab,
+                                   vx, vy, p,
+                                   relax_v, rhs, BC,
+                                   block_size_i=64, block_size_j=64):
+    """
+    Chunked Red-Black Gauss-Seidel update for vy.
+    """
+    # Red pass
+    n_tile_i = (ny1 - 3) // block_size_i + 1  # because range goes to ny1 - 2
+    for tile_i in nb.prange(n_tile_i):  # valid prange loop
+        ii = 1 + tile_i * block_size_i
+        for jj in range(1, nx1 - 1, block_size_j):
+            for i in range(ii, min(ii + block_size_i, ny1 - 2)):
+                j_start = 1 if i % 2 == 0 else 2
+                for j in range(jj + (j_start - jj) % 2, min(jj + block_size_j, nx1 - 1), 2):
+                    etaA = etap[i, j]
+                    etaB = etap[i+1, j]
+                    eta1 = etab[i, j-1]
+                    eta2 = etab[i, j]
+
+                    vy1_coeff = eta1 / (dx * dx)
+                    vy2_coeff = 2.0 * etaA / (dy * dy)
+                    vy3_coeff = -2.0 * etaA/(dy*dy) - 2.0 * etaB/(dy*dy) - eta1/(dx*dx) - eta2/(dx*dx)
+                    vy4_coeff = 2.0 * etaB / (dy * dy)
+                    vy5_coeff = eta2 / (dx * dx)
+
+                    vx1_coeff = eta1 / (dx * dy)
+                    vx2_coeff = -eta1 / (dx * dy)
+                    vx3_coeff = -eta2 / (dx * dy)
+                    vx4_coeff = eta2 / (dx * dy)
+
+                    dp_up = -1.0/dy * p[i+1, j]
+                    dp_down = +1.0/dy * p[i, j]
+
+                    sum_neighbors = (
+                        vy1_coeff * vy[i, j-1] +
+                        vy2_coeff * vy[i-1, j] +
+                        vy4_coeff * vy[i+1, j] +
+                        vy5_coeff * vy[i, j+1] +
+                        vx1_coeff * vx[i, j-1] +
+                        vx2_coeff * vx[i+1, j-1] +
+                        vx3_coeff * vx[i, j] +
+                        vx4_coeff * vx[i+1, j] +
+                        dp_up + dp_down
+                    )
+
+                    vy[i, j] = (1.0 - relax_v) * vy[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / vy3_coeff
+
+    apply_vy_BC(vy, BC)
+
+    # Black pass
+    n_tile_i = (ny1 - 3) // block_size_i + 1  # because range goes to ny1 - 2
+    for tile_i in nb.prange(n_tile_i):  # valid prange loop
+        ii = 1 + tile_i * block_size_i
+        for jj in range(1, nx1 - 1, block_size_j):
+            for i in range(ii, min(ii + block_size_i, ny1 - 2)):
+                j_start = 2 if i % 2 == 0 else 1
+                for j in range(jj + (j_start - jj) % 2, min(jj + block_size_j, nx1 - 1), 2):
+                    etaA = etap[i, j]
+                    etaB = etap[i+1, j]
+                    eta1 = etab[i, j-1]
+                    eta2 = etab[i, j]
+
+                    vy1_coeff = eta1 / (dx * dx)
+                    vy2_coeff = 2.0 * etaA / (dy * dy)
+                    vy3_coeff = -2.0 * etaA/(dy*dy) - 2.0 * etaB/(dy*dy) - eta1/(dx*dx) - eta2/(dx*dx)
+                    vy4_coeff = 2.0 * etaB / (dy * dy)
+                    vy5_coeff = eta2 / (dx * dx)
+
+                    vx1_coeff = eta1 / (dx * dy)
+                    vx2_coeff = -eta1 / (dx * dy)
+                    vx3_coeff = -eta2 / (dx * dy)
+                    vx4_coeff = eta2 / (dx * dy)
+
+                    dp_up = -1.0/dy * p[i+1, j]
+                    dp_down = +1.0/dy * p[i, j]
+
+                    sum_neighbors = (
+                        vy1_coeff * vy[i, j-1] +
+                        vy2_coeff * vy[i-1, j] +
+                        vy4_coeff * vy[i+1, j] +
+                        vy5_coeff * vy[i, j+1] +
+                        vx1_coeff * vx[i, j-1] +
+                        vx2_coeff * vx[i+1, j-1] +
+                        vx3_coeff * vx[i, j] +
+                        vx4_coeff * vx[i+1, j] +
+                        dp_up + dp_down
+                    )
+
+                    vy[i, j] = (1.0 - relax_v) * vy[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / vy3_coeff
+
+    apply_vy_BC(vy, BC)
+
+
+def red_black_gs_chunked(nx1, ny1,
+                 dx, dy,
+                 etap, etab,
+                 vx, vy, p,
+                 relax_v, relax_p,
+                 p_ref, BC, p_rhs, vx_rhs, vy_rhs, max_iter):
+    """
+    Full red-black Gauss-Seidel smoother for the velocity fields.
+    """
+    for _ in range(max_iter):
+        # Solve velocity system approximately
+        for __ in range(3):
+            _vx_rb_gs_sweep_chunked(nx1, ny1,
+                            dx, dy,
+                            etap, etab,
+                            vx, vy, p,
+                            relax_v, vx_rhs, BC)
+            
+            _vy_red_black_gs_sweep_chunked(nx1, ny1,
                                 dx, dy,
                                 etap, etab,
                                 vx, vy, p,

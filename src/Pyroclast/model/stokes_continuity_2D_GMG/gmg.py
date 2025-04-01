@@ -17,11 +17,14 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 from Pyroclast.interpolation.linear_2D_cpu \
     import interpolate_markers2grid as interpolate
 
+from Pyroclast.profiling import timer
+import phasma as ph
 import numpy as np
 from .smoother import *
 from .implicit_operators import *
 from .utils import *
 from .gmg_routines import *
+
 
 # Class to store each grid level
 class Grid:
@@ -69,6 +72,7 @@ class Grid:
         # Boundary conditions
         self.BC = BC
 
+    @timer.time_function("Model Solve", "Update Residual")
     def update_residual(self):
         # Update residual vectors in-place
         vx_residual(self.nx1,
@@ -88,7 +92,8 @@ class Grid:
                    self.dx, self.dy,
                    self.vx, self.vy,
                    self.p_res, self.p_rhs)
-        
+    
+    @timer.time_function("Model Solve", "Compute Residual Norm")
     def residual_norm(self):
         # Average L2 residual over all cells
         p_res_norm = np.linalg.norm(self.p_res.reshape(-1))/(self.nx1*self.ny1)
@@ -118,27 +123,30 @@ class Multigrid:
         self.gy = self.ctx.model.gy
         self.BC = self.ctx.model.BC
         self.p_ref = self.ctx.params.p_ref
-        self.relax_v = 0.8
-        self.relax_p = 0.8
+        self.relax_v = 0.9
+        self.relax_p = 0.9
 
         # Initialize grids
         self.init_grids()
 
-        # self.bicg = ph.matfree.Eigen_BiCGSTAB()
-        # self.bicg.set_max_iterations(200)
-        # self.bicg.set_tolerance(0.0)
+        self.use_bicgstab = False
+        if self.use_bicgstab:
+            self.bicg = ph.matfree.Eigen_BiCGSTAB()
+            self.bicg.set_max_iterations(10)
+            self.bicg.set_tolerance(1e-12)
 
     def make_grid(self, shape, level):
         return Grid(shape, self.xmin, self.xmax, self.ymin, self.ymax, level, self.ctx.model.BC)
     
+    @timer.time_function("Model Solve", "Initialization")
     def init_grids(self):
         # Initialize finest level
         gh = self.make_grid((self.ctx.grid.ny1, self.ctx.grid.nx1), level=0)
         
         # Copy over material properties from the context
-        gh.etab = np.nan_to_num(self.ctx.model.etab)
-        gh.etap = np.nan_to_num(self.ctx.model.etap)
-        gh.rho = np.nan_to_num(self.ctx.model.rho)
+        gh.etab = self.ctx.model.etab
+        gh.etap = self.ctx.model.etap
+        gh.rho = self.ctx.model.rho
 
         # Init hydrostatic pressure
         gh.p_ref = self.p_ref
@@ -196,71 +204,64 @@ class Multigrid:
             self.grids.append(gH)
             print(f"Grid {l+1}: {gH.nx1} x {gH.ny1}")
 
+    @timer.time_function("Model Solve", "Smoothing")
     def smooth(self, g, max_iter):
-        # if g.level > 0: # Use red-black Gauss-Seidel for coarse levels
-        red_black_gs(g.nx1, g.ny1,
-                    g.dx, g.dy,
-                    g.etap, g.etab,
-                    g.vx, g.vy, g.p,
-                    self.relax_v, self.relax_p,
-                    g.p_ref, g.BC, g.p_rhs, g.vx_rhs, g.vy_rhs,
-                    max_iter)
-        # else: # Use BiCGSTAB for the finest level
-        #     # Build rhs vector for velocity assuming constant pressure
-        #     rhs = assemble_momentum(g.nx1, g.ny1, g.dx, g.dy, g.rho, self.gy, g.p)
+        if g.level > 0 or self.use_bicgstab == False: # Use red-black Gauss-Seidel for coarse levels
+            red_black_gs_chunked(g.nx1, g.ny1,
+                        g.dx, g.dy,
+                        g.etap, g.etab,
+                        g.vx, g.vy, g.p,
+                        self.relax_v, self.relax_p,
+                        g.p_ref, g.BC, g.p_rhs, g.vx_rhs, g.vy_rhs,
+                        max_iter)
+        else: # Use BiCGSTAB for the finest level
+            for _ in range(10):
+                # Build rhs vector for velocity assuming constant pressure
+                rhs = assemble_momentum_rhs(g.nx1, g.ny1, g.dx, g.dy, g.rho, self.gy, g.p)
 
-        #     rows = 2 * g.ny1 * g.nx1
-            
-        #     # Build operator
-        #     def closure(u, u_new):
-        #         u = u.reshape(2, g.ny1, g.nx1)
-        #         u_new = u_new.reshape(2, g.ny1, g.nx1)
+                rows = 2 * g.ny1 * g.nx1
+                # Allocate memory for BC fix
+                u_bc = np.zeros((g.ny1, g.nx1, 2))
+
+                # Build operator
+                def closure(u, u_new):
+                    # Reshape u and u_new
+                    u = u.reshape(g.ny1, g.nx1, 2)
+                    u_new = u_new.reshape(g.ny1, g.nx1, 2)
+
+                    # Copy current solution to u_bc and apply boundary conditions
+                    u_bc[...] = u[...]
+                    apply_u_BC(u_bc, g.BC)
+
+                    # Apply momentum operator
+                    momentum_operator(u_bc, g.nx1, g.ny1, g.dx, g.dy, g.etap, g.etab, g.BC, u_new)
                 
-        #         vx = np.zeros((g.ny1, g.nx1))
-        #         vy = np.zeros((g.ny1, g.nx1))
+                # Copy current solution to u
+                guess = np.zeros((g.ny1, g.nx1, 2))
+                guess[..., 0] = g.vx
+                guess[..., 1] = g.vy
+
+                u_new = self.bicg.solve(closure, rows, rows, rhs.reshape(-1), guess.reshape(-1))
+                u_new = u_new.reshape(g.ny1, g.nx1, 2)
+
+                # print("BiCGSTAB error: ", self.bicg.error(), " iterations: ", self.bicg.iterations())
                 
-        #         vx[...] = u[0, ...]
-        #         vy[...] = u[1, ...]
+                # Update velocity
+                g.vx = (1 - self.relax_v) * g.vx + self.relax_v * u_new[..., 0]
+                g.vy = (1 - self.relax_v) * g.vy + self.relax_v * u_new[..., 1]
 
-        #         apply_vx_BC(vx, g.BC)
-        #         apply_vy_BC(vy, g.BC)
+                # Fix boundary conditions
+                apply_vx_BC(g.vx, g.BC)
+                apply_vy_BC(g.vy, g.BC)
 
-        #         # Allocate memory for operator result
-        #         Avx = np.zeros_like(vx)
-        #         Avy = np.zeros_like(vy)
-                
-        #         # Compute operator
-        #         fixed_p_vx_operator(g.nx1, g.ny1, g.dx, g.dy, g.etap, g.etab, vx, vy, Avx, g.BC)
-        #         fixed_p_vy_operator(g.nx1, g.ny1, g.dx, g.dy, g.etap, g.etab, vx, vy, Avy, g.BC)
+                # Pressure update
+                pressure_uzawa_sweep(g.nx1, g.ny1, g.dx, g.dy, g.vx, g.vy,
+                                        g.p, g.etap, self.relax_p, g.p_rhs, p_ref = g.p_ref)
+                pressure_uzawa_sweep(g.nx1, g.ny1, g.dx, g.dy, g.vx, g.vy,
+                                        g.p, g.etap, self.relax_p, g.p_rhs, p_ref = g.p_ref)
 
-        #         u_new[0, ...] = Avx[...]
-        #         u_new[1, ...] = Avy[...]
-            
-        #     # Copy current solution to u
-        #     u = np.zeros((2, g.ny1, g.nx1))
-        #     u[0, ...] = g.vx
-        #     u[1, ...] = g.vy
-
-        #     u_new = self.bicg.solve(closure, rows, rows, rhs.reshape(-1), u.reshape(-1))
-        #     u_new = u_new.reshape(2, g.ny1, g.nx1)
-
-        #     # Print solve error
-        #     # print("BiCGSTAB error: ", self.bicg.error(), " iterations: ", self.bicg.iterations())
-            
-        #     # Update velocity
-        #     g.vx = u_new[0, ...]
-        #     g.vy = u_new[1, ...]
-
-        #     # # Fix boundary conditions
-        #     apply_vx_BC(g.vx, g.BC)
-        #     apply_vy_BC(g.vy, g.BC)
-
-        #     # Pressure update
-        #     pressure_uzawa_sweep(g.nx1, g.ny1, g.dx, g.dy, g.vx, g.vy,
-        #                          g.p, g.etap, self.relax_p, g.p_rhs, p_ref = g.p_ref)
-            
-        #     # Fix pressure boundary conditions
-        #     apply_p_BC(g.p)
+                # Fix pressure boundary conditions
+                apply_p_BC(g.p)
 
     def vcycle(self, level, nu1, nu2, gamma):
         # Extract grid information

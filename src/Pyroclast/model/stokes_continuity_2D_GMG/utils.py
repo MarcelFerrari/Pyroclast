@@ -74,6 +74,26 @@ def apply_BC(p, vx, vy, BC):
     apply_p_BC(p)
     apply_vx_BC(vx, BC)
     apply_vy_BC(vy, BC)
+
+
+@nb.njit(cache=True)
+def apply_u_BC(u, BC):
+    """
+    Apply boundary conditions to the velocity and pressure fields.
+    """
+    # Apply vx boundary conditions
+    u[0, :, 0]  = -BC * u[1, :, 0]    # Top
+    u[-1, :, 0] = -BC * u[-2, :, 0]   # Bottom
+    u[:, 0, 0]  = 0.0               # Left
+    u[:, -2:, 0] = 0.0              # Right + ghost
+
+    # Apply vy boundary conditions
+    u[:, 0, 1]   = -BC * u[:, 1, 1]  # Left
+    u[:, -1, 1]  = -BC * u[:, -2, 1] # Right
+    u[0, :, 1]   = 0.0             # Top
+    u[-2:, :, 1] = 0.0             # Bottom + ghost
     
+    
+
 
 
