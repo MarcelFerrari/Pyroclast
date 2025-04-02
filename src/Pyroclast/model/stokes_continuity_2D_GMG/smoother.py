@@ -183,6 +183,35 @@ def pressure_uzawa_sweep(nx1, ny1, dx, dy,
     apply_p_BC(p)
 
 @nb.njit(cache=True, parallel=True)
+def pressure_uzawa_sweep_chunked(nx1, ny1, dx, dy,
+                                  vx, vy, p,
+                                  beta,
+                                  relax_p, rhs,
+                                  p_ref=None,
+                                  block_size_i=16, block_size_j=16):
+    """
+    Chunked Uzawa pressure sweep with block-based parallelism.
+    """
+    n_tile_i = (ny1 - 2) // block_size_i + 1
+    n_tile_j = (nx1 - 2) // block_size_j + 1
+
+    for tile_i in nb.prange(n_tile_i):
+        ii = 1 + tile_i * block_size_i
+        for tile_j in range(n_tile_j):
+            jj = 1 + tile_j * block_size_j
+            for i in range(ii, min(ii + block_size_i, ny1 - 1)):
+                for j in range(jj, min(jj + block_size_j, nx1 - 1)):
+                    res = rhs[i, j] - ((vx[i, j] - vx[i, j - 1]) / dx +
+                                       (vy[i, j] - vy[i - 1, j]) / dy)
+                    p[i, j] += res * beta[i, j] * relax_p
+
+    if p_ref is not None:
+        dp = p_ref - p[1, 1]
+        p += dp
+
+    apply_p_BC(p)
+
+@nb.njit(cache=True, parallel=True)
 def _vx_rb_gs_sweep(nx1, ny1,
                     dx, dy,
                     etap, etab,
@@ -428,7 +457,6 @@ def _vy_red_black_gs_sweep(nx1, ny1,
     # Apply vy boundary conditions
     apply_vy_BC(vy, BC)
 
-
 @nb.njit(cache=True)
 def red_black_gs(nx1, ny1,
                  dx, dy,
@@ -454,12 +482,12 @@ def red_black_gs(nx1, ny1,
                                 vx, vy, p,
                                 relax_v, vy_rhs, BC)
         
+        
         # Apply Uzawa pressure update
         pressure_uzawa_sweep(nx1, ny1, dx, dy,
                             vx, vy, p, etap,
                             relax_p, p_rhs, p_ref)
         
-
 @nb.njit(cache=True, parallel=True)
 def _vx_rb_gs_sweep_chunked(nx1, ny1,
                             dx, dy,
@@ -659,7 +687,7 @@ def red_black_gs_chunked(nx1, ny1,
                  etap, etab,
                  vx, vy, p,
                  relax_v, relax_p,
-                 p_ref, BC, p_rhs, vx_rhs, vy_rhs, max_iter):
+                 p_ref, BC, p_rhs, vx_rhs, vy_rhs, max_iter, chunk_size=32):
     """
     Full red-black Gauss-Seidel smoother for the velocity fields.
     """
@@ -670,15 +698,15 @@ def red_black_gs_chunked(nx1, ny1,
                             dx, dy,
                             etap, etab,
                             vx, vy, p,
-                            relax_v, vx_rhs, BC)
+                            relax_v, vx_rhs, BC, block_size_i=chunk_size, block_size_j=chunk_size)
             
             _vy_red_black_gs_sweep_chunked(nx1, ny1,
                                 dx, dy,
                                 etap, etab,
                                 vx, vy, p,
-                                relax_v, vy_rhs, BC)
+                                relax_v, vy_rhs, BC, block_size_i=chunk_size, block_size_j=chunk_size)
         
         # Apply Uzawa pressure update
-        pressure_uzawa_sweep(nx1, ny1, dx, dy,
+        pressure_uzawa_sweep_chunked(nx1, ny1, dx, dy,
                             vx, vy, p, etap,
-                            relax_p, p_rhs, p_ref)
+                            relax_p, p_rhs, p_ref, chunk_size)

@@ -139,8 +139,8 @@ class StokesContinuity2D(BaseModel): # Inherit from BaseModel
                                  return_weights=False)      # Do not return weights
      
     def solve(self):
-        solver = Multigrid(self.ctx, 6, grid_scaling=2.0)    
-        self.p, self.vx, self.vy = solver.solve(max_cycles=100, tol=0.0, nu1 = 5, nu2 = 5, gamma=1,
+        solver = Multigrid(self.ctx, 6, grid_scaling=1.5)    
+        self.p, self.vx, self.vy = solver.solve(max_cycles=100, tol=1e-11, nu1 = 5, nu2 = 5, gamma=1,
                                                 p_guess = self.p, vx_guess = self.vx, vy_guess = self.vy)
         self.dump_frame()
 

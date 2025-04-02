@@ -145,7 +145,6 @@ def vy_operator(nx1, ny1,
 
             rax[i, j] = y_mom
 
-
 @nb.njit(cache=True, parallel=True)
 def vy_residual(nx1, ny1,
                 dx, dy,
@@ -166,7 +165,6 @@ def vy_residual(nx1, ny1,
         for j in nb.prange(1, nx1 - 1):
             res_vy[i, j] = rhs[i, j] - res_vy[i, j]
 
-
 @nb.njit(cache=True, parallel=True)
 def p_operator(nx1, ny1,
                dx, dy,
@@ -182,7 +180,6 @@ def p_operator(nx1, ny1,
             rax[i, j] = ((vx[i, j] - vx[i, j - 1]) / dx +
                         (vy[i, j] - vy[i - 1, j]) / dy)
             
-
 @nb.njit(cache=True, parallel=True)
 def p_residual(nx1, ny1,
                dx, dy,
