@@ -42,8 +42,8 @@ def assemble_matrix(nx1, ny1, dx, dy, etap, etab):
             # Set P = 0 for ghost nodes
             if i == 0 or j == 0 or i == ny1 - 1 or j == nx1 - 1:
                 insert(i_idx, j_idx, vals, ptr, kij, kij, 1.0)
-            # elif i == 1 and j == 1:
-            #     insert(i_idx, j_idx, vals, ptr, kij, kij, 1.0)
+            elif i == 1 and j == 1:
+                insert(i_idx, j_idx, vals, ptr, kij, kij, 1.0)
             else:
                 # vx coefficients
                 insert(i_idx, j_idx, vals, ptr, kij, idx(ny1, nx1, i, j, 1), 1.0/dx)
