@@ -171,45 +171,29 @@ class Multigrid:
 
         print(f"Grid 1: {gh.nx1} x {gh.ny1} – Fine grid")
 
+        # Get grid size
+        nx = gh.nx1-1
+        ny = gh.ny1-1
+
         # Initialize coarser levels
         for l in range(1, self.levels):
             # Initialize new coarse level grid
-            nx = int((gh.nx1 - 1) / (self.grid_scaling**l))
-            ny = int((gh.ny1 - 1) / (self.grid_scaling**l))
+            nx1 = int(nx / (self.grid_scaling**l)) + 1
+            ny1 = int(ny / (self.grid_scaling**l)) + 1
             
-            shape = (ny+1, nx+1)
+            shape = (nx1, nx1)
 
             # Create grid
             gH = self.make_grid(shape, level=l)
             
-            # Interpolate material properties from marker to grid
-            # We need to use markers for this as it greatly improves the accuracy
-            # of the PDE discretization
-            gH.rho  = interpolate(gH.xvy,           # Density on y-velocity nodes
-                                  gH.yvy, 
-                                  self.ctx.pool.xm,             # Marker x positions
-                                  self.ctx.pool.ym,             # Marker y positions
-                                  (self.ctx.pool.rhom,),        # Marker density
-                                  indexing="equidistant",       # Equidistant grid spacing
-                                  return_weights=False)         # Do not return weights
-  
-            gH.etab = interpolate(gH.x,                         # Basic viscosity on grid nodes
-                                  gH.y,   
-                                  self.ctx.pool.xm,             # Marker x positions
-                                  self.ctx.pool.ym,             # Marker y positions
-                                  (self.ctx.pool.etam,),        # Marker viscosity
-                                  indexing="equidistant",       # Equidistant grid spacing
-                                  return_weights=False)         # Do not return weights
-              
-            gH.etap = interpolate(gH.xp,                        # Pressure viscosity on grid nodes
-                                       gH.yp,  
-                                       self.ctx.pool.xm,        # Marker x positions
-                                       self.ctx.pool.ym,        # Marker y positions
-                                       (self.ctx.pool.etam,),   # Marker viscosity
-                                       indexing="equidistant",  # Equidistant grid spacing
-                                       return_weights=False)    # Do not return weights
-
-
+            # Restrict the material properties from the fine grid to the coarse grid
+            gH.rho = restrict(gh.yvx, gh.yvy, gh.rho,
+                                gH.xvx, gH.yvx)
+            gH.etab = restrict(gh.x, gh.y, gh.etab,
+                                gH.x, gH.y)
+            gH.etap = restrict(gh.xp, gh.yp, gh.etap,
+                                gH.xp, gH.yp)
+            
             # Coarsest level
             if l == self.levels - 1:
                 data = assemble_matrix(gH.nx1, gH.ny1, gH.dx, gH.dy, gH.etap, gH.etab)
@@ -219,6 +203,7 @@ class Multigrid:
             # Append to list of grids
             self.grids.append(gH)
             print(f"Grid {l+1}: {gH.nx1} x {gH.ny1}")
+            gh = gH
 
     @timer.time_function("Model Solve", "Smoothing")
     def smooth(self, g, max_iter):
