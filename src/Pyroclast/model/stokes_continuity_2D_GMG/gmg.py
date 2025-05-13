@@ -208,62 +208,62 @@ class Multigrid:
     @timer.time_function("Model Solve", "Smoothing")
     def smooth(self, g, max_iter):
         # print(g.level)
-        if g.mat is not None: # Use direct solver for coarsest level
-            # Fix RHS conditions
-            g.p_rhs[0, :] = 0.0
-            g.p_rhs[-1, :] = 0.0
-            g.p_rhs[:, 0] = 0.0
-            g.p_rhs[:, -1] = 0.0
+        # if g.mat is not None: # Use direct solver for coarsest level
+        #     # Fix RHS conditions
+        #     g.p_rhs[0, :] = 0.0
+        #     g.p_rhs[-1, :] = 0.0
+        #     g.p_rhs[:, 0] = 0.0
+        #     g.p_rhs[:, -1] = 0.0
 
-            g.vx_rhs[0, :] = 0.0
-            g.vx_rhs[-1, :] = 0.0
-            g.vx_rhs[:, 0] = 0.0
-            g.vx_rhs[:, -2:] = 0.0
+        #     g.vx_rhs[0, :] = 0.0
+        #     g.vx_rhs[-1, :] = 0.0
+        #     g.vx_rhs[:, 0] = 0.0
+        #     g.vx_rhs[:, -2:] = 0.0
 
-            g.vy_rhs[0, :] = 0.0
-            g.vy_rhs[-2:, :] = 0.0
-            g.vy_rhs[:, 0] = 0.0
-            g.vy_rhs[:, -1] = 0.0
+        #     g.vy_rhs[0, :] = 0.0
+        #     g.vy_rhs[-2:, :] = 0.0
+        #     g.vy_rhs[:, 0] = 0.0
+        #     g.vy_rhs[:, -1] = 0.0
 
-            # Assemble rhs vector
-            rhs = np.zeros((3, g.ny1, g.nx1))
-            rhs[0, ...] = g.p_rhs
-            rhs[1, ...] = g.vx_rhs
-            rhs[2, ...] = g.vy_rhs       
+        #     # Assemble rhs vector
+        #     rhs = np.zeros((3, g.ny1, g.nx1))
+        #     rhs[0, ...] = g.p_rhs
+        #     rhs[1, ...] = g.vx_rhs
+        #     rhs[2, ...] = g.vy_rhs       
 
-            rhs = rhs.reshape(-1)
-            u = self.solver.solve(rhs)
+        #     rhs = rhs.reshape(-1)
+        #     u = self.solver.solve(rhs)
         
-            u = u.reshape(3, g.ny1, g.nx1)
+        #     u = u.reshape(3, g.ny1, g.nx1)
             
-            # g.p = (1 - self.relax_p) * g.p + self.relax_p * u[0, ...]
-            g.vx = (1 - self.relax_v) * g.vx + self.relax_v * u[1, ...]
-            g.vy = (1 - self.relax_v) * g.vy + self.relax_v * u[2, ...]
+        #     # g.p = (1 - self.relax_p) * g.p + self.relax_p * u[0, ...]
+        #     g.vx = (1 - self.relax_v) * g.vx + self.relax_v * u[1, ...]
+        #     g.vy = (1 - self.relax_v) * g.vy + self.relax_v * u[2, ...]
             
-            apply_vx_BC(g.vx, g.BC)
-            apply_vy_BC(g.vy, g.BC)
+        #     apply_vx_BC(g.vx, g.BC)
+        #     apply_vy_BC(g.vy, g.BC)
 
-            pressure_uzawa_sweep(g.nx1, g.ny1, g.dx, g.dy, g.vx, g.vy,
-                                g.p, g.etap, self.relax_p, g.p_rhs)
+        #     pressure_uzawa_sweep(g.nx1, g.ny1, g.dx, g.dy, g.vx, g.vy,
+        #                         g.p, g.etap, self.relax_p, g.p_rhs)
 
-            apply_p_BC(g.p)
-            # apply_BC(g.p, g.vx, g.vy, g.BC)
-            # Compute residual
-            # g.update_residual()
-            # print("level:", g.level, g.residual_norm())
-            # print("Saving Direct")
-            # np.savez(f"direct.npz", p = g.p, vx = g.vx, vy = g.vy, p_res = g.p_res, vx_res = g.vx_res, vy_res = g.vy_res)
-            # exit()
+        #     apply_p_BC(g.p)
+        #     # apply_BC(g.p, g.vx, g.vy, g.BC)
+        #     # Compute residual
+        #     # g.update_residual()
+        #     # print("level:", g.level, g.residual_norm())
+        #     # print("Saving Direct")
+        #     # np.savez(f"direct.npz", p = g.p, vx = g.vx, vy = g.vy, p_res = g.p_res, vx_res = g.vx_res, vy_res = g.vy_res)
+        #     # exit()
 
             
-        else: # Use red-black Gauss-Seidel for coarse levels
-            red_black_gs(g.nx1, g.ny1,
-                        g.dx, g.dy,
-                        g.etap, g.etab,
-                        g.vx, g.vy, g.p,
-                        self.relax_v, self.relax_p,
-                        g.p_ref, g.BC, g.p_rhs, g.vx_rhs, g.vy_rhs,
-                        max_iter)#, chunk_size=32)
+        # else: # Use red-black Gauss-Seidel for coarse levels
+        red_black_gs(g.nx1, g.ny1,
+                    g.dx, g.dy,
+                    g.etap, g.etab,
+                    g.vx, g.vy, g.p,
+                    self.relax_v, self.relax_p,
+                    g.p_ref, g.BC, g.p_rhs, g.vx_rhs, g.vy_rhs,
+                    max_iter)#, chunk_size=32)
         
             # if g.mat is not None:
             #     print("Saving Smooth")
