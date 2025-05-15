@@ -16,6 +16,9 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import numpy as np
 
 from Pyroclast.grid.base_grid import BaseGrid
+from Pyroclast.profiling import timer
+from Pyroclast.interpolation.linear_2D_cpu \
+    import interpolate_markers2grid as interpolate
 
 class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
                                    # this automatically does some magic
@@ -35,7 +38,7 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
     y-velocity nodes: rho_vy
     pressure nodes: p, eta_p (viscosity on pressure nodes)
     """
-    def initialize(self):
+    def __init__(self, ctx):
         """
         Initialization method for the grid.
 
@@ -44,58 +47,87 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
         instead the state (all variables saved as attributes of "self") is restored.
         """
 
-        # Read constants from the context
-        # These parameters are set in the input file
-        # and are stored in the "params" object of the context.
-        # Whatever variable you pass under the [params] annotation
-        # in the input file will be available here as an attribute.
-        self.xsize = self.ctx.params.xsize
-        self.ysize = self.ctx.params.ysize
-        self.nx = self.ctx.params.nx
-        self.ny = self.ctx.params.ny
-
+        # Read context
+        s, p, o = ctx
+        
         # All variables saved as attributes of "self"
         # will be available to all methods of the class.
         # Moreover, they will be automatically backed up
         # in simulation checkpoints.
         # Compute the grid spacing
-        self.nx1 = self.nx + 1
-        self.ny1 = self.ny + 1
-        self.dx = self.xsize / (self.nx-1)
-        self.dy = self.ysize / (self.ny-1)
+        s.nx1 = p.nx + 1
+        s.ny1 = p.ny + 1
+        s.dx = p.xsize / (p.nx-1)
+        s.dy = p.ysize / (p.ny-1)
 
-        # You can define arbitrary helper functions to
-        # keep the code clean and organized
-        self.create_grid()
-
-        # Print some information about the grid
-        self.info()
-
-    def create_grid(self):
+        
         # Create the main nodes
         # Add an extra row and column of ghost nodes
-        self.x = np.linspace(0, self.xsize + self.dx, self.nx+1)
-        self.y = np.linspace(0, self.ysize + self.dy, self.ny+1)
+        s.x = np.linspace(0, p.xsize + s.dx, s.nx1)
+        s.y = np.linspace(0, p.ysize + s.dy, s.ny1)
 
         # Create the x-velocity nodes
-        self.xvx = self.x
-        self.yvx = self.y - self.dy/2
+        s.xvx = s.x
+        s.yvx = s.y - s.dy/2
 
         # Create the y-velocity nodes
-        self.xvy = self.x - self.dx/2
-        self.yvy = self.y
+        s.xvy = s.x - s.dx/2
+        s.yvy = s.y
 
         # Create the pressure nodes
-        self.xp = self.x - self.dx/2
-        self.yp = self.y - self.dy/2
+        s.xp = s.x - s.dx/2
+        s.yp = s.y - s.dy/2
+
+        # Print some information about the grid
+        self.info(ctx)
+
+    @timer.time_function("Model Solve", "Interpolation")
+    def interpolate(self, ctx):
+        """
+        Interpolate density and viscosity from markers to grid nodes.
+        """
+        s, p, o = ctx
+
+        s.rho = interpolate(s.xvy,                      # Density on y-velocity nodes
+                            s.yvy,  
+                            s.xm,                       # Marker x positions
+                            s.ym,                       # Marker y positions
+                            (s.rhom,),                  # Marker density
+                            indexing="equidistant",     # Equidistant grid spacing
+                            return_weights=False)       # Do not return weights
+
+        s.rhop = interpolate(s.xp,                      # Density on y-velocity nodes
+                             s.yp,  
+                             s.xm,                      # Marker x positions
+                             s.ym,                      # Marker y positions
+                             (s.rhom,),                 # Marker density
+                             indexing="equidistant",    # Equidistant grid spacing
+                             return_weights=False)      # Do not return weights
         
-    def info(self):
+        s.etab = interpolate(s.x,                       # Basic viscosity on grid nodes
+                             s.y,
+                             s.xm,                      # Marker x positions
+                             s.ym,                      # Marker y positions
+                             (s.etam,),                 # Marker viscosity
+                             indexing="equidistant",    # Equidistant grid spacing
+                             return_weights=False)      # Do not return weights
+        
+        s.etap = interpolate(s.xp,                      # Pressure viscosity on grid nodes
+                             s.yp,
+                             s.xm,                      # Marker x positions
+                             s.ym,                      # Marker y positions
+                             (s.etam,),                 # Marker viscosity
+                             indexing="equidistant",    # Equidistant grid spacing
+                             return_weights=False)      # Do not return weights
+        
+    def info(self, ctx):
+        s, p, o = ctx
         print(10*"-" + " Grid Information " + 10*"-")
         print("Basic staggered 2D grid initialized.")
-        print(f"Domain size: {self.xsize:.1f} x {self.ysize:.1f}")
-        print(f"Grid size: {self.nx} x {self.ny}")
-        print(f"Grid spacing: {self.dx:.1f} x {self.dy:.1f}")
-        print(f"Total nodes: {self.nx1 * self.ny1}")
+        print(f"Domain size: {p.xsize:.1f} x {p.ysize:.1f}")
+        print(f"Grid size: {s.nx1} x {s.ny1}")
+        print(f"Grid spacing: {s.dx:.1f} x {s.dy:.1f}")
+        print(f"Total nodes: {s.nx1 * s.ny1}")
         print(38*"-")
         
 
