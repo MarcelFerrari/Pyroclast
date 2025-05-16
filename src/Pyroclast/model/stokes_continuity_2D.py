@@ -93,7 +93,7 @@ class StokesContinuity2D(BaseModel): # Inherit from BaseModel
         A = ph.CCSMatrix(i_idx, j_idx, vals, self.n_rows)
         
         # Call spsolve with explicit types
-        with timer.time_section("Model Solve", "spSolve"):
+        with timer.time_section("Model Solve", "Stokes Solve"):
             # Solve the system of equations
             solver.factorize(A)
             u = solver.solve(rhs)
