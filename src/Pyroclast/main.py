@@ -174,7 +174,6 @@ class Pyroclast():
             s.time += s.dt
             
             # 7) Write Data
-            print(o.framedump_interval)
             if ((s.iteration+1) % o.framedump_interval) == 0:
                 # Dump state to file
                 with open(f"frame_{str(s.iteration).zfill(zpad)}.pkl", 'wb') as f:
