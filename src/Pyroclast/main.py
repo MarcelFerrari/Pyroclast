@@ -145,6 +145,10 @@ class Pyroclast():
         
         # Main time integration loop
         print("Starting time integration loop...")
+        
+        # Compute zfill padding
+        zpad = len(str(p.max_iterations))
+
         start = time.time()
         while s.iteration < p.max_iterations:
             # 1) Interpolate marker values to grid nodes
@@ -166,21 +170,29 @@ class Pyroclast():
             with timer.time_section("Main Loop", "Advection"):
                 self.pool.advect(self.ctx)
 
-            # 6) Update time and iteration counter
+            # 6) Update time
             s.time += s.dt
-            s.iteration += 1
             
-            # 7) Write checkpoint
-            if (s.iteration % o.checkpoint_interval) == 0:
-                self.write_checkpoint(o.checkpoint_file)
+            # 7) Write Data
+            print(o.framedump_interval)
+            if ((s.iteration+1) % o.framedump_interval) == 0:
+                # Dump state to file
+                with open(f"frame_{str(s.iteration).zfill(zpad)}.pkl", 'wb') as f:
+                    pickle.dump(self.ctx.to_dict(), f)
+                print(f"Frame {s.iteration} written to file.")
 
-            # 8) Print progress every 5% of the simulation
-            if (s.iteration % max(p.max_iterations // 20, 1)) == 0:
+            if ((s.iteration+1) % o.checkpoint_interval) == 0:
+                self.write_checkpoint(o.checkpoint_file)
+            
+            if ((s.iteration+1) % max(p.max_iterations // 20, 1)) == 0:
                 percent = 100 * s.iteration / p.max_iterations
                 it = s.iteration
                 t = fmt.s2yr(s.time)
                 dt = fmt.s2yr(s.dt)
                 print(f"Progress: {percent:.2f}%, it = {it}, t = {t}, dt = {dt}")
+
+            # 8) Increment iteration
+            s.iteration += 1
         
         # End of time integration loop
         end = time.time() 

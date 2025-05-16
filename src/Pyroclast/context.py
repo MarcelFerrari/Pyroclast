@@ -37,7 +37,17 @@ class Context:
         yield self.state
         yield self.params
         yield self.options
-
+    
+    def to_dict(self):
+        """
+        Convert the context to a dictionary.
+        """
+        return {
+            'state': dict(self.state),
+            'params': dict(self.params),
+            'options': dict(self.options)
+        }
+    
 class ContextNamespace(dict):
     """
     A dictionary-like class that allows attribute access to its keys.

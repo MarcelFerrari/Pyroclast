@@ -2,14 +2,15 @@
 grid = "staggered2D.BasicStaggered2D"
 pool = "inclusion2D.CircularInclusion"
 model = "stokes_continuity_2D.StokesContinuity2D"
-checkpoint_interval = 100000
+checkpoint_interval = 5
+framedump_interval = 1
 
-[params]
-# Frame dumping
-dump_interval = 1
+[parameters]
+# Initial time step
+dt_initial = 1e11
 
 # Time integration options
-max_iter=200
+max_iterations=200
 
 # Grid options
 xsize = 100000 # Hortizontal size, m
@@ -36,8 +37,3 @@ rho_plume = 3200.0
 eta_mantle = 1e19
 rho_mantle = 3300.0
 p_ref = 1e9  # Reference pressure at (i, j) = (1, 1)
-
-# Scaling parameters
-p_scale = 1.0
-v_scale = 1.0
-
