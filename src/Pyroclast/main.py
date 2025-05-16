@@ -147,7 +147,8 @@ class Pyroclast():
         print("Starting time integration loop...")
         
         # Compute zfill padding
-        zpad = len(str(p.max_iterations))
+        zpad = len(str(p.max_iterations//o.framedump_interval)) + 1
+        frame = 0
 
         start = time.time()
         while s.iteration < p.max_iterations:
@@ -174,11 +175,12 @@ class Pyroclast():
             s.time += s.dt
             
             # 7) Write Data
-            if ((s.iteration+1) % o.framedump_interval) == 0:
+            if (s.iteration % o.framedump_interval) == 0:
                 # Dump state to file
-                with open(f"frame_{str(s.iteration).zfill(zpad)}.pkl", 'wb') as f:
+                with open(f"frame_{str(frame).zfill(zpad)}.pkl", 'wb') as f:
                     pickle.dump(self.ctx.to_dict(), f)
-                print(f"Frame {s.iteration} written to file.")
+                print(f"Frame {frame} written to file.")
+                frame += 1 # Increment frame counter
 
             if ((s.iteration+1) % o.checkpoint_interval) == 0:
                 self.write_checkpoint(o.checkpoint_file)
