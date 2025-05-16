@@ -16,7 +16,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import numba as nb
 import numpy as np
 
-from Pyroclast.linalg import xp
+
 from Pyroclast.model.base_model import BaseModel
 from Pyroclast.profiling import timer
 

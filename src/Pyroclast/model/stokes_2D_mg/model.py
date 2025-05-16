@@ -17,7 +17,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import numba as nb
 import numpy as np
 
-from Pyroclast.linalg import xp
+
 from Pyroclast.model.base_model import BaseModel
 from Pyroclast.interpolation.linear_2D_cpu \
     import interpolate_markers2grid as interpolate
@@ -76,9 +76,9 @@ class StokesContinuity2D(BaseModel): # Inherit from BaseModel
         self.gy = self.ctx.params.get('gy', 10.0)    # Gravity constant
 
         # Set up rho, eta_b, and eta_p arrays
-        self.rho = xp.zeros((self.ny, self.nx))
-        self.etab = xp.zeros((self.ny, self.nx))
-        self.etap = xp.zeros((self.ny, self.nx))
+        self.rho = np.zeros((self.ny, self.nx))
+        self.etab = np.zeros((self.ny, self.nx))
+        self.etap = np.zeros((self.ny, self.nx))
         self.p_ref = self.ctx.params.p_ref
         self.p_scale = self.ctx.params.p_scale
         self.v_scale = self.ctx.params.v_scale
@@ -90,8 +90,8 @@ class StokesContinuity2D(BaseModel): # Inherit from BaseModel
 
     def update_time_step(self):
         # Get maximum velocity
-        vxmax = xp.max(xp.abs(self.vx))
-        vymax = xp.max(xp.abs(self.vy))
+        vxmax = np.max(np.abs(self.vx))
+        vymax = np.max(np.abs(self.vy))
         dty = self.dispmax * self.ctx.grid.dy / vymax
         dtx = self.dispmax * self.ctx.grid.dx / vxmax
         
@@ -148,7 +148,7 @@ class StokesContinuity2D(BaseModel): # Inherit from BaseModel
         # Dump p, vx, vy to npz file
         if self.frame % self.dump_interval == 0:
             with open(f"frame_{str(self.frame).zfill(4)}.npz", 'wb') as f:
-                xp.savez(f, p=self.p, vx=self.vx, vy=self.vy, rho=self.rho, etab=self.etab, etap=self.etap)
+                np.savez(f, p=self.p, vx=self.vx, vy=self.vy, rho=self.rho, etab=self.etab, etap=self.etap)
         self.frame += 1
         
     def finalize(self):
