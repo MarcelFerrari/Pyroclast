@@ -25,8 +25,7 @@ import phasma as ph
 solver = ph.direct.Eigen_SparseLU(ph.Full)
 
 # Model class
-class StokesContinuity2D(BaseModel): # Inherit from BaseModel
-                                     # this automatically does some magic
+class IncompressibleStokes2D(BaseModel):
     """
     Basic Stokes flow and continuity equations for buoyancy-driven flow in 2D.
     
