@@ -109,11 +109,6 @@ class StokesContinuity2D(BaseModel): # Inherit from BaseModel
         s.p[...] = u[:, :, 0]
         s.vx[...] = u[:, :, 1]
         s.vy[...] = u[:, :, 2]
-
-        # Dump p, vx, vy to npz file
-        if s.iteration % p.framedump_interval == 0:
-            with open(f"frame_{str(s.iteration).zfill(4)}.npz", 'wb') as f:
-                np.savez(f, p=s.p, vx=s.vx, vy=s.vy, rho=s.rho, etab=s.etab, etap=s.etap)
         
     def finalize(self, ctx):
         # Read the context
