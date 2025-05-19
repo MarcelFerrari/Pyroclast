@@ -2,12 +2,12 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: gmg_routines.py
+File: mg_routines.py
 Description: This file implements restriction and prolongation operators for
              multigrid methods.
 
 Author: Marcel Ferrari
-Copyright (c) 2024 Marcel Ferrari.
+Copyright (c) 2025 Marcel Ferrari.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,6 @@ def clip(x, xmin, xmax):
     else:
         return x
 
-@timer.time_function("Model Solve", "Restriction")
 @nb.njit(cache=True, parallel=True)
 def restrict(xh, yh, uh, xH, yH, nt = nb.get_num_threads()):
     """
@@ -93,7 +92,6 @@ def restrict(xh, yh, uh, xH, yH, nt = nb.get_num_threads()):
 
     return np.nan_to_num(uH)
 
-@timer.time_function("Model Solve", "Prolongation")
 @nb.njit(cache=True, parallel=True)
 def prolong(xh, yh, xH, yH, uH):
     """

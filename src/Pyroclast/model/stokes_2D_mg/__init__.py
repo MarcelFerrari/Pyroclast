@@ -1,1 +1,1 @@
-from .model import StokesContinuity2D
+from .model import IncompressibleStokes2DMG

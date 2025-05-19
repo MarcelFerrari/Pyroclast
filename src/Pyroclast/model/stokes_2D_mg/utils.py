@@ -3,7 +3,7 @@ Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
 File: utils.py
-Description: This file implements utility functions for the multigrid solver.
+Description: This file implements utility functions for the multigrid method
 
 Author: Marcel Ferrari
 Copyright (c) 2024 Marcel Ferrari.
@@ -14,15 +14,12 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 import numba as nb
-import numpy as np
 
 @nb.njit(cache=True)
-def compute_hydrostatic_pressure(nx1, ny1, dy, rho, gy, p_ref):
+def compute_hydrostatic_pressure(nx1, ny1, dy, rho, gy, p_ref, p):
     """
-    Compute the hydrostatic pressure field.
+    Compute the hydrostatic pressure field in-place, returning the modified array.
     """
-    p = np.zeros((ny1, nx1))
-    
     # Set pressure at the top boundary
     for j in range(1, nx1-1):
         p[1, j] = p_ref
@@ -30,70 +27,63 @@ def compute_hydrostatic_pressure(nx1, ny1, dy, rho, gy, p_ref):
     # Compute pressure field
     for i in range(2, ny1-1):
         for j in range(1, nx1-1):
-            p[i, j] = p[i-1, j] + gy * dy * (rho[i, j] + rho[i-1, j])/2
+            p[i, j] = p[i-1, j] + gy * dy * (rho[i, j] + rho[i-1, j]) / 2
 
     return p
 
 
 # ======== Utilities for boundary conditions ========
-# These are JIT-compiled in order to make them callable from other JIT-compiled functions.
+# JIT-compiled to be callable from other JIT-compiled functions.
+
 @nb.njit(cache=True)
 def apply_vx_BC(vx, BC):
     """
-    Apply boundary conditions to the x-velocity field.
+    Apply boundary conditions to the x-velocity field in-place.
     """
-    # Apply vx boundary conditions
-    vx[0, :]  = -BC * vx[1, :]    # Top
-    vx[-1, :] = -BC * vx[-2, :]   # Bottom
-    vx[:, 0]  = 0.0               # Left
-    vx[:, -2:] = 0.0              # Right + ghost
+    # Top and bottom
+    vx[0, :]  = -BC * vx[1, :]
+    vx[-1, :] = -BC * vx[-2, :]
+    # Left wall
+    vx[:, 0]  = 0.0
+    # Right + ghost
+    vx[:, -2:] = 0.0
+    return vx
+
 
 @nb.njit(cache=True)
 def apply_vy_BC(vy, BC):
-    # Apply vy boundary conditions
-    vy[:, 0]   = -BC * vy[:, 1]  # Left
-    vy[:, -1]  = -BC * vy[:, -2] # Right
-    vy[0, :]   = 0.0             # Top
-    vy[-2:, :] = 0.0             # Bottom + ghost
+    """
+    Apply boundary conditions to the y-velocity field in-place.
+    """
+    # Left and right
+    vy[:, 0]   = -BC * vy[:, 1]
+    vy[:, -1]  = -BC * vy[:, -2]
+    # Top wall
+    vy[0, :]   = 0.0
+    # Bottom + ghost
+    vy[-2:, :] = 0.0
+    return vy
 
 
 @nb.njit(cache=True)
 def apply_p_BC(p):
-    # Fix pressure at the boundaries
-    p[0, :] = 0.0   # Top
-    p[-1, :] = 0.0  # Bottom
-    p[:, 0] = 0.0   # Left
-    p[:, -1] = 0.0  # Right
+    """
+    Apply boundary conditions to the pressure field in-place.
+    """
+    # Dirichlet zero on all boundaries
+    p[0, :] = 0.0
+    p[-1, :] = 0.0
+    p[:, 0] = 0.0
+    p[:, -1] = 0.0
+    return p
 
 
 @nb.njit(cache=True)
 def apply_BC(p, vx, vy, BC):
     """
-    Apply boundary conditions to the velocity and pressure fields.
+    Apply BCs to pressure and velocity in-place, returning all arrays.
     """
-    apply_p_BC(p)
-    apply_vx_BC(vx, BC)
-    apply_vy_BC(vy, BC)
-
-
-@nb.njit(cache=True)
-def apply_u_BC(u, BC):
-    """
-    Apply boundary conditions to the velocity and pressure fields.
-    """
-    # Apply vx boundary conditions
-    u[0, :, 0]  = -BC * u[1, :, 0]    # Top
-    u[-1, :, 0] = -BC * u[-2, :, 0]   # Bottom
-    u[:, 0, 0]  = 0.0               # Left
-    u[:, -2:, 0] = 0.0              # Right + ghost
-
-    # Apply vy boundary conditions
-    u[:, 0, 1]   = -BC * u[:, 1, 1]  # Left
-    u[:, -1, 1]  = -BC * u[:, -2, 1] # Right
-    u[0, :, 1]   = 0.0             # Top
-    u[-2:, :, 1] = 0.0             # Bottom + ghost
-    
-    
-
-
-
+    p  = apply_p_BC(p)
+    vx = apply_vx_BC(vx, BC)
+    vy = apply_vy_BC(vy, BC)
+    return p, vx, vy

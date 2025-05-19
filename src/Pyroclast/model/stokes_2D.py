@@ -51,9 +51,9 @@ class IncompressibleStokes2D(BaseModel):
 
         # Set up rho, eta_b, and eta_p arrays
         # These are not defined on ghost nodes
-        s.rho = np.zeros((p.ny, p.nx))
-        s.etab = np.zeros((p.ny, p.nx))
-        s.etap = np.zeros((p.ny, p.nx))
+        s.rho = np.zeros((s.ny1, s.nx1))
+        s.etab = np.zeros((s.ny1, s.nx1))
+        s.etap = np.zeros((s.ny1, s.nx1))
         
         # Set up variables for solution quantities
         # These are defined on ghost nodes to enforce the boundary conditions

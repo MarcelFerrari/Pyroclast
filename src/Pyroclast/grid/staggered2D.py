@@ -80,8 +80,7 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
 
         # Print some information about the grid
         self.info(ctx)
-
-    @timer.time_function("Model Solve", "Interpolation")
+    
     def interpolate(self, ctx):
         """
         Interpolate density and viscosity from markers to grid nodes.
@@ -96,13 +95,6 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
                             indexing="equidistant",     # Equidistant grid spacing
                             return_weights=False)       # Do not return weights
 
-        s.rhop = interpolate(s.xp,                      # Density on y-velocity nodes
-                             s.yp,  
-                             s.xm,                      # Marker x positions
-                             s.ym,                      # Marker y positions
-                             (s.rhom,),                 # Marker density
-                             indexing="equidistant",    # Equidistant grid spacing
-                             return_weights=False)      # Do not return weights
         
         s.etab = interpolate(s.x,                       # Basic viscosity on grid nodes
                              s.y,
@@ -119,7 +111,7 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
                              (s.etam,),                 # Marker viscosity
                              indexing="equidistant",    # Equidistant grid spacing
                              return_weights=False)      # Do not return weights
-        
+    
     def info(self, ctx):
         s, p, o = ctx
         print(10*"-" + " Grid Information " + 10*"-")
