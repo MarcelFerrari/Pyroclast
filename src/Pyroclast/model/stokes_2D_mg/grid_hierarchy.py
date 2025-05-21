@@ -19,7 +19,7 @@ class GridHierarchy:
     """
     Builds and stores grid levels from fine to coarse.
     """
-    def __init__(self, ctx, levels, scaling=2.0):
+    def __init__(self, ctx, levels, scaling):
         state, params, _opts = ctx
 
         # Fine grid

@@ -1,0 +1,39 @@
+[options]
+grid = "staggered2D.BasicStaggered2D"
+pool = "inclusion2D.CircularInclusion"
+model = "stokes_2D_mg.IncompressibleStokes2DMG"
+checkpoint_interval = 5
+framedump_interval = 1
+
+[parameters]
+# Initial time step
+dt_initial = 1e11
+
+# Time integration options
+max_iterations=1
+
+# Grid options
+xsize = 100000 # Hortizontal size, m
+ysize = 100000 # Vertical size, m
+nx = 151       # Horizontal resolution
+ny = 181       # Vertical resolution
+gy = 10.0      # Vertical gravity, m/s^2
+
+# Marker options
+# Boundary conditions: no slip=1, free slip=-1
+BC = -1
+dispmax = 0.5
+
+# Marker options
+nmpcx = 4 # Number of markers per cell in x direction
+nmpcy = 4 # Number of markers per cell in y direction
+
+# Inclusion options
+r = 20000 # Inclusion radius, m
+
+# Material options
+eta_plume = 1e18
+rho_plume = 3200.0
+eta_mantle = 1e24
+rho_mantle = 3300.0
+p_ref = 1e9  # Reference pressure at (i, j) = (1, 1)

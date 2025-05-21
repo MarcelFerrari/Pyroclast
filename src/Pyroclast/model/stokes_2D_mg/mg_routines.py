@@ -137,3 +137,165 @@ def prolong(xh, yh, xH, yH, uH):
                        rx*ry*uH[iH+1, jH+1]
     
     return np.nan_to_num(uh)
+
+@nb.njit(cache=True, parallel=True)
+def uzawa_velocity_rhs(nx1, ny1,
+                       dx, dy,
+                       vx_rhs, vy_rhs, p,
+                       vx_rhs_uzawa, vy_rhs_uzawa):
+    
+    # vx rhs
+    for i in nb.prange(1, ny1 - 1):
+        for j in nb.prange(1, nx1 - 2):
+            # Uzawa rhs = vx_rhs + dP/dx
+            vx_rhs_uzawa[i, j] = vx_rhs[i, j] + (p[i, j+1] - p[i, j]) / dx
+
+    # vy rhs
+    for i in nb.prange(1, ny1 - 2):
+        for j in nb.prange(1, nx1 - 1):
+            # Uzawa rhs = vy_rhs + dP/dy
+            vy_rhs_uzawa[i, j] = vy_rhs[i, j] + (p[i+1, j] - p[i, j]) / dy
+    
+    return vx_rhs_uzawa, vy_rhs_uzawa
+
+@nb.njit(cache=True, parallel=True)
+def uzawa_vx_operator(nx1, ny1,
+                dx, dy,
+                etap, etab,
+                vx, vy, rax):
+    """
+    Compute the x-momentum residual for each interior cell.
+    Returns res_x, a 2D array of the same shape as vx.
+    """
+    # Loop over interior
+    for i in nb.prange(1, ny1 - 1):
+        for j in nb.prange(1, nx1 - 2):
+            # 1) Local viscosities
+            etaA = etap[i,   j]
+            etaB = etap[i,   j+1]
+            eta1 = etab[i-1, j]
+            eta2 = etab[i,   j]
+
+            # 2) Coefficients for x-momentum operator
+            vx1_coeff = 2.0 * etaA / (dx * dx)
+            vx2_coeff = eta1 / (dy * dy)
+            vx3_coeff = -(eta1 + eta2)/(dy * dy) - 2.0*(etaA + etaB)/(dx * dx)
+            vx4_coeff = eta2 / (dy * dy)
+            vx5_coeff = 2.0 * etaB / (dx * dx)
+
+            # Cross terms with vy
+            vy1_coeff =  eta1 / (dx * dy)
+            vy2_coeff = -eta2 / (dx * dy)
+            vy3_coeff = -eta1 / (dx * dy)
+            vy4_coeff =  eta2 / (dx * dy)
+
+            # 3) Sum of off-diagonal contributions
+            x_mom = (
+                vx1_coeff * vx[i,   j-1] +
+                vx2_coeff * vx[i-1, j  ] +
+                vx3_coeff * vx[i,   j  ] +
+                vx4_coeff * vx[i+1, j  ] +
+                vx5_coeff * vx[i,   j+1]
+                +
+                vy1_coeff * vy[i-1, j  ] +
+                vy2_coeff * vy[i,   j  ] +
+                vy3_coeff * vy[i-1, j+1] +
+                vy4_coeff * vy[i,   j+1]
+            )
+            
+            rax[i, j] = x_mom
+    return rax
+
+@nb.njit(cache=True, parallel=True)
+def uzawa_vx_residual(nx1, ny1,
+                dx, dy,
+                etap, etab,
+                vx, vy, res_vx, rhs):
+    """
+    Compute the x-momentum residual for each interior cell.
+    Returns res_x, a 2D array of the same shape as vx.
+    """
+    
+    # Store operator result in res_vx
+    res_vx = uzawa_vx_operator(nx1, ny1, dx, dy, etap, etab, vx, vy, res_vx)
+
+    # Compute residual
+    for i in nb.prange(1, ny1 - 1):
+        for j in nb.prange(1, nx1 - 2):
+            res_vx[i, j] = rhs[i, j] - res_vx[i, j]
+    
+    return res_vx
+
+@nb.njit(cache=True, parallel=True)
+def uzawa_vy_operator(nx1, ny1,
+                      dx, dy,
+                      etap, etab,
+                      vx, vy, rax):
+    """
+    Compute the y-momentum residual for each interior cell.
+    Returns res_y, a 2D array of the same shape as vy.
+    """
+    # Loop over interior
+    for i in nb.prange(1, ny1 - 2):
+        for j in nb.prange(1, nx1 - 1):
+
+            # 1) Local viscosities
+            etaA = etap[i,   j]      # top cell's viscosity
+            etaB = etap[i+1, j]      # bottom cell's viscosity
+            eta1 = etab[i,   j-1]    
+            eta2 = etab[i,   j]
+
+            # 2) Coefficients for y-momentum operator
+            vy1_coeff = eta1 / (dx * dx)
+            vy2_coeff = 2.0 * etaA / (dy * dy)
+            vy3_coeff = (-2.0 * etaA / (dy * dy)
+                         -2.0 * etaB / (dy * dy)
+                         -eta1 / (dx * dx)
+                         -eta2 / (dx * dx))
+            vy4_coeff = 2.0 * etaB / (dy * dy)
+            vy5_coeff = eta2 / (dx * dx)
+
+            # Cross terms with vx
+            vx1_coeff =  eta1 / (dx * dy)
+            vx2_coeff = -eta1 / (dx * dy)
+            vx3_coeff = -eta2 / (dx * dy)
+            vx4_coeff =  eta2 / (dx * dy)
+
+            # 3) Sum of off-diagonal contributions
+            y_mom = (
+                vy1_coeff * vy[i,   j-1] +
+                vy2_coeff * vy[i-1, j  ] +
+                vy3_coeff * vy[i,   j  ] +
+                vy4_coeff * vy[i+1, j  ] +
+                vy5_coeff * vy[i,   j+1]
+                +
+                vx1_coeff * vx[i,   j-1] +
+                vx2_coeff * vx[i+1, j-1] +
+                vx3_coeff * vx[i,   j  ] +
+                vx4_coeff * vx[i+1, j  ]
+            )
+
+            rax[i, j] = y_mom
+    return rax
+
+@nb.njit(cache=True, parallel=True)
+def uzawa_vy_residual(nx1, ny1,
+                      dx, dy,
+                      etap, etab,
+                      vx, vy, res_vy, rhs):
+    """
+    Compute the y-momentum residual for each interior cell.
+    Returns res_y, a 2D array of the same shape as vy.
+    """
+    # Store operator result in res_vy
+    res_vy = uzawa_vy_operator(nx1, ny1,
+                               dx, dy,
+                               etap, etab,
+                               vx, vy, res_vy)
+
+    # Compute residual
+    for i in nb.prange(1, ny1 - 2):
+        for j in nb.prange(1, nx1 - 1):
+            res_vy[i, j] = rhs[i, j] - res_vy[i, j]
+    
+    return res_vy

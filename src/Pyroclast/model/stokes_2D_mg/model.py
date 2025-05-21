@@ -88,9 +88,9 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         self.vy_rhs[...] = -self.gy * s.rho
 
         # Create MG solver
-        solver = Multigrid(ctx, levels=6, scaling=2.0)
+        solver = Multigrid(ctx, levels=6, scaling=1.5)
 
         # Solve the system
         s.p, s.vx, s.vy = solver.solve(self.p_rhs, self.vx_rhs, self.vy_rhs,
-                                    max_cycles=30, tol=1e-9, nu1 = 5, nu2 = 5, gamma=1, p_ref = p.p_ref,
-                                    p_guess = s.p, vx_guess = s.vx, vy_guess = s.vy)
+                                        p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy,
+                                        max_cycles=500, tol=1e-7, nu1 = 5, nu2 = 5, gamma=1, p_ref = p.p_ref)

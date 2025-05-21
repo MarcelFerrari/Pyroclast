@@ -17,10 +17,9 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import numpy as np
 from Pyroclast.profiling import timer
-from .utils import apply_BC
-from .smoother import uzawa
-from .implicit_operators import vx_residual, vy_residual, p_residual
-from .mg_routines import restrict, prolong
+from .smoother import velocity_smoother
+from .mg_routines import restrict, prolong, uzawa_vx_residual, uzawa_vy_residual
+from .utils import apply_vx_BC, apply_vy_BC
 
 
 class Grid:
@@ -59,71 +58,51 @@ class Grid:
         self.etap = np.zeros(shape)
 
         # Solution, RHS, residual arrays
-        self.p = np.zeros(shape)
         self.vx = np.zeros(shape)
         self.vy = np.zeros(shape)
-        self.p_rhs = np.zeros(shape)
         self.vx_rhs = np.zeros(shape)
         self.vy_rhs = np.zeros(shape)
-        self.p_res = np.zeros(shape)
         self.vx_res = np.zeros(shape)
         self.vy_res = np.zeros(shape)
 
         # Boundary conditions and relaxation
         self.BC = params.BC
-        self.relax_v = 0.9
-        self.relax_p = 0.9
-        self.p_ref = None
+        self.relax_v = params.get("relax_v", 0.7)
 
     @timer.time_function("Vcycle", "Update Residual")
     def update_residual(self):
-        vx_residual(
-            self.nx1, self.ny1,
-            self.dx, self.dy,
-            self.etap, self.etab,
-            self.vx, self.vy, self.p,
-            self.vx_res, self.vx_rhs,
-        )
-        vy_residual(
-            self.nx1, self.ny1,
-            self.dx, self.dy,
-            self.etap, self.etab,
-            self.vx, self.vy, self.p,
-            self.vy_res, self.vy_rhs,
-        )
-        p_residual(
-            self.nx1, self.ny1,
-            self.dx, self.dy,
-            self.vx, self.vy,
-            self.p_res, self.p_rhs,
-        )
+        self.vx_res = uzawa_vx_residual(
+                                        self.nx1, self.ny1,
+                                        self.dx, self.dy,
+                                        self.etap, self.etab,
+                                        self.vx, self.vy,
+                                        self.vx_res, self.vx_rhs,
+                                    )
 
-    def residual_norm(self):
-        scale = (self.nx1 * self.ny1) ** 0.5
-        p_norm = np.linalg.norm(self.p_res) / scale
-        vx_norm = np.linalg.norm(self.vx_res) / scale
-        vy_norm = np.linalg.norm(self.vy_res) / scale
-        return p_norm, vx_norm, vy_norm
+        self.vy_res = uzawa_vy_residual(
+                                        self.nx1, self.ny1,
+                                        self.dx, self.dy,
+                                        self.etap, self.etab,
+                                        self.vx, self.vy,
+                                        self.vy_res, self.vy_rhs,
+                                    )
 
     @timer.time_function("Vcycle", "Smooth")
     def smooth(self, iterations):
-        uzawa(
-            self.nx1, self.ny1,
-            self.dx, self.dy,
-            self.etap, self.etab,
-            self.vx, self.vy, self.p,
-            self.relax_v, self.relax_p,
-            self.p_ref, self.BC,
-            self.p_rhs, self.vx_rhs, self.vy_rhs,
-            iterations,
-        )
+        # Smooth the velocity field
+        self.vx, self.vy = velocity_smoother(self.nx1, self.ny1,
+                                            self.dx, self.dy,
+                                            self.etap, self.etab,
+                                            self.vx, self.vy,
+                                            self.relax_v, self.BC,
+                                            self.vx_rhs, self.vy_rhs, iterations)
 
     def apply_bc(self):
-        apply_BC(self.p, self.vx, self.vy, self.BC)
+        apply_vx_BC(self.vx, self.BC)
+        apply_vy_BC(self.vy, self.BC)
 
     def reset_solution(self):
         """Reset the solution and residual arrays to zero y but not the material properties."""
-        self.p.fill(0.0)
         self.vx.fill(0.0)
         self.vy.fill(0.0)
 
@@ -143,11 +122,6 @@ class Grid:
 
     @timer.time_function("Vcycle", "Restriction")
     def restrict_residuals(self, fine):
-        self.p_rhs = restrict(
-            fine.xp, fine.yp,
-            fine.p_res * fine.etap,
-            self.xp, self.yp,
-        ) / self.etap
         self.vx_rhs = restrict(
             fine.xvx, fine.yvx, fine.vx_res,
             self.xvx, self.yvx,
@@ -159,11 +133,6 @@ class Grid:
 
     @timer.time_function("Vcycle", "Prolongation")
     def prolong_correction(self, fine):
-        fine.p += prolong(
-            fine.xp, fine.yp,
-            self.xp, self.yp,
-            self.p * self.etap,
-        ) / fine.etap
         fine.vx += prolong(
             fine.xvx, fine.yvx,
             self.xvx, self.yvx,
