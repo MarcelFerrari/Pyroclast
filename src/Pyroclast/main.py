@@ -26,6 +26,7 @@ from Pyroclast.profiling import timer
 from Pyroclast.banner import print_banner
 import Pyroclast.format as fmt
 from Pyroclast.defaults import default_config
+from Pyroclast.rng import set_seed
 
 class Pyroclast():
     def __init__(self, args):
@@ -39,8 +40,9 @@ class Pyroclast():
         state, params, options = self.load_input(self.input_file) 
 
         # Read checkpoint options
+        load_chkpt = options.get('load_checkpoint', False)
         chkpt_file = options.checkpoint_file
-        if os.path.exists(chkpt_file):
+        if load_chkpt and os.path.exists(chkpt_file):
             print(f"Checkpoint file {chkpt_file} found. Loading checkpoint...")
             # Checkpoint file found -> load context from checkpoint
             with open(chkpt_file, 'rb') as f:
@@ -64,7 +66,16 @@ class Pyroclast():
         # Update options with command line arguments
         # This allows us to override some options from the input file
         self.ctx.options.update(args)
+
+        # Set random seed if provided
+        seed = self.ctx.options.get('seed', None)
+        if seed is not None:
+            print(f"Setting random seed to {seed}.")
+            set_seed(seed)
         
+        # Set up threading layer
+        self.set_threading(self.ctx.options)
+     
     def load_input(self, input):
         # Load TOML input file
         with open(input, 'r') as f:
@@ -145,11 +156,6 @@ class Pyroclast():
         
         # Main time integration loop
         print("Starting time integration loop...")
-        
-        # Compute zfill padding
-        zpad = len(str(p.max_iterations//o.framedump_interval)) + 1
-        frame = 0
-
         start = time.time()
         while s.iteration < p.max_iterations:
             # 1) Interpolate marker values to grid nodes
@@ -176,21 +182,16 @@ class Pyroclast():
             
             # 7) Write Data
             if (s.iteration % o.framedump_interval) == 0:
-                # Dump state to file
-                with open(f"frame_{str(frame).zfill(zpad)}.pkl", 'wb') as f:
-                    pickle.dump(self.ctx.to_dict(), f)
-                print(f"Frame {frame} written to file.")
-                frame += 1 # Increment frame counter
+                self.model.dump(self.ctx)
 
             if ((s.iteration+1) % o.checkpoint_interval) == 0:
                 self.write_checkpoint(o.checkpoint_file)
             
-            if ((s.iteration+1) % max(p.max_iterations // 20, 1)) == 0:
-                percent = 100 * s.iteration / p.max_iterations
-                it = s.iteration
-                t = fmt.s2yr(s.time)
-                dt = fmt.s2yr(s.dt)
-                print(f"Progress: {percent:.2f}%, it = {it}, t = {t}, dt = {dt}")
+            percent = 100 * s.iteration / p.max_iterations
+            it = s.iteration
+            t = fmt.s2yr(s.time)
+            dt = fmt.s2yr(s.dt)
+            print(f"Progress: {percent:.2f}%, it = {it}, t = {t}, dt = {dt}")
 
             # 8) Increment iteration
             s.iteration += 1
