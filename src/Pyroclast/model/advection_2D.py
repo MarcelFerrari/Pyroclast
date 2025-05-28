@@ -41,9 +41,17 @@ class ConstantVelocityAdvection2D(BaseModel):
 
         # Set up rho, eta_b, and eta_p arrays
         # These are not defined on ghost nodes
-        s.rho = np.zeros((p.ny, p.nx))
-        s.etab = np.zeros((p.ny, p.nx))
-        s.etap = np.zeros((p.ny, p.nx))
+        s.rho = np.zeros((s.ny1, s.nx1))
+        s.etab = np.zeros((s.ny1, s.nx1))
+        s.etap = np.zeros((s.ny1, s.nx1))
+        
+        # Set border values to nan
+        s.rho[-1, :] = np.nan
+        s.rho[:, -1] = np.nan
+        s.etab[-1, :] = np.nan
+        s.etab[:, -1] = np.nan
+        s.etap[-1, :] = np.nan
+        s.etap[:, -1] = np.nan
         
         # Set up variables for solution quantities
         # These are defined on ghost nodes to enforce the boundary conditions
@@ -56,18 +64,32 @@ class ConstantVelocityAdvection2D(BaseModel):
         # Set up time step
         vxmax = np.max(np.abs(s.vx))
         vymax = np.max(np.abs(s.vy))
-        dty = p.cfl_dispmax * s.dy / vymax
-        dtx = p.cfl_dispmax * s.dx / vxmax
+        dty = p.cfl_dispmax * p.L / vymax
+        dtx = p.cfl_dispmax * p.L / vxmax
         self.dt = min(dtx, dty)
 
         assert s.vx.shape == (s.ny1, s.nx1), "vx shape mismatch"
         assert s.vy.shape == (s.ny1, s.nx1), "vy shape mismatch"
 
+        self.frame = 0
+        self.zpad = len(str(p.max_iterations//o.framedump_interval)) + 1
 
     def update_time_step(self, ctx):
         # Read the context
         s, p, o = ctx
         s.dt = self.dt
+
+    def dump(self, ctx):
+        # Read the context
+        s, p, o = ctx
+
+        # Dump state to file
+        with open(f"frame_{str(self.frame).zfill(self.zpad)}.npz", 'wb') as f:
+            np.savez(f, vx=s.vx, vy=s.vy,
+                    rho=s.rho, etab=s.etab, etap=s.etap)
+        
+        print(f"Frame {self.frame} written to file.")
+        self.frame += 1 # Increment frame counter
         
     def solve(self, ctx):
         # Nothing to do here
