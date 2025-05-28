@@ -87,7 +87,7 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
         """
         s, p, o = ctx
 
-        s.rho = interpolate(s.xvy,                      # Density on y-velocity nodes
+        rho = interpolate(s.xvy,                      # Density on y-velocity nodes
                             s.yvy,  
                             s.xm,                       # Marker x positions
                             s.ym,                       # Marker y positions
@@ -96,7 +96,7 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
                             return_weights=False)       # Do not return weights
 
         
-        s.etab = interpolate(s.x,                       # Basic viscosity on grid nodes
+        etab = interpolate(s.x,                       # Basic viscosity on grid nodes
                              s.y,
                              s.xm,                      # Marker x positions
                              s.ym,                      # Marker y positions
@@ -104,13 +104,23 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
                              indexing="equidistant",    # Equidistant grid spacing
                              return_weights=False)      # Do not return weights
         
-        s.etap = interpolate(s.xp,                      # Pressure viscosity on grid nodes
+        etap = interpolate(s.xp,                      # Pressure viscosity on grid nodes
                              s.yp,
                              s.xm,                      # Marker x positions
                              s.ym,                      # Marker y positions
                              (s.etam,),                 # Marker viscosity
                              indexing="equidistant",    # Equidistant grid spacing
                              return_weights=False)      # Do not return weights
+
+        mask = np.isfinite(rho)
+        s.rho[mask] = rho[mask]
+
+        mask = np.isfinite(etab)
+        s.etab[mask] = etab[mask]
+
+        mask = np.isfinite(etap)
+        s.etap[mask] = etap[mask]
+
     
     def info(self, ctx):
         s, p, o = ctx
