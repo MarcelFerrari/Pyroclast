@@ -18,7 +18,10 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 class BaseModel:
     def __init__(self, ctx):
         raise NotImplementedError()
-        
+    
+    def dump(self, ctx):
+        pass
+    
     def finalize(self, ctx):
         pass
 
