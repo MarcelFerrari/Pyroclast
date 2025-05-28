@@ -54,11 +54,16 @@ def restrict(xh, yh, uh, xH, yH, nt = nb.get_num_threads()):
     uH = np.zeros((nt, nyH, nxH))
     uHw = np.zeros((nt, nyH, nxH))
 
+    # MEGA IMPORTANT:
+    # The loop on the fine grid should be from 0 to nyh - 1 and from 0 to nxh - 1
+    # This is because otherwise we interpolate the values at the edges of the fine grid
+    # which ALWAYS correspond to ghost points in the coarse grid!!
+
     for t in nb.prange(nt):
         start = t*nyh//nt
-        end = (t+1)*nyh//nt if t < nt-1 else nyh
+        end = (t+1)*nyh//nt if t < nt-1 else nyh - 1
         for i in range(start, end):
-            for j in range(nxh):
+            for j in range(nxh - 1):
                 # Extract coordinates of source point
                 yhi = yh[i]
                 xhj = xh[j]
