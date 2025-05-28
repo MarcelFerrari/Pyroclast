@@ -19,10 +19,7 @@ import numpy as np
 
 from Pyroclast.model.base_model import BaseModel
 from Pyroclast.profiling import timer
-
-# Initialize solver
-import phasma as ph
-solver = ph.direct.Eigen_SparseLU(ph.Full)
+import scipy.sparse as sp
 
 # Model class
 class IncompressibleStokes2D(BaseModel):
@@ -54,12 +51,23 @@ class IncompressibleStokes2D(BaseModel):
         s.rho = np.zeros((s.ny1, s.nx1))
         s.etab = np.zeros((s.ny1, s.nx1))
         s.etap = np.zeros((s.ny1, s.nx1))
+
+        # Set nan on borders
+        s.rho[-1, :] = np.nan
+        s.rho[:, -1] = np.nan
+        s.etab[-1, :] = np.nan
+        s.etab[:, -1] = np.nan
+        s.etap[-1, :] = np.nan
+        s.etap[:, -1] = np.nan
         
         # Set up variables for solution quantities
         # These are defined on ghost nodes to enforce the boundary conditions
         s.p = np.zeros((s.ny1, s.nx1))
         s.vx = np.zeros((s.ny1, s.nx1))
         s.vy = np.zeros((s.ny1, s.nx1))
+
+        self.frame = 0
+        self.zpad = len(str(p.max_iterations//o.framedump_interval)) + 1
 
     def update_time_step(self, ctx):
         # Read the context
@@ -68,13 +76,43 @@ class IncompressibleStokes2D(BaseModel):
         # Get maximum velocity
         vxmax = np.max(np.abs(s.vx))
         vymax = np.max(np.abs(s.vy))
-        dty = p.cfl_dispmax * s.dy / vymax
-        dtx = p.cfl_dispmax * s.dx / vxmax
+        dty = p.cfl_dispmax * p.L / vymax
+        dtx = p.cfl_dispmax * p.L / vxmax
         
         # It is important to set dt in the context
         # parameters so that it can be accessed by other
         # classes in the simulation.
         s.dt = min(dtx, dty)
+
+    def scale_and_solve(self, Acsc, rhs):
+        # Compute row norms (for D_r) using CSR
+        Acsr = Acsc.tocsr()
+        Dr = row_norms_csr(Acsr.data, Acsr.indptr, self.n_rows)
+        
+        # Compute column norms (for D_c) using CSC
+        Dc = col_norms_csc(Acsc.data, Acsc.indptr, self.n_rows)
+
+        # Avoid division by zero
+        Dr[Dr == 0] = 1.0
+        Dc[Dc == 0] = 1.0
+
+        # Build diagonal scaling matrices
+        D_r_inv = sp.diags(1.0 / Dr)  # shape (n_rows, n_rows)
+        D_c_inv = sp.diags(1.0 / Dc)  # shape (n_cols, n_cols)
+
+        # Scale the matrix: A_scaled = D_r^{-1} * A * D_c^{-1}
+        A_scaled = D_r_inv @ Acsc @ D_c_inv
+
+        # Scale the RHS: rhs_scaled = D_r^{-1} * rhs
+        rhs_scaled = (1.0 / Dr) * rhs
+
+        # Solve the scaled system
+        x_scaled = sp.linalg.spsolve(A_scaled, rhs_scaled)
+
+        # Rescale the solution: x = D_c^{-1} * x_scaled
+        x = (1.0 / Dc) * x_scaled
+
+        return x
      
     def solve(self, ctx):
         # Read the context
@@ -89,16 +127,18 @@ class IncompressibleStokes2D(BaseModel):
                                            self.BC)
         
         # Assemble the matrix in COO format
-        A = ph.CCSMatrix(i_idx, j_idx, vals, self.n_rows)
-        
+        A = sp.coo_matrix((vals, (i_idx, j_idx)), shape=(self.n_rows, self.n_rows))
+
+        # Convert to CSC format for efficient solving
+        A = A.tocsc()
+
         # Call spsolve with explicit types
         with timer.time_section("Model Solve", "Stokes Solve"):
             # Solve the system of equations
-            solver.factorize(A)
-            u = solver.solve(rhs)
+            u = self.scale_and_solve(A, rhs)
 
         # Compute the residual
-        res = np.linalg.norm(rhs - A * u)/np.linalg.norm(rhs)
+        res = np.linalg.norm(rhs - A @ u)/np.linalg.norm(rhs)
         print("Residual: ", res)
 
         # Extract solution quantities
@@ -109,6 +149,18 @@ class IncompressibleStokes2D(BaseModel):
         s.vx[...] = u[:, :, 1]
         s.vy[...] = u[:, :, 2]
         
+    def dump(self, ctx):
+        s, p, o = ctx
+
+        # Dump state to file
+        with open(f"frame_{str(self.frame).zfill(self.zpad)}.npz", 'wb') as f:
+            np.savez(f, vx=s.vx, vy=s.vy, p=s.p,
+                    rho=s.rho, etab=s.etab, etap=s.etap)
+        
+        print(f"Frame {self.frame} written to file.")
+        self.frame += 1 # Increment frame counter
+
+
     def finalize(self, ctx):
         # Read the context
         s, p, o = ctx
@@ -283,3 +335,28 @@ def assemble(nx1, ny1, dx, dy, gy, etap, etab, rho, p_ref, BC):
                 # RHS
                 b[kij] = -gy*rho[i, j]
     return mat[0], mat[1], mat[2], b
+
+# Matrix scaling functions
+@nb.njit(cache=True)
+def row_norms_csr(data, indptr, n_rows):
+    norms = np.empty(n_rows)
+    for i in range(n_rows):
+        start = indptr[i]
+        end = indptr[i+1]
+        s = 0.0
+        for k in range(start, end):
+            s += data[k] * data[k]
+        norms[i] = np.sqrt(s)
+    return norms
+
+@nb.njit(cache=True)
+def col_norms_csc(data, indptr, n_cols):
+    norms = np.empty(n_cols)
+    for j in range(n_cols):
+        start = indptr[j]
+        end = indptr[j+1]
+        s = 0.0
+        for k in range(start, end):
+            s += data[k] * data[k]
+        norms[j] = np.sqrt(s)
+    return norms
