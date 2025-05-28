@@ -57,7 +57,7 @@ class Multigrid:
             self.vcycle(level + 1, nu1*self.scaling, nu2*self.scaling, gamma)
             
             # Prolongate correction to fine grid
-            coarse.prolong_correction(fine)
+            fine.prolong_correction(coarse)
             
             fine.apply_bc()
             
@@ -69,7 +69,7 @@ class Multigrid:
         
         # Update residuals
         fine.update_residual()
-        
+
         return fine.vx, fine.vy
 
     def set_rhs(self, vx_rhs, vy_rhs, grid):
@@ -118,7 +118,11 @@ class Multigrid:
         self.set_guess(p_guess, vx_guess, vy_guess, fine)
 
         # Anderson acceleration
-        acc = AndersonAccelerator(m=15, shape=(fine.ny1, fine.nx1))
+        acc = AndersonAccelerator(m=30, shape=(fine.ny1, fine.nx1))
+
+        p_rmse_0 = None
+        vx_rmse_0 = None
+        vy_rmse_0 = None
 
         # Main Uzawa loop
         for cycle in range(max_cycles):
@@ -129,12 +133,11 @@ class Multigrid:
                                                         fine.dx, fine.dy,
                                                         vx_rhs, vy_rhs, self.p,
                                                         fine.vx_rhs, fine.vy_rhs)
-
             # Store current full state before updates
             state_k = np.stack([fine.vx.copy(), fine.vy.copy(), self.p.copy()])
 
             # MG solve for velocity
-            for _ in range(3):
+            for _ in range(2):
                 vx, vy = self.vcycle(0, nu1, nu2, gamma)
 
             # Update pressure (in-place)
@@ -154,25 +157,42 @@ class Multigrid:
                 fine.vy[:, :] = state_accel[1]
                 self.p[:, :] = state_accel[2]
 
-                # Fix boundary conditions
+                #Anchor pressure
+                dp = p_ref - self.p[1, 1]
+                self.p += dp
+            
+                #Fix boundary conditions
                 apply_BC(self.p, fine.vx, fine.vy, self.BC)
 
             # Compute residuals
             p_res, vx_res, vy_res = self.residuals(fine, p_rhs, vx_rhs, vy_rhs)
 
-            # 8. Compute the norm of the residuals
+            etabmin = np.nanmin(fine.etab[:-1, :-1])
+            etabmax = np.nanmax(fine.etab[:-1, :-1])
+            etapmin = np.nanmin(fine.etap[:-1, :-1])
+            etapmax = np.nanmax(fine.etap[:-1, :-1])
+
+            dEta = max(etabmax, etapmax)/(1.0 + min(etabmin, etapmin))
+            
+            # Compute the norm of the residuals
             N = np.sqrt(fine.nx1 * fine.ny1)
             p_res_rmse = np.linalg.norm(p_res) / N
-            vx_res_rmse = np.linalg.norm(vx_res) / N
-            vy_res_rmse = np.linalg.norm(vy_res) / N
+            vx_res_rmse = np.linalg.norm(vx_res) / (N * dEta)
+            vy_res_rmse = np.linalg.norm(vy_res) / (N * dEta)
 
-            print(f"Continuity residual: {p_res_rmse}")
-            print(f"X-momentum residual: {vx_res_rmse}")
-            print(f"Y-momentum residual: {vy_res_rmse}")
-                
+
+            print(f"RMSE residuals: p = {p_res_rmse:.2e}, vx = {vx_res_rmse:.2e}, vy = {vy_res_rmse:.2e}")
+
             # Check convergence
-            if max(p_res_rmse, vx_res_rmse, vy_res_rmse) < tol:
+            if max(p_res_rmse, vx_res_rmse, vy_res_rmse) < tol and self.hierarchy.done_rescaling():
                 break
 
+            if p_res_rmse < 1e-15 and vx_res_rmse < 1e-5 and vy_res_rmse < 1e-5 and self.hierarchy.done_rescaling():
+                print("Converged...")
+                break
+
+            # Update viscosity
+            if self.hierarchy.update_viscosity():
+                acc.reset() # Reset Anderson accelerator
 
         return self.p, fine.vx, fine.vy

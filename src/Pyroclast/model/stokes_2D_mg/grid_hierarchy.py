@@ -81,12 +81,12 @@ class GridHierarchy:
             coarse.restrict_properties(prev)
 
     def recompute_viscosity(self):
-        print(f"Rescaling viscosity: {self.eta_theta:.2f} (min: {self.etab_min:.2e}, max: {self.etab_max:.2e})")
+        print(f"Rescaling viscosity: {self.eta_theta:.2f}")
         # Log-space interpolation
         self.eta_theta = min(self.eta_theta, 1.0)
         
         fine = self.levels[0]
-        
+
         # Linear interpolation of viscosity
         fine.etab = self.etab_min * (1.0 - self.eta_theta) + \
                     self.etab_original * self.eta_theta
