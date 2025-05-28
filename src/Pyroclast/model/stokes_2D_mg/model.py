@@ -27,6 +27,8 @@ from .utils import *
 from .multigrid import Multigrid
 from Pyroclast.model.stokes_2D import IncompressibleStokes2D
 
+import pickle
+
 # Model class
 class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
                                      # this automatically does some magic
@@ -79,7 +81,7 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
                            (s.rhom,),                 # Marker density
                            indexing="equidistant",    # Equidistant grid spacing
                            return_weights=False)      # Do not return weights
-    
+
     def solve(self, ctx):
         # Read the context
         s, p, o = ctx
@@ -88,9 +90,10 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         self.vy_rhs[...] = -self.gy * s.rho
 
         # Create MG solver
-        solver = Multigrid(ctx, levels=6, scaling=1.5)
+        solver = Multigrid(ctx, levels=4, scaling=2.0)
 
         # Solve the system
+        max_cycles = 500
         s.p, s.vx, s.vy = solver.solve(self.p_rhs, self.vx_rhs, self.vy_rhs,
                                         p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy,
-                                        max_cycles=500, tol=1e-7, nu1 = 5, nu2 = 5, gamma=1, p_ref = p.p_ref)
+                                        max_cycles=max_cycles, tol=1e-7, nu1 = 5, nu2 = 5, gamma=1, p_ref = p.p_ref)
