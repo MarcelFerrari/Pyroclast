@@ -68,7 +68,7 @@ class Grid:
         # Boundary conditions and relaxation
         self.BC = params.BC
         self.relax_v = params.get("relax_v", 0.7)
-
+            
     @timer.time_function("Vcycle", "Update Residual")
     def update_residual(self):
         self.vx_res = uzawa_vx_residual(
@@ -87,6 +87,12 @@ class Grid:
                                         self.vy_res, self.vy_rhs,
                                     )
 
+    def residual_norms(self):
+        N = np.sqrt(self.nx1 * self.ny1)
+        vx_res_rmse = np.linalg.norm(self.vx_res) / N
+        vy_res_rmse = np.linalg.norm(self.vy_res) / N
+        return vx_res_rmse, vy_res_rmse
+    
     @timer.time_function("Vcycle", "Smooth")
     def smooth(self, iterations):
         # Smooth the velocity field
@@ -119,7 +125,7 @@ class Grid:
             fine.xp, fine.yp, fine.etap,
             self.xp, self.yp,
         )
-
+             
     @timer.time_function("Vcycle", "Restriction")
     def restrict_residuals(self, fine):
         self.vx_rhs = restrict(
@@ -132,14 +138,14 @@ class Grid:
         )
 
     @timer.time_function("Vcycle", "Prolongation")
-    def prolong_correction(self, fine):
-        fine.vx += prolong(
-            fine.xvx, fine.yvx,
+    def prolong_correction(self, coarse):
+        self.vx += prolong(
             self.xvx, self.yvx,
-            self.vx,
+            coarse.xvx, coarse.yvx,
+            coarse.vx,
         )
-        fine.vy += prolong(
-            fine.xvy, fine.yvy,
+        self.vy += prolong(
             self.xvy, self.yvy,
-            self.vy,
+            coarse.xvy, coarse.yvy,
+            coarse.vy,
         )
