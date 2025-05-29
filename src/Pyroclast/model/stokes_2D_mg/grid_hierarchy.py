@@ -103,22 +103,26 @@ class GridHierarchy:
         keeping eta_comp_min fixed. Only triggers if viscosity scaling is enabled and enough
         cycles have passed.
         """
+        # Is scaling enabled?
         if not self.scale_viscosity:
             return False
-
-        self.eta_cycle += 1
-
-        if self.eta_cycle < self.eta_rescale_interval:
-            return False
         
+        # Have we reached the maximum number of scaling cycles?
         if self.eta_counter >= self.eta_ncycles:
             return False
-        
-        self.eta_theta += self.eta_theta_step
 
-        # Last cycle: clamp to max
+        # Increment cycle counter
+        self.eta_cycle += 1
+
+        # Did we reach the rescale interval?
+        if self.eta_cycle < self.eta_rescale_interval:
+            return False
+
+        # Clamp to max if we reached the last cycle
         if self.eta_counter == self.eta_ncycles - 1:
             self.eta_theta = 1.0
+        else: # Increment theta
+            self.eta_theta += self.eta_theta_step
 
         # Recompute viscosity
         self.recompute_viscosity()
@@ -127,7 +131,7 @@ class GridHierarchy:
         self.propagate_properties()
 
         self.eta_cycle = 0  # reset interval counter
-        self.eta_counter += 1
+        self.eta_counter += 1 # increment rescale counter
         return True
 
     def __getitem__(self, idx):
