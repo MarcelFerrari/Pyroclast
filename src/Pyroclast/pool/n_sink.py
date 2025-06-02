@@ -41,7 +41,16 @@ class NSink(RK42DStokes):
         # and have at least 5% xsize and ysize distance from the edges
 
         # Create a Sobol sequence sampler in 2D
-        sampler = qmc.Sobol(d=2, scramble=True)
+        try:
+            # Try new scipy.stats.qmc.Sobol API
+            rng = np.random.default_rng(o.seed)
+            sampler = qmc.Sobol(d=2, scramble=True, rng=rng)
+        except:
+            # Fallback for older versions of scipy
+            # that do not support the new API
+            sampler = qmc.Sobol(d=2, scramble=True, seed=o.seed)
+
+        # Generate n samples in the unit square [0, 1]^2
         samples = sampler.random(n=n_sediments)
 
         # Map from unit square to your desired range
