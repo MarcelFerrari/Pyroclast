@@ -47,7 +47,8 @@ class Context:
             'params': dict(self.params),
             'options': dict(self.options)
         }
-    
+
+
 class ContextNamespace(dict):
     """
     A dictionary-like class that allows attribute access to its keys.
