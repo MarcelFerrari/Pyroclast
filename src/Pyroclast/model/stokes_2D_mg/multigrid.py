@@ -3,8 +3,8 @@ Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
 File: multigrid.py
-Description: This file implements the multigrid method for the Stokes flow
-             and continuity equations in 2D.
+Description: This file implements the multigrid method used for the velocity
+             solve of the inexact Uzawa iteration.
 
 Author: Marcel Ferrari
 Copyright (c) 2025 Marcel Ferrari.
@@ -18,15 +18,12 @@ from Pyroclast.profiling import timer
 from .grid_hierarchy import GridHierarchy
 
 
-
 class Multigrid:
-    """Velocity multigrid solver operating on a :class:`GridHierarchy`."""
-
     def __init__(self, ctx, levels, scaling=2.0):
         self.scaling = scaling
         self.hierarchy = GridHierarchy(ctx, levels, scaling)
 
-    def vcycle(self, level, nu1, nu2, gamma):
+    def vcycle(self, level, nu1, nu2):
         # Extract the current grid level
         fine = self.hierarchy[level]
 
@@ -45,8 +42,7 @@ class Multigrid:
             coarse.restrict_residuals(fine)
 
             # Solve problem on coarse grid
-            # for _ in range(gamma):
-            self.vcycle(level + 1, nu1*self.scaling, nu2*self.scaling, gamma)
+            self.vcycle(level + 1, nu1*self.scaling, nu2*self.scaling)
             
             # Prolongate correction to fine grid
             fine.prolong_correction(coarse)

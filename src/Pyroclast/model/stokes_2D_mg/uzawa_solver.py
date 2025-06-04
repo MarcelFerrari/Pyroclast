@@ -1,4 +1,19 @@
-"""High level Uzawa iteration using the velocity multigrid solver."""
+
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: uzawa_solver.py
+Description: This file implements the Uzawa solver for the Stokes flow
+              and continuity equations in 2D.
+                    
+Author: Marcel Ferrari
+Copyright (c) 2025 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
 
 import numpy as np
 
@@ -9,7 +24,7 @@ from .implicit_operators import p_residual, vx_residual, vy_residual
 from .anderson import AndersonAccelerator
 from .utils import apply_BC
 from .viscosity_rescaler import ViscosityRescaler
-
+from .residual_tracker import ResidualTracker
 
 class UzawaSolver:
     """Solve the Stokes system using Uzawa iterations and multigrid."""
@@ -25,6 +40,7 @@ class UzawaSolver:
         self.state_k = np.zeros((3, self.fine.ny1, self.fine.nx1))
         self.state_next = np.zeros_like(self.state_k)
         self.accel = AndersonAccelerator(m=30, shape=(self.fine.ny1, self.fine.nx1))
+        self.tracker = ResidualTracker(m=30, tol=1e-16, convergence_thresh=1e-2)
 
     def compute_residuals(self, p_rhs, vx_rhs, vy_rhs):
         p_res = p_residual(self.fine.nx1, self.fine.ny1,
@@ -74,7 +90,7 @@ class UzawaSolver:
             self.state_k[2] = self.p
 
             for _ in range(2):
-                vx, vy = self.mg.vcycle(0, nu1, nu2, gamma)
+                vx, vy = self.mg.vcycle(0, nu1, nu2)
 
             self.p = pressure_sweep(self.fine.nx1, self.fine.ny1,
                                     self.fine.dx, self.fine.dy,
@@ -108,18 +124,17 @@ class UzawaSolver:
             print(
                 f"RMSE residuals: p = {p_res_rmse:.2e}, "
                 f"vx = {vx_res_rmse:.2e}, vy = {vy_res_rmse:.2e}")
+            
+            # Update the residual tracker
+            converged = self.tracker.update(p_res_rmse, vx_res_rmse, vy_res_rmse)
 
-            if max(p_res_rmse, vx_res_rmse, vy_res_rmse) < tol and \
-               self.rescaler.done_rescaling():
-                break
-
-            if p_res_rmse < 1e-15 and vx_res_rmse < 1e-5 and \
-               vy_res_rmse < 1e-5 and self.rescaler.done_rescaling():
-                print("Converged...")
+            if converged and self.rescaler.done_rescaling():
+                print("Converged!")
                 break
 
             if self.rescaler.update_viscosity():
                 self.accel.reset()
+                self.tracker.reset()
 
         return self.p, self.fine.vx, self.fine.vy
 

@@ -90,7 +90,7 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         self.vy_rhs[...] = -self.gy * s.rho
 
         # Create Uzawa solver
-        solver = UzawaSolver(ctx, levels=4, scaling=2.0)
+        solver = UzawaSolver(ctx, levels=4, scaling=2.5)
 
         # Solve the system
         max_cycles = 500
@@ -98,5 +98,5 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
             self.p_rhs, self.vx_rhs, self.vy_rhs,
             p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy,
             max_cycles=max_cycles, tol=1e-7,
-            nu1=5, nu2=5, gamma=1)
+            nu1=5, nu2=5)
 
