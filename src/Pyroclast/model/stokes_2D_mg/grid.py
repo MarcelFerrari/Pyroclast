@@ -149,3 +149,12 @@ class Grid:
             coarse.xvy, coarse.yvy,
             coarse.vy,
         )
+
+    def viscosity_contrast(self):
+        """Return the ratio of maximum to minimum viscosity on this grid."""
+        etabmin = np.nanmin(self.etab[:-1, :-1])
+        etabmax = np.nanmax(self.etab[:-1, :-1])
+        etapmin = np.nanmin(self.etap[:-1, :-1])
+        etapmax = np.nanmax(self.etap[:-1, :-1])
+        return max(etabmax, etapmax) / (1.0 + min(etabmin, etapmin))
+
