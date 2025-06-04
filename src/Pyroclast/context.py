@@ -57,14 +57,14 @@ class ContextNamespace(dict):
         # Initialize state parameters
         super().__init__(args or {})
     
-    def _raise(self, key):
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{key}'")
+    def missing_key_string_factory(self, key) -> str:
+        return f"'{self.__class__.__name__}' object has no attribute '{key}' available {self.keys()}"
     
     def __getattr__(self, key):
         if key in self:
             return self[key]
         else:
-            self._raise(key)
+            raise AttributeError(self.missing_key_string_factory(key))
     
     def __setattr__(self, key, value):
         self[key] = value
@@ -73,4 +73,4 @@ class ContextNamespace(dict):
         if key in self:
             del self[key]
         else:
-            self._raise(key)
+            raise AttributeError(self.missing_key_string_factory(key))
