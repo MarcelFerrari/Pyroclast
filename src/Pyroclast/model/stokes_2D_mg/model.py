@@ -24,7 +24,7 @@ from Pyroclast.profiling import timer
 
 from .smoother import *
 from .utils import *
-from .multigrid import Multigrid
+from .uzawa_solver import UzawaSolver
 from Pyroclast.model.stokes_2D import IncompressibleStokes2D
 
 import pickle
@@ -89,11 +89,14 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         # Recompute vy rhs
         self.vy_rhs[...] = -self.gy * s.rho
 
-        # Create MG solver
-        solver = Multigrid(ctx, levels=4, scaling=2.0)
+        # Create Uzawa solver
+        solver = UzawaSolver(ctx, levels=4, scaling=2.0)
 
         # Solve the system
         max_cycles = 500
-        s.p, s.vx, s.vy = solver.solve(self.p_rhs, self.vx_rhs, self.vy_rhs,
-                                        p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy,
-                                        max_cycles=max_cycles, tol=1e-7, nu1 = 5, nu2 = 5, gamma=1, p_ref = p.p_ref)
+        s.p, s.vx, s.vy = solver.solve(
+            self.p_rhs, self.vx_rhs, self.vy_rhs,
+            p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy,
+            max_cycles=max_cycles, tol=1e-7,
+            nu1=5, nu2=5, gamma=1)
+
