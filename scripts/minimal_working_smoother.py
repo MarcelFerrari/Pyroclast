@@ -230,9 +230,9 @@ def vx_rb_gs_sweep(nx1, ny1,
 
 if __name__ == "__main__":
     # Generate synthetic data for testing
-    max_iter = 100
-    nx = 2000
-    ny = 2000
+    max_iter = 128
+    nx = 2048
+    ny = 2048
     dx = 1.0 / (nx - 1)
     dy = 1.0 / (ny - 1)
     nx1 = nx + 1
