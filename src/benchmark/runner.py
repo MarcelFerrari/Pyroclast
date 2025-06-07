@@ -81,21 +81,99 @@ parser.add_argument(f"-e", "--no-env",
                     help="Disable storing of environment variables.")
 
 
-def benchmark_single_module(module: str,
+def benchmark_single_module(module_name: str,
                             nx: int,
                             ny: int,
                             max_iter: int,
                             profiling: bool,
-                            sample: int,
+                            samples: int,
                             test_set: list[BenchmarkType],
                             cache_a: int,
                             cache_b: int,
                             ) -> list[BenchmarkResults]:
-    module = importlib.import_module(name=module, package="Pyroclast.model.stokes_2D_mg.smoothers")
+    """
+    Run the benchmark for a single module. Requires this module to have defined a benchmark factory.
+    """
+    results = []
+    module = importlib.import_module(f"Pyroclast.model.stokes_2D_mg.smoothers.{module_name}")
 
-    factory = getattr(module, "benchmark_factory")
+    # Get the factory method
+    try:
+        factory = getattr(module, "benchmark_factory")
+    except AttributeError:
+        raise RuntimeError(f"Module {module_name} does not implement benchmark_factory. "
+                           f"The targeted smoother implements benchmark_factory and the return type is correct. "
+                           f"Check the template.py in the `smoothers` package for the signature of the factory")
 
-    return []
+    # Annotated factory
+    factory: Callable[[], tuple[Optional[Type[BenchmarkSmoother]],
+                                Optional[Type[BenchmarkVX]],
+                                Optional[Type[BenchmarkVY]]]]
+
+    # Execute factory
+    bm_s, bm_vx, bm_vy = factory()
+
+    # Run benchmark for entire smoother
+    if bm_s is not None and BenchmarkType.SMOOTHER in test_set:
+        args = BenchmarkValidatorSmoother(
+            nx=nx, ny=ny,
+            max_iter=max_iter,
+            profile=profiling, samples=samples,
+            cache_block_size_1=cache_a,
+            cache_block_size_2=cache_b,
+        )
+
+        local_benchmark = bm_s(arguments=args)
+        local_benchmark.benchmark()
+
+        results.append(BenchmarkResults(
+            module=module_name,
+            benchmark_type=BenchmarkType.SMOOTHER,
+            input_model=args,
+            timings=local_benchmark.timings
+        ))
+
+    # Run benchmark on vx_subroutine
+    if bm_vx is not None and BenchmarkType.VX in test_set:
+        args = BenchmarkValidatorVX(
+            nx=nx, ny=ny,
+            max_iter=max_iter,
+            profile=profiling, samples=samples,
+            cache_block_size_1=cache_a,
+            cache_block_size_2=cache_b,
+        )
+
+        local_benchmark = bm_vx(arguments=args)
+        local_benchmark.benchmark()
+
+        results.append(BenchmarkResults(
+            module=module_name,
+            benchmark_type=BenchmarkType.VX,
+            input_model=args,
+            timings=local_benchmark.timings
+        ))
+
+    # Run benchmark on vy_subroutine
+    if bm_vy is not None and BenchmarkType.VY in test_set:
+        args = BenchmarkValidatorVY(
+            nx=nx, ny=ny,
+            max_iter=max_iter,
+            profile=profiling, samples=samples,
+            cache_block_size_1=cache_a,
+            cache_block_size_2=cache_b,
+        )
+
+        local_benchmark = bm_vy(arguments=args)
+        local_benchmark.benchmark()
+
+        results.append(BenchmarkResults(
+            module=module_name,
+            benchmark_type=BenchmarkType.VY,
+            input_model=args,
+            timings=local_benchmark.timings
+        ))
+
+    return results
 
 
 def check_git_status() -> tuple[bool, bool]:
