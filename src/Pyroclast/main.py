@@ -16,17 +16,16 @@ import importlib
 import os
 import pickle
 import re
+import time as tm
 
 import numba as nb
 import toml
-import time as tm
 
-import Pyroclast.format as fmt
-from Pyroclast.banner import print_banner
 from Pyroclast.context import Context, ContextNamespace
 from Pyroclast.defaults import default_config
 from Pyroclast.profiling import timer
 from Pyroclast.rng import set_seed
+from Pyroclast.string_util import print_banner, s2yr
 
 
 class Pyroclast:
@@ -190,8 +189,8 @@ class Pyroclast:
             
             percent = 100 * s.iteration / p.max_iterations
             it = s.iteration
-            t = fmt.s2yr(s.time)
-            dt = fmt.s2yr(s.dt)
+            t = s2yr(s.time)
+            dt = s2yr(s.dt)
             print(f"Progress: {percent:.2f}%, it = {it}, t = {t}, dt = {dt}")
 
             # 8) Increment iteration
