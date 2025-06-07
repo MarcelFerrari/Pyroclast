@@ -72,10 +72,10 @@ class BenchmarkValidatorVX(BaseBenchmarkValidator):
     """
     Any combination of values can be passed. If a given matrix or tensor isn't passed, it is assumed to be zero
     """
-    vx: Optional[np.ndarray]
-    vx_new: Optional[np.ndarray]
-    vy: Optional[np.ndarray]
-    vx_rhs: Optional[np.ndarray]
+    vx: Optional[np.ndarray] = None
+    vx_new: Optional[np.ndarray] = None
+    vy: Optional[np.ndarray] = None
+    vx_rhs: Optional[np.ndarray] = None
 
     @model_validator(mode="after")
     def validate_velocities(self) -> Self:
@@ -90,10 +90,10 @@ class BenchmarkValidatorVY(BaseBenchmarkValidator):
     """
     Any combination of values can be passed. If a given matrix or tensor isn't passed, it is assumed to be zero
     """
-    vy: Optional[np.ndarray]
-    vy_new: Optional[np.ndarray]
-    vx: Optional[np.ndarray]
-    vy_rhs: Optional[np.ndarray]
+    vy: Optional[np.ndarray] = None
+    vy_new: Optional[np.ndarray] = None
+    vx: Optional[np.ndarray] = None
+    vy_rhs: Optional[np.ndarray] = None
 
     @model_validator(mode="after")
     def validate_velocities(self) -> Self:
@@ -105,13 +105,13 @@ class BenchmarkValidatorVY(BaseBenchmarkValidator):
         return self
 
 class BenchmarkValidatorSmoother(BaseBenchmarkValidator):
-    vx: Optional[np.ndarray]
-    vx_new: Optional[np.ndarray]
-    vx_rhs: Optional[np.ndarray]
+    vx: Optional[np.ndarray] = None
+    vx_new: Optional[np.ndarray] = None
+    vx_rhs: Optional[np.ndarray] = None
 
-    vy: Optional[np.ndarray]
-    vy_new: Optional[np.ndarray]
-    vy_rhs: Optional[np.ndarray]
+    vy: Optional[np.ndarray] = None
+    vy_new: Optional[np.ndarray] = None
+    vy_rhs: Optional[np.ndarray] = None
 
     @model_validator(mode="after")
     def validate_velocities(self) -> Self:
