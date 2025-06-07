@@ -253,4 +253,5 @@ setup-env.sh
 *.ckpt
 *.checkpoint
 .idea/
+.results/
 local_scripts/
