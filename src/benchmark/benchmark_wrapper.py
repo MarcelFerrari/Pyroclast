@@ -21,7 +21,7 @@ from typing import Optional
 import numpy as np
 
 from .benchmark_validators import (BaseBenchmarkValidator, BenchmarkValidatorVX, BenchmarkValidatorVY,
-                                   BenchmarkValidatorSmoother)
+                                   BenchmarkValidatorSmoother, Timing)
 
 
 class BaseBenchmark:
@@ -38,6 +38,8 @@ class BaseBenchmark:
     boundary_condition: float
 
     max_iter: int
+
+    timings: list[Timing]
 
     def __init__(self,
                  arguments: BaseBenchmarkValidator):
@@ -57,6 +59,8 @@ class BaseBenchmark:
 
         self.relax_v = arguments.relax_v
         self.boundary_condition = arguments.boundary_condition
+
+        self.timings = []
 
     def benchmark(self):
         """
