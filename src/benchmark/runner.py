@@ -123,6 +123,7 @@ def benchmark_single_module(module_name: str,
             cache_block_size_2=cache_b,
         )
 
+        print(f"Running Smoother Benchmark of: {module_name}")
         local_benchmark = bm_s(arguments=args)
         local_benchmark.benchmark()
 
@@ -143,6 +144,7 @@ def benchmark_single_module(module_name: str,
             cache_block_size_2=cache_b,
         )
 
+        print(f"Running VX Benchmark of: {module_name}")
         local_benchmark = bm_vx(arguments=args)
         local_benchmark.benchmark()
 
@@ -163,6 +165,7 @@ def benchmark_single_module(module_name: str,
             cache_block_size_2=cache_b,
         )
 
+        print(f"Running VY Benchmark of: {module_name}")
         local_benchmark = bm_vy(arguments=args)
         local_benchmark.benchmark()
 
