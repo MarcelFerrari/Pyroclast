@@ -215,6 +215,7 @@ def main():
     Main function to make it runnable from other locations.
     """
     ns = parser.parse_args()
+
     # Dim in x, y tuple
     dim_list: list[tuple[int, int]] = []
     all_res = []
