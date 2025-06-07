@@ -27,14 +27,15 @@ class BaseBenchmarkValidator(BaseModel):
     max_iter: int = Field(..., gt=0)
     nx: int = Field(..., gt=0)
     ny: int= Field(..., gt=0)
-    dx: Optional[float] = Field(None, gt=0.0)
-    dy: Optional[float] = Field(None, gt=0.0)
+
+    dx: Optional[float] = Field(default=None, gt=0.0)
+    dy: Optional[float] = Field(default=None, gt=0.0)
     eta_b: Optional[np.ndarray] = None
     eta_p: Optional[np.ndarray] = None
 
     # TODO check boundary condition and relax_v is correct
-    boundary_condition: float = Field(-1.0)
-    relax_v: float = Field(0.7)
+    boundary_condition: float = Field(default=-1.0)
+    relax_v: float = Field(default=0.7)
 
     # Performance options
     cache_block_size_1: Optional[int] = Field(None, gt=0)
