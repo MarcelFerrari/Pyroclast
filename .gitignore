@@ -252,3 +252,4 @@ setup-env.sh
 *.db3
 *.ckpt
 *.checkpoint
+.idea/
