@@ -2,6 +2,7 @@ from abc import abstractmethod, ABC
 from typing import Optional
 
 import numpy as np
+import pyinstrument
 
 from .benchmark_validators import (BaseBenchmarkValidator, BenchmarkValidatorVX, BenchmarkValidatorVY,
                                    BenchmarkValidatorSmoother, Timing)
@@ -58,7 +59,16 @@ class BaseBenchmark:
         Actually run the benchmark.
         """
         self.benchmark_preamble()
-        self.run_benchmark()
+
+        # Call benchmark function either with profile wrapper or without depending on arguments
+        if self.args.profile:
+            with pyinstrument.profile():
+                for _ in range(self.args.samples):
+                    self.run_benchmark()
+        else:
+            for _ in range(self.args.samples):
+                self.run_benchmark()
+
         self.benchmark_epilogue()
 
     @abstractmethod
