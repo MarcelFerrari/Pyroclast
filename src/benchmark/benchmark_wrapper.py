@@ -23,7 +23,7 @@ import numpy as np
 from .benchmark_validators import BaseBenchmarkValidator, BenchmarkValidatorVX, BenchmarkValidatorVY
 
 
-class Benchmark:
+class BaseBenchmark:
     nx1: int
     ny1: int
 
@@ -80,7 +80,7 @@ class Benchmark:
         """
         ...
 
-class BenchmarkVX(ABC, Benchmark):
+class BenchmarkVX(ABC, BaseBenchmark):
     vx: np.ndarray
     vx_new: Optional[np.ndarray] = None
     vy: np.ndarray
@@ -99,7 +99,7 @@ class BenchmarkVX(ABC, Benchmark):
         self.vx_new = arguments.vx_new if arguments.vx_new is not None else None
 
 
-class BenchmarkVY(ABC, Benchmark):
+class BenchmarkVY(ABC, BaseBenchmark):
     vy: np.ndarray
     vy_new: Optional[np.ndarray] = None
     vx: np.ndarray
