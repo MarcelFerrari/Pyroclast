@@ -27,3 +27,5 @@ def get_banner():
     return banner
     
 
+if __name__ == '__main__':
+    print_banner()
