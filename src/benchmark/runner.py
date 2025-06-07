@@ -8,6 +8,7 @@ import warnings
 from typing import Callable, Type, Optional
 
 from git import Repo
+import numba as nb
 
 from benchmark.utils import dtf
 from benchmark.benchmark_validators import (BenchmarkType, BenchmarkResults, BenchmarkRun,
@@ -252,6 +253,10 @@ def main():
     if ns.samples > 1 and ns.profiling and not ns.quiet:
         warnings.warn("Profiling in Combination with multiple samples increases runtime drastically")
 
+    if ns.cpu is not None:
+        print(f"Setting number of threads")
+        nb.set_num_threads(ns.cpu)
+
     # Check git status
     staged, unstaged = check_git_status()
     if staged or unstaged:
@@ -284,7 +289,7 @@ def main():
         env=None if ns.no_env else os.environ,
     )
 
-    print(benchmark_run.model_dump())
+    print(benchmark_run.model_dump_json(indent=2))
 
 if __name__ == "__main__":
     main()
