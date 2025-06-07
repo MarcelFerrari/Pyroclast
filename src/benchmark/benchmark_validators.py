@@ -190,6 +190,8 @@ class BenchmarkRun(BaseBenchmarkValidator):
 
     result: list[BenchmarkResults] = Field(..., min_length=1)
 
+    env: Optional[dict[str, Any]] = Field(..., description="Environment dump of environment variables.")
+
     git_commit: str = Field(..., description="Git commit hash of the benchmark run")
     git_branch: str = Field(..., description="Git branch of the benchmark run")
     dirty: bool = False
