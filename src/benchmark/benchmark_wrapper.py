@@ -107,9 +107,9 @@ class BenchmarkVX(ABC, BaseBenchmark):
         """
         super().__init__(arguments=arguments)
 
-        self.vx = arguments.vx if arguments.vx is None else np.zeros((self.ny1, self.nx1))
-        self.vy = arguments.vy if arguments.vy is None else np.zeros((self.ny1, self.nx1))
-        self.vx_rhs  = arguments.vx_rhs if arguments.vx_rhs is None else np.zeros((self.ny1, self.nx1))
+        self.vx = arguments.vx if arguments.vx is not None else np.zeros((self.ny1, self.nx1))
+        self.vy = arguments.vy if arguments.vy is not None else np.zeros((self.ny1, self.nx1))
+        self.vx_rhs  = arguments.vx_rhs if arguments.vx_rhs is not None else np.zeros((self.ny1, self.nx1))
 
         self.vx_new = arguments.vx_new if arguments.vx_new is not None else None
 
@@ -130,11 +130,11 @@ class BenchmarkVY(ABC, BaseBenchmark):
         """
         super().__init__(arguments=arguments)
 
-        self.vy = arguments.vy if arguments.vy is None else np.zeros((self.ny1, self.nx1))
-        self.vx = arguments.vx if arguments.vx is None else np.zeros((self.ny1, self.nx1))
-        self.vy_rhs  = arguments.vy_rhs if arguments.vy_rhs is None else np.zeros((self.ny1, self.nx1))
+        self.vy = arguments.vy if arguments.vy is not None else np.zeros((self.ny1, self.nx1))
+        self.vx = arguments.vx if arguments.vx is not None else np.zeros((self.ny1, self.nx1))
+        self.vy_rhs  = arguments.vy_rhs if arguments.vy_rhs is not None else np.zeros((self.ny1, self.nx1))
 
-        self.vy_new = arguments.vy_new if arguments.vy_new else None
+        self.vy_new = arguments.vy_new if arguments.vy_new is not None else None
 
         self.args = arguments
 
@@ -153,14 +153,14 @@ class BenchmarkSmoother(ABC, BaseBenchmark):
     def __init__(self, arguments: BenchmarkValidatorSmoother):
         super().__init__(arguments=arguments)
 
-        self.vx = arguments.vx if arguments.vx is None else np.zeros((self.ny1, self.nx1))
-        self.vx_rhs  = arguments.vx_rhs if arguments.vx_rhs is None else np.zeros((self.ny1, self.nx1))
+        self.vx = arguments.vx if arguments.vx is not None else np.zeros((self.ny1, self.nx1))
+        self.vx_rhs  = arguments.vx_rhs if arguments.vx_rhs is not None else np.zeros((self.ny1, self.nx1))
 
         self.vx_new = arguments.vx_new if arguments.vx_new is not None else None
 
-        self.vy = arguments.vy if arguments.vy is None else np.zeros((self.ny1, self.nx1))
-        self.vy_rhs  = arguments.vy_rhs if arguments.vy_rhs is None else np.zeros((self.ny1, self.nx1))
+        self.vy = arguments.vy if arguments.vy is not None else np.zeros((self.ny1, self.nx1))
+        self.vy_rhs  = arguments.vy_rhs if arguments.vy_rhs is not None else np.zeros((self.ny1, self.nx1))
 
-        self.vy_new = arguments.vy_new if arguments.vy_new else None
+        self.vy_new = arguments.vy_new if arguments.vy_new is not None else None
 
         self.args = arguments
