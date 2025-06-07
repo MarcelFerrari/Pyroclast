@@ -140,7 +140,6 @@ def _vy_red_black_gs_sweep(nx1, ny1,
                 eta1 = etab[i, j - 1]
                 eta2 = etab[i, j]
 
-                # TODO lift
                 # 2) Construct coefficients for y-momentum
                 vy1_coeff = eta1 / (dx * dx)
                 vy2_coeff = 2.0 * etaA / (dy * dy)
@@ -192,7 +191,6 @@ def _vy_red_black_gs_sweep(nx1, ny1,
                 eta1 = etab[i, j - 1]
                 eta2 = etab[i, j]
 
-                # TODO lift
                 # 2) Coefficients for y-momentum
                 vy1_coeff = eta1 / (dx * dx)
                 vy2_coeff = 2.0 * etaA / (dy * dy)
