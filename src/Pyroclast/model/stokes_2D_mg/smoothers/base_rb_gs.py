@@ -12,7 +12,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
                     dx, dy,
                     etap, etab,
                     vx, vy,
-                    relax_v, rhs, BC):
+                    relax_v, rhs, BC) -> np.ndarray:
     """
     In-place Red-Black Gauss-Seidel update for vx.
     """
