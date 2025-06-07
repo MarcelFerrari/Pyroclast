@@ -159,7 +159,7 @@ class BenchmarkResults(BaseModel):
     Represents the result of the execution of a single benchmark wrapper
     """
     timings: list[Timing] = Field(..., min_length=1, description="List of timing information")
-    input_model: BaseBenchmarkValidator | BenchmarkValidatorVX | BenchmarkValidatorVY
+    input_model: BenchmarkValidatorSmoother | BenchmarkValidatorVX | BenchmarkValidatorVY
     module: str = Field(..., description="Which is being benchmarked")
     benchmark_type: BenchmarkType = Field(..., description="Which benchmark of the module is executed")
 
