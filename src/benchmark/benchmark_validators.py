@@ -185,7 +185,8 @@ class BenchmarkResults(BaseModel):
 
         return self
 
-class BenchmarkRun(BaseBenchmarkValidator):
+
+class BenchmarkRun(BaseModel):
     """
     Represents the results of a call to the runner script.
     """
