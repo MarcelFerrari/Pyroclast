@@ -95,6 +95,27 @@ class BenchmarkValidatorVY(BaseBenchmarkValidator):
         self.check_shape("vx")
         self.check_shape("vy_rhs")
 
+
+class BenchmarkValidatorSmoother(BaseBenchmarkValidator):
+    vx: Optional[np.ndarray]
+    vx_new: Optional[np.ndarray]
+    vx_rhs: Optional[np.ndarray]
+
+    vy: Optional[np.ndarray]
+    vy_new: Optional[np.ndarray]
+    vy_rhs: Optional[np.ndarray]
+
+    @model_validator(mode="after")
+    def validate_velocities(self) -> Self:
+        self.check_shape("vx")
+        self.check_shape("vx_new")
+        self.check_shape("vx_rhs")
+
+        self.check_shape("vy")
+        self.check_shape("vy_new")
+        self.check_shape("vy_rhs")
+
+
 # ======================================================================================================================
 # Models which are the results of benchmarks
 # ======================================================================================================================
