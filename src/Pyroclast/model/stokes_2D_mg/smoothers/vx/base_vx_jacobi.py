@@ -106,20 +106,19 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             Perform the actual run of the benchmark.
             """
-            for _ in range(self.args.samples):
-                start = dtf()
-                for _ in range(self.args.max_iter):
-                    vx_jacobi_sweep(nx1=self.nx1, ny1=self.ny1,
-                                    dx=self.dx, dy=self.dy,
-                                    etap=self.eta_p, etab=self.eta_b,
-                                    vx=self.vx, vy=self.vy, vx_new=self.vx_new,
-                                    relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
-                end = dtf()
+            start = dtf()
+            for _ in range(self.args.max_iter):
+                vx_jacobi_sweep(nx1=self.nx1, ny1=self.ny1,
+                                dx=self.dx, dy=self.dy,
+                                etap=self.eta_p, etab=self.eta_b,
+                                vx=self.vx, vy=self.vy, vx_new=self.vx_new,
+                                relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+            end = dtf()
 
-                # Add the timing information
-                self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
-                                           stage=Stage.BENCHMARK,
-                                           start=start,
-                                           end=end))
+            # Add the timing information
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
+                                       stage=Stage.BENCHMARK,
+                                       start=start,
+                                       end=end))
 
     return None, BaseImplementationVX, None
