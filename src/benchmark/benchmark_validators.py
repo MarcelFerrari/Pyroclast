@@ -42,6 +42,7 @@ class BaseBenchmarkValidator(BaseModel):
 
     # Inspection Options
     profile: bool = False
+    samples: int = Field(..., gt=0)
 
     @model_validator(mode="after")
     def validate_sizes_eta(self) -> Self:
