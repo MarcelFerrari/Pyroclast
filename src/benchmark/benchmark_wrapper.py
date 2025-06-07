@@ -63,10 +63,12 @@ class BaseBenchmark:
         # Call benchmark function either with profile wrapper or without depending on arguments
         if self.args.profile:
             with pyinstrument.profile():
-                for _ in range(self.args.samples):
+                for s in range(self.args.samples):
+                    print(f"Running Sample {s + 1} of {self.args.samples}")
                     self.run_benchmark()
         else:
-            for _ in range(self.args.samples):
+            for s in range(self.args.samples):
+                print(f"Running Sample {s + 1} of {self.args.samples}")
                 self.run_benchmark()
 
         self.benchmark_epilogue()
