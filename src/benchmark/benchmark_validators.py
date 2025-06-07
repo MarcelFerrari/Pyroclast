@@ -199,9 +199,12 @@ class BenchmarkRun(BaseModel):
 
     env: Optional[dict[str, Any]] = Field(..., description="Environment dump of environment variables.")
 
-    git_commit: str = Field(..., description="Git commit hash of the benchmark run")
     git_branch: str = Field(..., description="Git branch of the benchmark run")
-    dirty: bool = False
+    git_commit_msg: str = Field(..., description="Git commit message of current commit.")
+    git_commit_hash: str = Field(..., description="Git commit hash of the benchmark run")
+
+    dirty: bool = Field(False, description="Is set to true, if the runner was called with force and there were diffs in "
+                                           "the working tree.")
 
     @property
     def smoother_benchmarks(self) -> list[BenchmarkResults]:
