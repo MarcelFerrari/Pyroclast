@@ -99,6 +99,7 @@ class BenchmarkValidatorVX(BaseBenchmarkValidator):
         self.check_shape("vy")
         self.check_shape("vx_rhs")
 
+        return self
 
 class BenchmarkValidatorVY(BaseBenchmarkValidator):
     """
@@ -116,6 +117,7 @@ class BenchmarkValidatorVY(BaseBenchmarkValidator):
         self.check_shape("vx")
         self.check_shape("vy_rhs")
 
+        return self
 
 class BenchmarkValidatorSmoother(BaseBenchmarkValidator):
     vx: Optional[np.ndarray]
@@ -136,6 +138,7 @@ class BenchmarkValidatorSmoother(BaseBenchmarkValidator):
         self.check_shape("vy_new")
         self.check_shape("vy_rhs")
 
+        return self
 
 # ======================================================================================================================
 # Models which are the results of benchmarks
@@ -195,6 +198,7 @@ class BenchmarkResults(BaseModel):
         if len(list(filter(lambda t: t.stage == Stage.EPILOG,self.timings)))  > 1:
             raise ValueError(f"Epilog stage {self.benchmark_type.name} may appear at most once")
 
+        return self
 
 class BenchmarkRun(BaseBenchmarkValidator):
     """
