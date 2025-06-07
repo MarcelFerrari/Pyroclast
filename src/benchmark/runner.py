@@ -265,6 +265,7 @@ def main():
     # Run benchmark on modules and dimension list
     for module in ns.modules:
         for dim in dim_list:
+            print(f"Running Module: {module} with dimensions: x={dim[0]}, y={dim[1]}")
             all_res.extend(benchmark_single_module(module_name=module,
                                                    nx=dim[0], ny=dim[1], max_iter=ns.iterations,
                                                    profiling=ns.profiling, samples=ns.samples,
