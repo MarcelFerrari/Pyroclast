@@ -224,6 +224,8 @@ def main():
     all_res = []
     dirty = False
 
+    branch, c_hash, c_msg = get_git_info()
+
     print(ns.__dict__)
 
     # Prevent all empty
@@ -273,8 +275,6 @@ def main():
                                                    test_set=ns.test))
 
     end = dtf()
-
-    branch, c_hash, c_msg = get_git_info()
 
     benchmark_run = BenchmarkRun(
         start=start, end=end,
