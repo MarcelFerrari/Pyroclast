@@ -26,3 +26,5 @@ def print_banner():
     print(banner)
     
 
+if __name__ == '__main__':
+    print_banner()
