@@ -14,6 +14,7 @@ from benchmark.utils import dtf
 from benchmark.benchmark_validators import (BenchmarkType, BenchmarkResults, BenchmarkRun,
                                             BenchmarkValidatorSmoother, BenchmarkValidatorVX, BenchmarkValidatorVY)
 from benchmark.benchmark_wrapper import BenchmarkSmoother, BenchmarkVX, BenchmarkVY
+from Pyroclast.string_util import print_banner
 
 
 parser = argparse.ArgumentParser()
@@ -218,6 +219,8 @@ def main():
     """
     Main function to make it runnable from other locations.
     """
+    print_banner()
+
     ns = parser.parse_args()
 
     # Dim in x, y tuple
