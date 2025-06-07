@@ -104,6 +104,7 @@ class BaseBenchmark:
         """
         ...
 
+
 class BenchmarkVX(ABC, BaseBenchmark):
     vx: np.ndarray
     vx_new: Optional[np.ndarray] = None
