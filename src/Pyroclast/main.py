@@ -12,23 +12,24 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
-import toml
 import importlib
 import os
-import re
 import pickle
-import time
-import numpy as np
-import numba as nb
+import re
 
-from Pyroclast.context import Context, ContextNamespace
-from Pyroclast.profiling import timer
-from Pyroclast.banner import print_banner
+import numba as nb
+import toml
+import time as tm
+
 import Pyroclast.format as fmt
+from Pyroclast.banner import print_banner
+from Pyroclast.context import Context, ContextNamespace
 from Pyroclast.defaults import default_config
+from Pyroclast.profiling import timer
 from Pyroclast.rng import set_seed
 
-class Pyroclast():
+
+class Pyroclast:
     def __init__(self, args):
         # Print Pyroclast banner
         print_banner()
@@ -156,7 +157,7 @@ class Pyroclast():
         
         # Main time integration loop
         print("Starting time integration loop...")
-        start = time.time()
+        start = tm.time()
         while s.iteration < p.max_iterations:
             # 1) Interpolate marker values to grid nodes
             with timer.time_section("Main Loop", "Interpolation"):
@@ -197,7 +198,7 @@ class Pyroclast():
             s.iteration += 1
         
         # End of time integration loop
-        end = time.time() 
+        end = tm.time()
 
         print("Time loop complete!")
         
