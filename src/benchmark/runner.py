@@ -257,14 +257,30 @@ def main():
         else:
             dirty = True
 
+    start = dtf()
+
     # Run benchmark on modules and dimension list
     for module in ns.modules:
         for dim in dim_list:
-            all_res.extend(benchmark_single_module(module=module,
+            all_res.extend(benchmark_single_module(module_name=module,
                                                    nx=dim[0], ny=dim[1], max_iter=ns.iterations,
-                                                   profiling=ns.profiling, sample=ns.samples,
+                                                   profiling=ns.profiling, samples=ns.samples,
                                                    cache_a=ns.cache_a, cache_b=ns.cache_b,
                                                    test_set=ns.test))
+
+    end = dtf()
+
+    branch, c_hash, c_msg = get_git_info()
+
+    benchmark_run = BenchmarkRun(
+        start=start, end=end,
+        args=ns.__dict__,
+        dirty=dirty, git_branch=branch, git_commit_hash=c_hash, git_commit_msg=c_msg,
+        result=all_res,
+        env=None if ns.no_env else os.environ,
+    )
+
+    print(benchmark_run.model_dump())
 
 if __name__ == "__main__":
     main()
