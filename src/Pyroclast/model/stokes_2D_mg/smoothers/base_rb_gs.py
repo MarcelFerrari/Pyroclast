@@ -301,7 +301,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             end = dtf()
 
             # Add the timing information
-            self.timings.append(Timing(name=f"{module_name}.{self.__name__}: Preamble",
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
                                        end=end))
@@ -328,7 +328,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                 end = dtf()
 
                 # Add the timing information
-                self.timings.append(Timing(name=f"{module_name}.{self.__name__}: Benchmark",
+                self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                            stage=Stage.BENCHMARK,
                                            start=start,
                                            end=end))
@@ -345,7 +345,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             end = dtf()
 
             # Add the timing information
-            self.timings.append(Timing(name=f"{module_name}.{self.__name__}: Preamble",
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
                                        end=end))
