@@ -105,3 +105,26 @@ class BenchmarkVY(ABC, BaseBenchmark):
         self.vy_rhs  = arguments.vy_rhs if arguments.vy_rhs is None else np.zeros((self.ny1, self.nx1))
 
         self.vy_new = arguments.vy_new if arguments.vy_new else None
+
+
+class BenchmarkSmoother(ABC, BaseBenchmark):
+    vx: np.ndarray
+    vx_new: Optional[np.ndarray] = None
+    vx_rhs: np.ndarray
+
+    vy: np.ndarray
+    vy_new: Optional[np.ndarray] = None
+    vy_rhs: np.ndarray
+
+    def __init__(self, arguments: BenchmarkValidatorSmoother):
+        super().__init__(arguments=arguments)
+
+        self.vx = arguments.vx if arguments.vx is None else np.zeros((self.ny1, self.nx1))
+        self.vx_rhs  = arguments.vx_rhs if arguments.vx_rhs is None else np.zeros((self.ny1, self.nx1))
+
+        self.vx_new = arguments.vx_new if arguments.vx_new is not None else None
+
+        self.vy = arguments.vy if arguments.vy is None else np.zeros((self.ny1, self.nx1))
+        self.vy_rhs  = arguments.vy_rhs if arguments.vy_rhs is None else np.zeros((self.ny1, self.nx1))
+
+        self.vy_new = arguments.vy_new if arguments.vy_new else None
