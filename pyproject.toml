@@ -26,6 +26,7 @@ packages = [{include = "Pyroclast", from="src"}]
 
 [tool.poetry.group.dev.dependencies]
 pyinstrument = "^5.0.2"
+tzlocal = "^5.3.1"
 
 
 
