@@ -253,3 +253,4 @@ setup-env.sh
 *.ckpt
 *.checkpoint
 .idea/
+.results/
