@@ -41,6 +41,8 @@ class BaseBenchmark:
 
     timings: list[Timing]
 
+    args: BaseBenchmarkValidator
+
     def __init__(self,
                  arguments: BaseBenchmarkValidator):
         """
@@ -61,6 +63,7 @@ class BaseBenchmark:
         self.boundary_condition = arguments.boundary_condition
 
         self.timings = []
+        self.args = arguments
 
     def benchmark(self):
         """
@@ -97,6 +100,8 @@ class BenchmarkVX(ABC, BaseBenchmark):
     vy: np.ndarray
     vx_rhs: np.ndarray
 
+    args: BenchmarkValidatorVX
+
     def __init__(self, arguments: BenchmarkValidatorVX):
         """
         If the added arguments for the VX case aren't added,
@@ -109,12 +114,16 @@ class BenchmarkVX(ABC, BaseBenchmark):
 
         self.vx_new = arguments.vx_new if arguments.vx_new is not None else None
 
+        self.args = arguments
+
 
 class BenchmarkVY(ABC, BaseBenchmark):
     vy: np.ndarray
     vy_new: Optional[np.ndarray] = None
     vx: np.ndarray
     vy_rhs: np.ndarray
+
+    args: BenchmarkValidatorVY
 
     def __init__(self, arguments: BenchmarkValidatorVY):
         """
@@ -128,6 +137,8 @@ class BenchmarkVY(ABC, BaseBenchmark):
 
         self.vy_new = arguments.vy_new if arguments.vy_new else None
 
+        self.args = arguments
+
 
 class BenchmarkSmoother(ABC, BaseBenchmark):
     vx: np.ndarray
@@ -137,6 +148,8 @@ class BenchmarkSmoother(ABC, BaseBenchmark):
     vy: np.ndarray
     vy_new: Optional[np.ndarray] = None
     vy_rhs: np.ndarray
+
+    args: BenchmarkValidatorSmoother
 
     def __init__(self, arguments: BenchmarkValidatorSmoother):
         super().__init__(arguments=arguments)
@@ -150,3 +163,5 @@ class BenchmarkSmoother(ABC, BaseBenchmark):
         self.vy_rhs  = arguments.vy_rhs if arguments.vy_rhs is None else np.zeros((self.ny1, self.nx1))
 
         self.vy_new = arguments.vy_new if arguments.vy_new else None
+
+        self.args = arguments
