@@ -324,8 +324,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                             dx=self.dx, dy=self.dy,
                             etap=self.eta_p, etab=self.eta_b,
                             vx=self.vx, vy=self.vy,
-                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
-                            max_iter=1)
+                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
             end = dtf()
 
             # Add the timing information
@@ -346,16 +345,16 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             for _ in range(self.args.samples):
                 start = dtf()
-                _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
-                                dx=self.dx, dy=self.dy,
-                                etap=self.eta_p, etab=self.eta_b,
-                                vx=self.vx, vy=self.vy,
-                                relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
-                                max_iter=1)
+                for _ in range(self.args.max_iter):
+                    _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
+                                    dx=self.dx, dy=self.dy,
+                                    etap=self.eta_p, etab=self.eta_b,
+                                    vx=self.vx, vy=self.vy,
+                                    relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
                 end = dtf()
 
                 # Add the timing information
-                self.timings.append(Timing(name=f"{module_name}.{self.__name__}: Benchmark",
+                self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                            stage=Stage.BENCHMARK,
                                            start=start,
                                            end=end))
@@ -372,7 +371,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             end = dtf()
 
             # Add the timing information
-            self.timings.append(Timing(name=f"{module_name}.{self.__name__}: Preamble",
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
                                        end=end))
@@ -389,16 +388,16 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             for _ in range(self.args.samples):
                 start = dtf()
-                _vy_red_black_gs_sweep(nx1=self.nx1, ny1=self.ny1,
-                                       dx=self.dx, dy=self.dy,
-                                       etap=self.eta_p, etab=self.eta_b,
-                                       vx=self.vx, vy=self.vy,
-                                       relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vy_rhs,
-                                       max_iter=1)
+                for _ in range(self.args.max_iter):
+                    _vy_red_black_gs_sweep(nx1=self.nx1, ny1=self.ny1,
+                                           dx=self.dx, dy=self.dy,
+                                           etap=self.eta_p, etab=self.eta_b,
+                                           vx=self.vx, vy=self.vy,
+                                           relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vy_rhs)
                 end = dtf()
 
                 # Add the timing information
-                self.timings.append(Timing(name=f"{module_name}.{self.__name__}: Benchmark",
+                self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                            stage=Stage.BENCHMARK,
                                            start=start,
                                            end=end))
