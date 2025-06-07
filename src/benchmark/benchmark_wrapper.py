@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 
 from .benchmark_validators import (BaseBenchmarkValidator, BenchmarkValidatorVX, BenchmarkValidatorVY,
-                                   BenchmarkValidatorSmoother)
+                                   BenchmarkValidatorSmoother, Timing)
 
 """
 File contains a basic wrapper class that is used to instantiate and run a benchmark.
@@ -27,6 +27,8 @@ class BaseBenchmark:
 
     max_iter: int
 
+    timings: list[Timing]
+
     def __init__(self,
                  arguments: BaseBenchmarkValidator):
         """
@@ -45,6 +47,8 @@ class BaseBenchmark:
 
         self.relax_v = arguments.relax_v
         self.boundary_condition = arguments.boundary_condition
+
+        self.timings = []
 
     def benchmark(self):
         """
