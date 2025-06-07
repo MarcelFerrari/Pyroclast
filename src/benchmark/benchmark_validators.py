@@ -32,6 +32,10 @@ class BaseBenchmarkValidator(BaseModel):
     eta_b: Optional[np.ndarray] = None
     eta_p: Optional[np.ndarray] = None
 
+    # TODO check boundary condition and relax_v is correct
+    boundary_condition: float = Field(-1.0)
+    relax_v: float = Field(0.7)
+
     # Performance options
     cache_block_size_1: Optional[int] = Field(None, gt=0)
     cache_block_size_2: Optional[int] = Field(None, gt=0)

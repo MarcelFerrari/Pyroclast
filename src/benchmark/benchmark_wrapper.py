@@ -22,6 +22,9 @@ class BaseBenchmark:
     eta_b: np.ndarray
     eta_p: np.ndarray
 
+    relax_v: float
+    boundary_condition: float
+
     max_iter: int
 
     def __init__(self,
@@ -39,6 +42,9 @@ class BaseBenchmark:
 
         self.eta_b = np.random.rand(self.ny1, self.nx1) * 1e19 + 1e19
         self.eta_p = np.random.rand(self.ny1, self.nx1) * 1e19 + 1e19
+
+        self.relax_v = arguments.relax_v
+        self.boundary_condition = arguments.boundary_condition
 
     def benchmark(self):
         """
