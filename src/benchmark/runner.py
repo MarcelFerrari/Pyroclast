@@ -215,6 +215,17 @@ def get_git_info() -> tuple[str, str, str]:
     return branch_name, commit_hash, commit_msg
 
 
+def print_statistics(run: BenchmarkRun):
+    """
+    For each benchmark type, extract the statistics and print them
+    """
+    tbl = []
+    # TODO print formatted statistics
+
+
+
+
+
 def main():
     """
     Main function to make it runnable from other locations.
