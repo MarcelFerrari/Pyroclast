@@ -3,7 +3,8 @@ from typing import Optional
 
 import numpy as np
 
-from .benchmark_validators import BaseBenchmarkValidator, BenchmarkValidatorVX, BenchmarkValidatorVY
+from .benchmark_validators import (BaseBenchmarkValidator, BenchmarkValidatorVX, BenchmarkValidatorVY,
+                                   BenchmarkValidatorSmoother)
 
 """
 File contains a basic wrapper class that is used to instantiate and run a benchmark.
