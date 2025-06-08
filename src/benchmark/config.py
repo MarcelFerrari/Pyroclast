@@ -7,6 +7,8 @@ class BenchmarkConfig(BaseModel):
     day_folders: bool = Field(True, description="Whether the benchmark results grouped by day and stored in "
                                                 "subfolders for each day.")
     hash_suffix: bool = Field(True, description="Whether to add the json hash to the file name")
+    validate_hash_on_read: bool = Field(True, description="Whether to validate the hash against the file content "
+                                                          "when reading in the file")
 
 
 if os.environ.get("PYROCLAST_BENCHMARK_CONFIG") is not None:
