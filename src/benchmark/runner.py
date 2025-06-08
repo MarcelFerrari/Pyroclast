@@ -246,8 +246,6 @@ def main():
 
     branch, c_hash, c_msg = get_git_info()
 
-    print(ns.__dict__)
-
     # Prevent all empty
     if ns.dimension is None and ns.x_dimension is None and ns.y_dimension is None:
         raise ValueError("At least one kind of dimension needs to be provided "
