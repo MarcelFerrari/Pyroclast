@@ -76,6 +76,7 @@ parser.add_argument("-q", "--quiet",
                     help="Suppress warnings")
 parser.add_argument("-c", "--cpu",
                     type=int,
+                    nargs="+",
                     default=None,
                     help="Number of CPU cores to use")
 parser.add_argument(f"-e", "--no-env",
@@ -92,6 +93,7 @@ def benchmark_single_module(module_name: str,
                             test_set: list[BenchmarkType],
                             cache_a: int,
                             cache_b: int,
+                            cpu_count: int,
                             ) -> list[BenchmarkResults]:
     """
     Run the benchmark for a single module. Requires this module to have defined a benchmark factory.
@@ -133,7 +135,8 @@ def benchmark_single_module(module_name: str,
             module=module_name,
             benchmark_type=BenchmarkType.SMOOTHER,
             input_model=args,
-            timings=local_benchmark.timings
+            timings=local_benchmark.timings,
+            cpu_count=cpu_count,
         ))
 
     # Run benchmark on vx_subroutine
@@ -154,7 +157,8 @@ def benchmark_single_module(module_name: str,
             module=module_name,
             benchmark_type=BenchmarkType.VX,
             input_model=args,
-            timings=local_benchmark.timings
+            timings=local_benchmark.timings,
+            cpu_count=cpu_count,
         ))
 
     # Run benchmark on vy_subroutine
@@ -175,7 +179,8 @@ def benchmark_single_module(module_name: str,
             module=module_name,
             benchmark_type=BenchmarkType.VY,
             input_model=args,
-            timings=local_benchmark.timings
+            timings=local_benchmark.timings,
+            cpu_count=cpu_count,
         ))
 
     return results
@@ -267,9 +272,9 @@ def main():
     if ns.samples > 1 and ns.profiling and not ns.quiet:
         warnings.warn("Profiling in Combination with multiple samples increases runtime drastically")
 
-    if ns.cpu is not None:
-        print(f"Setting number of threads")
-        nb.set_num_threads(ns.cpu)
+    if ns.cpu is None:
+        print(f"Process count not given, defaulting to os.cpu_count()={os.cpu_count()}")
+        ns.cpu = [os.cpu_count()]
 
     # Check git status
     staged, unstaged = check_git_status()
@@ -283,15 +288,20 @@ def main():
 
     start = dtf()
 
-    # Run benchmark on modules and dimension list
-    for module in ns.modules:
-        for dim in dim_list:
-            print(f"Running Module: {module} with dimensions: x={dim[0]}, y={dim[1]}")
-            all_res.extend(benchmark_single_module(module_name=module,
-                                                   nx=dim[0], ny=dim[1], max_iter=ns.iterations,
-                                                   profiling=ns.profiling, samples=ns.samples,
-                                                   cache_a=ns.cache_a, cache_b=ns.cache_b,
-                                                   test_set=ns.test))
+    for cc in ns.cpu:
+        # Set the cpu count
+        print(f"Working on {cc} cpu's")
+        nb.set_num_threads(cc)
+
+        # Run benchmark on modules and dimension list
+        for module in ns.modules:
+            for dim in dim_list:
+                print(f"Running Module: {module} with dimensions: x={dim[0]}, y={dim[1]}")
+                all_res.extend(benchmark_single_module(module_name=module,
+                                                       nx=dim[0], ny=dim[1], max_iter=ns.iterations,
+                                                       profiling=ns.profiling, samples=ns.samples,
+                                                       cache_a=ns.cache_a, cache_b=ns.cache_b,
+                                                       test_set=ns.test, cpu_count=cc))
 
     end = dtf()
 
