@@ -186,6 +186,37 @@ class BenchmarkResults(BaseModel):
 
         return self
 
+    @property
+    def get_preamble_timing(self) -> Optional[Timing]:
+        """
+        Get the timing of the preamble
+        """
+        p = list(filter(lambda timing: timing.stage == Stage.PREAMBLE, self.timings))
+
+        if len(p) == 0:
+            return None
+
+        return p[0]
+
+    @property
+    def get_epilog_timing(self) -> Optional[Timing]:
+        """
+        Get the timing of the epilogue
+        """
+        e = list(filter(lambda timing: timing.stage == Stage.EPILOG, self.timings))
+
+        if len(e) == 0:
+            return None
+
+        return e[0]
+
+    @property
+    def get_benchmark_timings(self) -> list[Timing]:
+        """
+        Get all benchmark timings.
+        """
+        b = list(filter(lambda timing: timing.stage == Stage.BENCHMARK, self.timings))
+        return b
 
 class BenchmarkRun(BaseModel):
     """
