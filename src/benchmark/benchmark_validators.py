@@ -203,7 +203,7 @@ class BenchmarkResults(BaseModel):
         return self
 
     @property
-    def get_preamble_timing(self) -> Optional[Timing]:
+    def preamble_timing(self) -> Optional[Timing]:
         """
         Get the timing of the preamble
         """
@@ -215,7 +215,7 @@ class BenchmarkResults(BaseModel):
         return p[0]
 
     @property
-    def get_epilog_timing(self) -> Optional[Timing]:
+    def epilog_timing(self) -> Optional[Timing]:
         """
         Get the timing of the epilogue
         """
@@ -227,7 +227,7 @@ class BenchmarkResults(BaseModel):
         return e[0]
 
     @property
-    def get_benchmark_timings(self) -> list[Timing]:
+    def benchmark_timings(self) -> list[Timing]:
         """
         Get all benchmark timings.
         """
