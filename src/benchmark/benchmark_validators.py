@@ -170,6 +170,7 @@ class BenchmarkResults(BaseModel):
     timings: list[Timing] = Field(..., min_length=1, description="List of timing information")
     input_model: BenchmarkValidatorSmoother | BenchmarkValidatorVX | BenchmarkValidatorVY
     module: str = Field(..., description="Which is being benchmarked")
+    cpu_count: int = Field(..., gt=0, description="Number of CPU cores to use"),
     benchmark_type: BenchmarkType = Field(..., description="Which benchmark of the module is executed")
 
     @model_validator(mode="after")
