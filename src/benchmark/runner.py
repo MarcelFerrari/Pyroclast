@@ -5,20 +5,18 @@ import importlib
 import itertools
 import os
 import warnings
-from typing import Callable, Type, Optional, Any
+from typing import Callable, Type, Optional
 
-import numpy as np
-import tabulate
-from git import Repo
 import numba as nb
+from git import Repo
 
+import benchmark.results_processing as string_util
 import benchmark.defaults as defaults
-from benchmark.utils import dtf
+from Pyroclast.string_util import print_banner
 from benchmark.benchmark_validators import (BenchmarkType, BenchmarkResults, BenchmarkRun,
                                             BenchmarkValidatorSmoother, BenchmarkValidatorVX, BenchmarkValidatorVY)
 from benchmark.benchmark_wrapper import BenchmarkSmoother, BenchmarkVX, BenchmarkVY
-from Pyroclast.string_util import print_banner
-
+from benchmark.utils import dtf
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--iterations",
@@ -227,17 +225,6 @@ def get_git_info() -> tuple[str, str, str]:
     return branch_name, commit_hash, commit_msg
 
 
-def print_statistics(run: BenchmarkRun):
-    """
-    For each benchmark type, extract the statistics and print them
-    """
-    tbl = []
-    # TODO print formatted statistics
-
-
-
-
-
 def main():
     """
     Main function to make it runnable from other locations.
@@ -245,6 +232,8 @@ def main():
     print_banner()
 
     ns = parser.parse_args()
+
+    print(ns)
 
     # Dim in x, y tuple
     dim_list: list[tuple[int, int]] = []
@@ -318,7 +307,12 @@ def main():
         env=None if ns.no_env else os.environ,
     )
 
-    print(benchmark_run.model_dump_json(indent=2))
+    if ns.verbose:
+        # TODO this needs to move into a json file
+        print(benchmark_run.model_dump_json(indent=2))
+
+        string_util.print_statistics(benchmark_run, True)
+
 
 if __name__ == "__main__":
     main()
