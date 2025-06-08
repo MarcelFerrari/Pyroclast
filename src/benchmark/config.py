@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 
 class BenchmarkConfig(BaseModel):
-    results_store: str = Field("[absolute] path to where the benchmark results are stored.")
+    results_store: str = Field(...,"[absolute] path to where the benchmark results are stored.")
     day_folders: bool = Field(True, description="Whether the benchmark results grouped by day and stored in "
                                                 "subfolders for each day.")
     hash_suffix: bool = Field(True, description="Whether to add the json hash to the file name")
