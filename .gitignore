@@ -254,3 +254,4 @@ setup-env.sh
 *.checkpoint
 .idea/
 .results/
+*benchmark_config.json
