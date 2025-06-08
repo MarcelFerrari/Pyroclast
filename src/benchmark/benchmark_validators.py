@@ -218,6 +218,7 @@ class BenchmarkResults(BaseModel):
         b = list(filter(lambda timing: timing.stage == Stage.BENCHMARK, self.timings))
         return b
 
+
 class BenchmarkRun(BaseModel):
     """
     Represents the results of a call to the runner script.
