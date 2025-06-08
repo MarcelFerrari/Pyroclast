@@ -22,9 +22,9 @@ from Pyroclast.string_util import print_banner
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--iterations",
-                    default=128,
+                    default=defaults.max_iter,
                     type=int,
-                    help="Number of iterations")
+                    help=f"Number of iterations. Default: {defaults.max_iter}")
 parser.add_argument("-d", "--dimension",
                     default=None,
                     type=int,
@@ -53,14 +53,15 @@ parser.add_argument("-p", "--profiling",
                     action="store_true",
                     help="Perform Profiling using pyinstrument")
 parser.add_argument("-s", "--samples",
-                    default=1,
+                    default=defaults.number_of_samples,
                     type=int,
-                    help="Number of samples to generate")
+                    help=f"Number of samples to generate. Default: {defaults.number_of_samples}")
 parser.add_argument("-t", "--test",
-                    default=[BenchmarkType.SMOOTHER, BenchmarkType.VX, BenchmarkType.VY],
+                    default=defaults.types,
                     nargs="+",
                     type=BenchmarkType,
-                    help="List of benchmark types to test (default is all, can be limited to only a subfunction)")
+                    help=f"List of benchmark types to test (default is all, can be limited to only a subfunction). "
+                         f"Default: {defaults.types}")
 parser.add_argument("-a", "--cache_a",
                     default=None,
                     type=int,
@@ -76,15 +77,18 @@ parser.add_argument("-f", "--force",
                     help="Force execution of benchmark with pending changes.")
 parser.add_argument("-q", "--quiet",
                     action="store_true",
-                    help="Suppress warnings")
+                    help="Suppress Warning")
 parser.add_argument("-c", "--cpu",
                     type=int,
                     nargs="+",
                     default=None,
-                    help="Number of CPU cores to use")
-parser.add_argument(f"-e", "--no-env",
-                    action="store_false",
+                    help=f"Number of CPU cores to use. Default: {os.cpu_count()}")
+parser.add_argument("-e", "--no-env",
+                    action="store_true",
                     help="Disable storing of environment variables.")
+parser.add_argument("-v", "--verbose",
+                    action="store_true",
+                    help="Enable verbose output. Print result tables.")
 
 
 def benchmark_single_module(module_name: str,
