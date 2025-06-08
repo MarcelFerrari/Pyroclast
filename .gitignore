@@ -255,3 +255,4 @@ setup-env.sh
 .idea/
 .results/
 local_scripts/
+*benchmark_config.json
