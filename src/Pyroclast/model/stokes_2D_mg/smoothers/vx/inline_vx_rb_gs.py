@@ -14,7 +14,7 @@ check that inlining doesn't degrade performance
 @nb.njit(cache=True, inline="always")
 def compute_coeffs(i: int, j: int,
                    dx: float, dy: float,
-                   etap: np.ndarray, etab: np.ndarray,):
+                   etap: np.ndarray, etab: np.ndarray):
     """
     External compute coeffs function to reduce on code duplication
     """
