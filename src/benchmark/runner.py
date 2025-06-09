@@ -233,6 +233,60 @@ def get_git_info() -> tuple[str, str, str]:
     return branch_name, commit_hash, commit_msg
 
 
+def handle_store_run(run: BenchmarkRun, ns: argparse.Namespace):
+    """
+    Function implements the storage handling functionality.
+    """
+    # Parse output script parameter
+    dest = None
+    if ns.output is not None:
+        dest = os.path.abspath(ns.output)
+
+    # Attempt to get the config
+    try:
+        cfg = config.get_config()
+    except FileNotFoundError:
+        cfg = None
+
+    # No output provided, config doesn't exist. -> Dump to stdout
+    if dest is None:
+        # Print warning
+        if not ns.quiet and cfg is None:
+            warnings.warn("No config file present. Writing benchmark data to stdout:")
+
+        # Dump to stdout if config doesn't exist and now output is provided
+        if cfg is None:
+            print(run.model_dump_json())
+
+        # Dump to directory specified in config
+        else:
+            # Store the run on the file system, using defaults
+            res_proc.store_benchmark_run(run)
+        return
+
+    assert dest is not None, "INVARIANT: Destination must exist."
+
+    # Get custom file name and custom direcory
+    if os.path.isfile(dest):
+        tgt_dir, file_name = os.path.split(dest)
+    elif os.path.isdir(dest):
+        tgt_dir = dest
+        file_name = None
+    else:
+        if not ns.quiet:
+            warnings.warn("Invalid Destination. Destination must be a directory or file. Dumping result to stdout")
+
+        # Edge case of weird target (e.g. socket)
+        print(run.model_dump_json())
+        return
+
+    # INFO: BenchmarkConfig correct, validate_hash_on_read has default.
+    new_cfg = config.BenchmarkConfig(results_store=tgt_dir, day_folders=False, hash_suffix=True)
+
+    # store with new config
+    res_proc.store_benchmark_run(run, bmc=new_cfg, file_name=file_name)
+
+
 def main():
     """
     Main function to make it runnable from other locations.
