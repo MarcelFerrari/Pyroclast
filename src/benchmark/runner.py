@@ -368,6 +368,11 @@ def benchmark_lister() -> tuple[list[str], list[str], list[str]]:
     return vx_benchmarks, vy_benchmarks, smoother_benchmarks
 
 
+# ======================================================================================================================
+# Main function which calls all other functions (needed to expose this command)
+# ======================================================================================================================
+
+
 def main():
     """
     Main function to make it runnable from other locations.
