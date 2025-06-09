@@ -9,4 +9,4 @@ def benchmark_factory() -> tuple[Optional[Type["BenchmarkSmoother"]],
     Returns Benchmark Classes needed for benchmarking. Done via factory to avoid issues with the `benchmark` package
     not being available in a production environment.
     """
-    pass
+    return None, None, None
