@@ -282,23 +282,34 @@ def main():
         else:
             dirty = True
 
+    # Start of overall benchmark
     start = dtf()
 
-    for cc in ns.cpu:
-        # Set the cpu count
-        print(f"Working on {cc} cpu's")
-        nb.set_num_threads(cc)
+    for ca in ns.cache_a:
+        if len(ns.cache_a) > 1:
+            print(f"Testing with Cache Size A = {ca}")
 
-        # Run benchmark on modules and dimension list
-        for module in ns.modules:
-            for dim in dim_list:
-                print(f"Running Module: {module} with dimensions: x={dim[0]}, y={dim[1]}")
-                all_res.extend(benchmark_single_module(module_name=module,
-                                                       nx=dim[0], ny=dim[1], max_iter=ns.iterations,
-                                                       profiling=ns.profiling, samples=ns.samples,
-                                                       cache_a=ns.cache_a, cache_b=ns.cache_b,
-                                                       test_set=ns.test, cpu_count=cc))
+        for cb in ns.cache_b:
+            if len(ns.cache_b) > 1:
+                print(f"Testing with Cache Size B = {cb}")
 
+            for cc in ns.cpu:
+                # Set the cpu count
+                nb.set_num_threads(cc)
+                if len(ns.cpu) > 1:
+                    print(f"Working on {cc} cpu's")
+
+                # Run benchmark on modules and dimension list
+                for module in ns.modules:
+                    for dim in dim_list:
+                        print(f"Running Module: {module} with dimensions: x={dim[0]}, y={dim[1]}")
+                        all_res.extend(benchmark_single_module(module_name=module,
+                                                               nx=dim[0], ny=dim[1], max_iter=ns.iterations,
+                                                               profiling=ns.profiling, samples=ns.samples,
+                                                               cache_a=ca, cache_b=cb,
+                                                               test_set=ns.test, cpu_count=cc))
+
+    # End of overall benchmark
     end = dtf()
 
     benchmark_run = BenchmarkRun(
