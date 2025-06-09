@@ -12,9 +12,7 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
-
-
-from benchmark_validators import BenchmarkType
+from .benchmark_validators import BenchmarkType
 
 max_iter = 128
 number_of_samples = 1

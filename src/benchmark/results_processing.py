@@ -14,16 +14,17 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """     
 
 
-import os.path
-
-import tabulate
-from typing import Any
-import numpy as np
+import base64
 import hashlib
+import os.path
+import os.path
+from typing import Any
+
+import numpy as np
+import tabulate
+
 from benchmark.benchmark_validators import BenchmarkResults, BenchmarkRun
 from benchmark.config import config
-import base64
-
 
 """
 This file contains some functionality to handle formatting and printing of benchmark results.
