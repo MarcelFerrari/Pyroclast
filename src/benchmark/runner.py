@@ -61,12 +61,14 @@ parser.add_argument("-t", "--test",
                     help=f"List of benchmark types to test (default is all, can be limited to only a subfunction). "
                          f"Default: {defaults.types}")
 parser.add_argument("-a", "--cache_a",
-                    default=None,
+                    default=[None],
                     type=int,
+                    nargs="+",
                     help="Cache Block size. If benchmark requires cache block size and it is not provided, "
                          "an error will be raised")
 parser.add_argument("-b", "--cache_b",
-                    default=None,
+                    default=[None],
+                    nargs="+",
                     type=int,
                     help="Secondary Cache Block size. If benchmark requires second cache block size and it is not provided, "
                          "an error will be raised")
