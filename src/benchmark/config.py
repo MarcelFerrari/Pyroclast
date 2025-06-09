@@ -17,9 +17,15 @@ else:
     _config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "scripts",
                                                 "benchmark_config.json"))
 
-if not os.path.exists(_config_path):
-    raise FileNotFoundError(f"Config file {_config_path} not found.")
+def get_config():
+    """
+    Created a config factory instead of loading the config at import time to prevent issues from the raise Error
+    """
+    if not os.path.exists(_config_path):
+        raise FileNotFoundError(f"Config file {_config_path} not found.")
 
 
-with open(_config_path, "r") as f:
-    config = BenchmarkConfig.model_validate_json(f.read())
+    with open(_config_path, "r") as f:
+        config = BenchmarkConfig.model_validate_json(f.read())
+
+    return config
