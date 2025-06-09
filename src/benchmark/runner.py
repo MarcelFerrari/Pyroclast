@@ -380,11 +380,15 @@ def main():
         env=None if ns.no_env else os.environ,
     )
 
-    if ns.verbose:
-        # TODO this needs to move into a json file
+    # Print
+    if ns.print_table:
         print(benchmark_run.model_dump_json(indent=2))
 
-        string_util.print_statistics(benchmark_run, True)
+        print(f"Benchmark of {start.isoformat()}, time taken: {(end - start).total_seconds()}")
+        res_proc.print_statistics(benchmark_run, True)
+
+    handle_store_run(benchmark_run, ns)
+
 
 
 if __name__ == "__main__":
