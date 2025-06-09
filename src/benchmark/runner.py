@@ -11,8 +11,8 @@ import numba as nb
 from git import Repo
 
 import benchmark.config as config
-import benchmark.results_processing as res_proc
 import benchmark.defaults as defaults
+import benchmark.results_processing as res_proc
 from Pyroclast.string_util import print_banner
 from benchmark.benchmark_validators import (BenchmarkType, BenchmarkResults, BenchmarkRun,
                                             BenchmarkValidatorSmoother, BenchmarkValidatorVX, BenchmarkValidatorVY)
