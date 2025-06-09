@@ -55,7 +55,7 @@ class UzawaSolver:
         # Set the residual tracker to use the same window size as the accelerator
         # We need to ensure that AA can build up a long enough history to be effective
         # before signaling convergence.
-        self.tracker = ResidualTracker(m=accel_m, tol=1e-19, convergence_thresh=2.5e-2)
+        self.tracker = ResidualTracker(m=accel_m, tol_p=1e-17, tol_vx=1e-7, tol_vy = 1e-7, convergence_thresh=1e-2, divergence_thresh=2.0)
 
     @property
     def fine(self):
@@ -83,8 +83,7 @@ class UzawaSolver:
 
     def solve(self, p_rhs, vx_rhs, vy_rhs,
               p_guess=None, vx_guess=None, vy_guess=None,
-              max_cycles=50, tol=1e-7,
-              nu1=3, nu2=3, velocity_cycles=2):
+              max_cycles=1000, nu1=3, nu2=3, velocity_cycles=2):
         """Run Uzawa iterations until convergence."""
 
         if p_guess is not None:

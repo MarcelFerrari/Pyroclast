@@ -93,10 +93,10 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         solver = UzawaSolver(ctx, levels=4, scaling=2.5)
 
         # Solve the system
-        max_cycles = 500
+        max_cycles = p.get('max_uzawa_iterations', 1000)
         s.p, s.vx, s.vy = solver.solve(
             self.p_rhs, self.vx_rhs, self.vy_rhs,
             p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy,
-            max_cycles=max_cycles, tol=1e-7,
+            max_cycles=max_cycles,
             nu1=5, nu2=5)
 

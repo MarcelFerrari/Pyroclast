@@ -15,8 +15,11 @@ class ViscosityRescaler:
         if not self.enable:
             return
 
+        # Original viscosity fields
         self.orig_etab = state.etab
         self.orig_etap = state.etap
+
+        # Rescaling parameters
         self.cycle_count = 0
         self.rescale_count = 0
         self.rescale_interval = params.eta_cycle_interval
@@ -26,21 +29,30 @@ class ViscosityRescaler:
         self.etab_min = np.nanmin(self.orig_etab[:-1, :-1])
         self.etap_min = np.nanmin(self.orig_etap[:-1, :-1])
 
+        # Optional tolerances
+        self.tol_p = params.get("tol_p", 1e-16)
+        self.tol_vx = params.get("tol_vx", 1e-6)
+        self.tol_vy = params.get("tol_vy", 1e-6)
+
+        # Apply initial scaling
         self._apply_scaling()
         self._propagate()
 
     def done_rescaling(self):
+        """Check whether all planned rescaling cycles are done."""
         if not self.enable:
             return True
         return self.rescale_count >= self.total_rescales
 
     def _propagate(self):
+        """Propagate viscosity values down the grid hierarchy."""
         for lvl in range(1, len(self.hierarchy)):
             prev = self.hierarchy[lvl - 1]
             coarse = self.hierarchy[lvl]
             coarse.restrict_properties(prev)
 
     def _apply_scaling(self):
+        """Apply viscosity rescaling to the finest level."""
         if not self.enable:
             return
         theta = min(self.progress, 1.0)
@@ -51,6 +63,7 @@ class ViscosityRescaler:
         fine.etap = np.nan_to_num(fine.etap, copy=False)
 
     def update_viscosity(self):
+        """Possibly rescale viscosity based on current cycle count."""
         if not self.enable:
             return False
 
@@ -63,7 +76,7 @@ class ViscosityRescaler:
         print(f"Rescaling viscosity: cycle {self.cycle_count}, "
               f"rescale {self.rescale_count + 1}/{self.total_rescales}, "
               f"progress {self.progress:.2f}")
-        
+
         self.progress = min(1.0, self.progress + self.progress_step)
         self._apply_scaling()
         self._propagate()
@@ -71,4 +84,3 @@ class ViscosityRescaler:
         self.cycle_count = 0
         self.rescale_count += 1
         return True
-

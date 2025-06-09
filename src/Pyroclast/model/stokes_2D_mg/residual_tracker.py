@@ -1,67 +1,49 @@
-"""
-Pyroclast: Scalable Geophysics Models
-https://github.com/MarcelFerrari/Pyroclast
-
-File: residual_tracker.py
-Description: This file implements a residual tracker to monitor the convergence of
-             the Stokes residuasls.
-
-Author: Marcel Ferrari
-Copyright (c) 2025 Marcel Ferrari.
-
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at https://mozilla.org/MPL/2.0/.
-"""
-
 import numpy as np
 from collections import deque
 
 class ResidualTracker:
-    def __init__(self, m, tol, convergence_thresh = 1e-3):
+    def __init__(self, m, tol_p, tol_vx, tol_vy, convergence_thresh, divergence_thresh):
         """
         Args:
             m: Number of recent residuals to track.
-            tol: Convergence tolerance.
+            tol_p: Convergence tolerance for pressure.
+            tol_vx: Convergence tolerance for vx.
+            tol_vy: Convergence tolerance for vy.
             convergence_thresh: Relative change threshold to detect convergence.
         """
         self.m = m
-        self.tol = tol
+        self.tol_p = tol_p
+        self.tol_vx = tol_vx
+        self.tol_vy = tol_vy
         self.convergence_thresh = convergence_thresh
-        self.history = {
-            'p': deque(maxlen=m),
-            'vx': deque(maxlen=m),
-            'vy': deque(maxlen=m)
-        }
+        self.divergence_thresh = divergence_thresh
+
+        self.p_history = deque(maxlen=m)
+        self.vx_history = deque(maxlen=m)
+        self.vy_history = deque(maxlen=m)
 
     def update(self, p_res: float, vx_res: float, vy_res: float) -> bool:
         """Update residual history and check for convergence.
-        
+
         Returns:
-            True if converged or converged, False otherwise.
+            True if converged, False otherwise.
         """
-        self.history['p'].append(p_res)
-        self.history['vx'].append(vx_res)
-        self.history['vy'].append(vy_res)
+        self.p_history.append(p_res)
+        self.vx_history.append(vx_res)
+        self.vy_history.append(vy_res)
 
-        # Check if the residuals fall below tolerance
-        if max(p_res, vx_res, vy_res) < self.tol:
-            return True
-
-        # If we have fewer than m values, we can't assess convergence
-        if len(self.history['p']) < self.m:
+        if len(self.p_history) < self.m:
             return False
 
-        # Check convergence for each component
-        converged = True
-        for key, hist in self.history.items():
-            residuals = np.array(hist)
-            if np.min(residuals) < residuals[0] * (1 - self.convergence_thresh):
-                converged = False
-                break
-        
-        return converged
+        def has_converged(history):
+            residuals = np.array(history)
+            return np.mean(residuals) >= residuals[0] * (1 - self.convergence_thresh)
+
+        return (has_converged(self.p_history) or self.p_history[-1] < self.tol_p) and \
+               (has_converged(self.vx_history) or self.vx_history[-1] < self.tol_vx) and \
+               (has_converged(self.vy_history) or self.vy_history[-1] < self.tol_vy)
 
     def reset(self):
-        for key in self.history:
-            self.history[key].clear()
+        self.p_history.clear()
+        self.vx_history.clear()
+        self.vy_history.clear()
