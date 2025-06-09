@@ -43,8 +43,8 @@ parser.add_argument("-y", "--y-dimension",
                          "DO NOT COMBINE WITH -d")
 parser.add_argument("-m", "--modules",
                     nargs="+",
+                    default=None,
                     type=str,
-                    required=True,
                     help="Modules to test")
 
 # Testing Options
