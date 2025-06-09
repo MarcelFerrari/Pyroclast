@@ -1,12 +1,14 @@
-import os.path
-
-import tabulate
-from typing import Any
-import numpy as np
-import hashlib
-from benchmark.benchmark_validators import BenchmarkResults, BenchmarkRun
-from benchmark.config import config
 import base64
+import hashlib
+import os.path
+from typing import Any
+from typing import Optional
+
+import numpy as np
+import tabulate
+
+from benchmark.benchmark_validators import BenchmarkResults, BenchmarkRun
+from benchmark.config import get_config, BenchmarkConfig
 
 
 """
