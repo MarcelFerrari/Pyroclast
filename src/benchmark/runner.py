@@ -385,7 +385,7 @@ def main():
         print(benchmark_run.model_dump_json(indent=2))
 
         print(f"Benchmark of {start.isoformat()}, time taken: {(end - start).total_seconds()}")
-        res_proc.print_statistics(benchmark_run, True)
+        res_proc.print_statistics(benchmark_run, False)
 
     handle_store_run(benchmark_run, ns)
 
