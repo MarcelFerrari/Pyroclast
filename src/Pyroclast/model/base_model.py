@@ -16,28 +16,17 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 class BaseModel:
-    def set_context(self, ctx):
-        self.ctx = ctx
-
-    def initialize(self):
-        raise NotImplementedError(f"Grid class {self.__class__.__name__} must implement initialize method")
-        
-    def finalize(self):
-        raise NotImplementedError(f"Grid class {self.__class__.__name__} must implement finalize method")
-
-    def __getstate__(self):
-        # Return a dictionary with only the essential attributes
-        state = self.__dict__.copy()
-        state.pop('ctx', None)  # Exclude weak references
-        return state
-
-    def __setstate__(self, state):
-        # Restore the object's state from the unpickled state dictionary
-        self.__dict__.update(state)
-        self.ctx = None  # Reset weak reference
-
-    def solve(self):
-        raise NotImplementedError(f"Model class {self.__class__.__name__} must implement solve method")
+    def __init__(self, ctx):
+        raise NotImplementedError()
     
-    def update_time_step(self):
-        raise NotImplementedError(f"Model class {self.__class__.__name__} must implement update_time_step method")
+    def dump(self, ctx):
+        pass
+    
+    def finalize(self, ctx):
+        pass
+
+    def solve(self, ctx):
+        raise NotImplementedError()
+    
+    def update_time_step(self, ctx):
+        raise NotImplementedError()

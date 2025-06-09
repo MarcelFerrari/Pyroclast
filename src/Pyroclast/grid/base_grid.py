@@ -16,25 +16,11 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 class BaseGrid:
-    def set_context(self, ctx):
-        self.ctx = ctx
-
-    def initialize(self):
-        raise NotImplementedError(f"Grid class {self.__class__.__name__} must implement initialize method")
-        
-    def finalize(self):
-        pass
+    def __init__(self, ctx):
+        raise NotImplementedError()
     
-    def __getstate__(self):
-        # Return a dictionary with only the essential attributes
-        state = self.__dict__.copy()
-        state.pop('ctx', None)  # Exclude weak references
-        return state
-
-    def __setstate__(self, state):
-        # Restore the object's state from the unpickled state dictionary
-        self.__dict__.update(state)
-        self.ctx = None  # Reset weak reference
-
-    def interpolate(self):
-        raise NotImplementedError(f"Grid class {self.__class__.__name__} must implement interpolate method")
+    def finalize(self, ctx):
+        pass
+        
+    def interpolate(self, ctx):
+        raise NotImplementedError()

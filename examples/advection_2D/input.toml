@@ -1,43 +1,40 @@
 [options]
 grid = "staggered2D.BasicStaggered2D"
-pool = "inclusion2D.SquareInclusion"
-model = "stokes_continuity_2D_GMG.StokesContinuity2D"
+pool = "inclusion2D.RectangularInclusion"
+model = "advection_2D.ConstantVelocityAdvection2D"
 checkpoint_interval = 100000
+framedump_interval = 20
 
-[params]
-# Frame dumping
-dump_interval = 100
+[parameters]
+# Initial time step
+dt_initial = 69.420
 
 # Time integration options
-max_iter=1
+max_iterations=800
 
 # Grid options
 xsize = 100000 # Hortizontal size, m
 ysize = 100000 # Vertical size, m
-nx = 400      # Horizontal resolution
-ny = 500      # Vertical resolution
-gy = 10.0     # Vertical gravity, m/s^2
+nx = 101       # Horizontal resolution
+ny = 101       # Vertical resolution
+gy = 10.0      # Vertical gravity, m/s^2
 
 # Marker options
 # Boundary conditions: no slip=1, free slip=-1
 BC = -1
-dispmax = 0.5
 
 # Marker options
 nmpcx = 4 # Number of markers per cell in x direction
 nmpcy = 4 # Number of markers per cell in y direction
 
 # Inclusion options
-r = 20000 # Inclusion radius, m
+h = 20000 # Inclusion height, m
+w = 50000 # Inclusion radius, m
+
+L = 5000
 
 # Material options
 eta_plume = 1e18
 rho_plume = 3200.0
 eta_mantle = 1e19
 rho_mantle = 3300.0
-p_ref = 1e9  # Reference pressure at (i, j) = (1, 1)
-
-# Scaling parameters
-p_scale = 1.0
-v_scale = 1.0
-

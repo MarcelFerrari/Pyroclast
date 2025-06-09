@@ -136,7 +136,7 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
         yidx = compute_idx(y, ym)
     elif indexing == "bisect":
         xidx = bisect_idx(x, xm, nx)
-        yidx = bisect_idx(y, ym, nx)
+        yidx = bisect_idx(y, ym, ny)
     else:
         raise ValueError("Invalid indexing mode. Choose 'equidistant' or 'bisect'.")
 

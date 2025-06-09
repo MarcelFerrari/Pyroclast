@@ -1,15 +1,17 @@
 [options]
+model = "stokes_2D.IncompressibleStokes2D"
 grid = "staggered2D.BasicStaggered2D"
 pool = "inclusion2D.CircularInclusion"
-model = "stokes_continuity_2D.StokesContinuity2D"
-checkpoint_interval = 100000
+checkpoint_interval = 5
+framedump_interval = 1
+seed = 42
 
-[params]
-# Frame dumping
-dump_interval = 1
+[parameters]
+# Initial time step
+dt_initial = 1e11
 
 # Time integration options
-max_iter=200
+max_iterations=20
 
 # Grid options
 xsize = 100000 # Hortizontal size, m
@@ -21,7 +23,8 @@ gy = 10.0      # Vertical gravity, m/s^2
 # Marker options
 # Boundary conditions: no slip=1, free slip=-1
 BC = -1
-dispmax = 0.5
+cfl_dispmax = 0.5
+L = 5e3
 
 # Marker options
 nmpcx = 4 # Number of markers per cell in x direction
@@ -31,13 +34,8 @@ nmpcy = 4 # Number of markers per cell in y direction
 r = 20000 # Inclusion radius, m
 
 # Material options
-eta_plume = 1e18
-rho_plume = 3200.0
-eta_mantle = 1e19
-rho_mantle = 3300.0
+eta_plume = 1e26
+rho_plume = 3300.0
+eta_mantle = 1e18
+rho_mantle = 3200.0
 p_ref = 1e9  # Reference pressure at (i, j) = (1, 1)
-
-# Scaling parameters
-p_scale = 1.0
-v_scale = 1.0
-
