@@ -116,6 +116,11 @@ bench_opt.add_argument("-l", "--list",
                        help="List available benchmarks.")
 
 
+# ======================================================================================================================
+# Functions used to perform main benchmarking operations
+# ======================================================================================================================
+
+
 def benchmark_single_module(module_name: str,
                             nx: int,
                             ny: int,
