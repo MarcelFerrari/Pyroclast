@@ -355,7 +355,8 @@ def main():
 
     ns = parser.parse_args()
 
-    print(ns)
+    # if __debug__:
+    #     print(ns)
 
     # Dim in x, y tuple
     dim_list: list[tuple[int, int]] = []
@@ -363,6 +364,16 @@ def main():
     dirty = False
 
     branch, c_hash, c_msg = get_git_info()
+
+    if ns.list is True:
+        vx, vy, smoother = benchmark_lister()
+        print(f"VX Benchmarks:\n" + "\n".join(vx) + "\n")
+        print(f"VY Benchmarks:\n" + "\n".join(vy) + "\n")
+        print(f"Smoother Benchmarks:\n" + "\n".join(smoother) + "\n")
+        return
+
+    if ns.modules is None:
+        raise ValueError("At least one Module is required for benchmarking.")
 
     # Prevent all empty
     if ns.dimension is None and ns.x_dimension is None and ns.y_dimension is None:
