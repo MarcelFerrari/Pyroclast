@@ -87,9 +87,14 @@ parser.add_argument("-c", "--cpu",
 parser.add_argument("-e", "--no-env",
                     action="store_true",
                     help="Disable storing of environment variables.")
-parser.add_argument("-v", "--verbose",
+parser.add_argument("-P", "--print-table",
                     action="store_true",
-                    help="Enable verbose output. Print result tables.")
+                    help="Print result tables.")
+parser.add_argument("-o", "--output",
+                    type=str,
+                    default=None,
+                    help="Output file path or directory. If a directory is provided, "
+                         "the file name generated is datetime(utc) + hash")
 
 
 def benchmark_single_module(module_name: str,
