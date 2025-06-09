@@ -19,85 +19,101 @@ from benchmark.benchmark_validators import (BenchmarkType, BenchmarkResults, Ben
 from benchmark.benchmark_wrapper import BenchmarkSmoother, BenchmarkVX, BenchmarkVY
 from benchmark.utils import dtf
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--iterations",
-                    default=defaults.max_iter,
-                    type=int,
-                    help=f"Number of iterations. Default: {defaults.max_iter}")
-parser.add_argument("-d", "--dimension",
-                    default=None,
-                    type=int,
-                    nargs="+",
-                    help="List of domain sizes to try. DO NOT COMBINE WITH -x and -y")
-parser.add_argument("-x", "--x-dimension",
-                    default=None,
-                    type=int,
-                    nargs="+",
-                    help="List of domain size in x dimension, tests cartesian product of x and y, "
-                         "DO NOT COMBINE with -d")
-parser.add_argument("-y", "--y-dimension",
-                    default=None,
-                    type=int,
-                    nargs="+",
-                    help="List of domain size in x dimension, tests cartesian product of x and y, "
-                         "DO NOT COMBINE WITH -d")
-parser.add_argument("-m", "--modules",
-                    nargs="+",
-                    default=None,
-                    type=str,
-                    help="Modules to test")
+parser = argparse.ArgumentParser(prog="Smoother Benchmark Runner",
+                                 description="Run benchmarks on the smoother implementation of Pyroclast. Both full "
+                                             "smoother benchmarks, as well as partial benchmarks only on the vx or vy "
+                                             "component can be run")
+perf_opt = parser.add_argument_group(
+    title="Performance Options",
+    description="Variables which have a major impact on performance. "
+                "All variables accept >= 1 arguments. The benchmarking algorithm will test the "
+                "cartesian product of all configurations.")
+
+bench_opt = parser.add_argument_group(
+    title="Benchmark Options",
+    description="Variables which determine what the benchmark does. E.g. storage path for results, printing of results,"
+                "optional stack analysis with pyinstrument... "
+)
+perf_opt.add_argument("-i", "--iterations",
+                      default=defaults.max_iter,
+                      type=int,
+                      help=f"Number of iterations. Default: {defaults.max_iter}")
+perf_opt.add_argument("-d", "--dimension",
+                      default=None,
+                      type=int,
+                      nargs="+",
+                      help="List of domain sizes to try. DO NOT COMBINE WITH -x and -y")
+perf_opt.add_argument("-x", "--x-dimension",
+                      default=None,
+                      type=int,
+                      nargs="+",
+                      help="List of domain size in x dimension, tests cartesian product of x and y, "
+                           "DO NOT COMBINE with -d")
+perf_opt.add_argument("-y", "--y-dimension",
+                      default=None,
+                      type=int,
+                      nargs="+",
+                      help="List of domain size in x dimension, tests cartesian product of x and y, "
+                           "DO NOT COMBINE WITH -d")
+perf_opt.add_argument("-m", "--modules",
+                      nargs="+",
+                      default=None,
+                      type=str,
+                      help="Modules to test")
+perf_opt.add_argument("-a", "--cache_a",
+                      default=[None],
+                      type=int,
+                      nargs="+",
+                      help="Cache Block size. If benchmark requires cache block size and it is not provided, "
+                           "an error will be raised. If the benchmark doesn't require a cache_a option, "
+                           "it will be ignored.")
+perf_opt.add_argument("-b", "--cache_b",
+                      default=[None],
+                      nargs="+",
+                      type=int,
+                      help="Secondary Cache Block size. If benchmark requires second cache block size and it is not "
+                           "provided, an error will be raised. If the benchmark doesn't require a cache_b option, "
+                           "it will be ignored.")
+perf_opt.add_argument("-c", "--cpu",
+                      type=int,
+                      nargs="+",
+                      default=None,
+                      help=f"Number of CPU cores to use. Default: {os.cpu_count()}")
 
 # Testing Options
-parser.add_argument("-p", "--profiling",
-                    action="store_true",
-                    help="Perform Profiling using pyinstrument")
-parser.add_argument("-s", "--samples",
-                    default=defaults.number_of_samples,
-                    type=int,
-                    help=f"Number of samples to generate. Default: {defaults.number_of_samples}")
-parser.add_argument("-t", "--test",
-                    default=defaults.types,
-                    nargs="+",
-                    type=BenchmarkType,
-                    help=f"List of benchmark types to test (default is all, can be limited to only a subfunction). "
-                         f"Default: {defaults.types}")
-parser.add_argument("-a", "--cache_a",
-                    default=[None],
-                    type=int,
-                    nargs="+",
-                    help="Cache Block size. If benchmark requires cache block size and it is not provided, "
-                         "an error will be raised")
-parser.add_argument("-b", "--cache_b",
-                    default=[None],
-                    nargs="+",
-                    type=int,
-                    help="Secondary Cache Block size. If benchmark requires second cache block size and it is not provided, "
-                         "an error will be raised")
-parser.add_argument("-f", "--force",
-                    action="store_true",
-                    help="Force execution of benchmark with pending changes.")
-parser.add_argument("-q", "--quiet",
-                    action="store_true",
-                    help="Suppress Warning")
-parser.add_argument("-c", "--cpu",
-                    type=int,
-                    nargs="+",
-                    default=None,
-                    help=f"Number of CPU cores to use. Default: {os.cpu_count()}")
-parser.add_argument("-e", "--no-env",
-                    action="store_true",
-                    help="Disable storing of environment variables.")
-parser.add_argument("-P", "--print-table",
-                    action="store_true",
-                    help="Print result tables.")
-parser.add_argument("-o", "--output",
-                    type=str,
-                    default=None,
-                    help="Output file path or directory. If a directory is provided, "
-                         "the file name generated is datetime(utc) + hash")
-parser.add_argument("-l", "--list",
-                    action="store_true",
-                    help="List available benchmarks.")
+bench_opt.add_argument("-p", "--profiling",
+                       action="store_true",
+                       help="Perform Profiling using pyinstrument")
+bench_opt.add_argument("-s", "--samples",
+                       default=defaults.number_of_samples,
+                       type=int,
+                       help=f"Number of samples to generate. Default: {defaults.number_of_samples}")
+bench_opt.add_argument("-t", "--test",
+                       default=defaults.types,
+                       nargs="+",
+                       type=BenchmarkType,
+                       help=f"List of benchmark types to test (default is all, can be limited to only a subset). "
+                            f"Default: {defaults.types}")
+bench_opt.add_argument("-f", "--force",
+                       action="store_true",
+                       help="Force execution of benchmark with pending changes.")
+bench_opt.add_argument("-q", "--quiet",
+                       action="store_true",
+                       help="Suppress Warning")
+bench_opt.add_argument("-e", "--no-env",
+                       action="store_true",
+                       help="Disable storing of environment variables.")
+bench_opt.add_argument("-P", "--print-table",
+                       action="store_true",
+                       help="Print result tables.")
+bench_opt.add_argument("-o", "--output",
+                       type=str,
+                       default=None,
+                       help="Output file path or directory. If a directory is provided, "
+                            "the file name generated is datetime(utc) + hash")
+bench_opt.add_argument("-l", "--list",
+                       action="store_true",
+                       help="List available benchmarks.")
 
 
 def benchmark_single_module(module_name: str,
