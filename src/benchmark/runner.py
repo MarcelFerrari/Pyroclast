@@ -95,6 +95,9 @@ parser.add_argument("-o", "--output",
                     default=None,
                     help="Output file path or directory. If a directory is provided, "
                          "the file name generated is datetime(utc) + hash")
+parser.add_argument("-l", "--list",
+                    action="store_true",
+                    help="List available benchmarks.")
 
 
 def benchmark_single_module(module_name: str,
@@ -285,6 +288,63 @@ def handle_store_run(run: BenchmarkRun, ns: argparse.Namespace):
 
     # store with new config
     res_proc.store_benchmark_run(run, bmc=new_cfg, file_name=file_name)
+
+
+def benchmark_lister() -> tuple[list[str], list[str], list[str]]:
+    """
+    List available implementations to benchmark. More specifically, walks through all files starting from
+    Pyroclast/model/stokes_2D_mg/smoothers and checks, if they have a benchmark_factory and return a given benchmark
+
+    :returns: vx benchmarks, vy benchmarks, smoother benchmarks
+    """
+    smoothers_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..",
+                                                 "src", "Pyroclast", "model", "stokes_2D_mg", "smoothers"))
+
+    vx_benchmarks = []
+    vy_benchmarks = []
+    smoother_benchmarks = []
+
+    for path, dirs, files in os.walk(smoothers_dir):
+        for file in files:
+            # ignore non python files
+            if not file.endswith(".py"):
+                continue
+
+            # ignore __init__ files
+            if file == "__init__.py":
+                continue
+
+            # PRECONDITION: is python file, and is not init file
+            file_path = os.path.join(path, file)
+
+            # Remove till smooth
+            mod_path = (file_path
+                        .replace(smoothers_dir + "/", "" )
+                        .replace(".py", "")
+                        .replace("/", "."))
+
+            module = importlib.import_module("Pyroclast.model.stokes_2D_mg.smoothers." + mod_path)
+
+            if not hasattr(module, "benchmark_factory"):
+                continue
+
+            # PRECONDITION: is python file, is not init file, contains benchmark_factory
+            smoother, vx, vy = getattr(module, "benchmark_factory")()
+
+            if smoother is not None:
+                smoother_benchmarks.append(mod_path)
+
+            if vx is not None:
+                vx_benchmarks.append(mod_path)
+
+            if vy is not None:
+                vy_benchmarks.append(mod_path)
+
+    vx_benchmarks.sort()
+    vy_benchmarks.sort()
+    smoother_benchmarks.sort()
+
+    return vx_benchmarks, vy_benchmarks, smoother_benchmarks
 
 
 def main():
