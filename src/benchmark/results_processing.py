@@ -103,7 +103,7 @@ def benchmark_run_string_hasher(benchmark: BenchmarkRun | str) -> str:
     return base64.urlsafe_b64encode(hash_result).decode("utf-8")
 
 
-def store_benchmark_run(run: BenchmarkRun):
+def store_benchmark_run(run: BenchmarkRun, bmc: Optional[BenchmarkConfig] = None, file_name: Optional[str] = None):
     """
     Store the benchmark on file system.
     """
@@ -111,18 +111,22 @@ def store_benchmark_run(run: BenchmarkRun):
     # This format of datetime string is needed to ensure the file name can be taken on.
     datetime_string = run.start.strftime("%Y%m%d-%H%M%S")
 
+    if bmc is None:
+        bmc = get_config()
+
     # Determine file name
-    if config.hash_suffix:
-        json_hash = benchmark_run_string_hasher(run)
-        file_name = f"pcbm_{datetime_string}_{json_hash}.json"
-    else:
-        file_name = f"pcbm_{datetime_string}.json"
+    if file_name is None:
+        if bmc.hash_suffix:
+            json_hash = benchmark_run_string_hasher(run)
+            file_name = f"pcbm_{datetime_string}_{json_hash}.json"
+        else:
+            file_name = f"pcbm_{datetime_string}.json"
 
     # Determine target folder
-    if config.day_folders:
-        tgt_dir = os.path.abspath(os.path.join(config.results_store, run.start.strftime("%Y-%m-%d")))
+    if bmc.day_folders:
+        tgt_dir = os.path.abspath(os.path.join(bmc.results_store, run.start.strftime("%Y-%m-%d")))
     else:
-        tgt_dir = config.results_store
+        tgt_dir = bmc.results_store
 
     # Create folder if not exists
     if not os.path.exists(tgt_dir):
