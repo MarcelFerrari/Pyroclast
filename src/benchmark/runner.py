@@ -10,7 +10,8 @@ from typing import Callable, Type, Optional
 import numba as nb
 from git import Repo
 
-import benchmark.results_processing as string_util
+import benchmark.config as config
+import benchmark.results_processing as res_proc
 import benchmark.defaults as defaults
 from Pyroclast.string_util import print_banner
 from benchmark.benchmark_validators import (BenchmarkType, BenchmarkResults, BenchmarkRun,
