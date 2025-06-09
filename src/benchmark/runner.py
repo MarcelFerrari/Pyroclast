@@ -401,25 +401,17 @@ def main():
     if ns.modules is None:
         raise ValueError("At least one Module is required for benchmarking.")
 
-    # Prevent all empty
-    if ns.dimension is None and ns.x_dimension is None and ns.y_dimension is None:
-        raise ValueError("At least one kind of dimension needs to be provided "
-                         "(either dimension or x-dimensions and y-dimensions)")
-
     # dimension is given
-    if ns.dimension is not None:
-        if ns.x_dimension is not None or ns.y_dimension is not None:
-            raise ValueError("x-dimension and y-dimension need to be empty if dimension is provided")
-
+    if ns.dimension is not None and ns.x_dimension is None or ns.y_dimension is None:
         dim_list = [(d, d) for d in ns.dimension]
 
     # x and y are given
-    if ns.x_dimension is not None and ns.y_dimension is not None:
-        if ns.dimension is not None:
-            raise ValueError("dimension needs to be empty if x-dimension and y-dimension are provided")
-
+    elif ns.x_dimension is not None and ns.y_dimension is not None and ns.dimension is None:
         for x, y in itertools.product(ns.x_dimension, ns.y_dimension):
             dim_list.append((x, y))
+    else:
+        raise ValueError("Invalid Dimension specification. Either provide -d <list of dimensions> or "
+                         "-x <list of x sizes> and -y <list of y sizes>")
 
     # Warn that there's an issue with the configuration.
     if ns.samples > 1 and ns.profiling and not ns.quiet:
