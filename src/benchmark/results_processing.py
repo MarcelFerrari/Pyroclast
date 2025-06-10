@@ -175,3 +175,36 @@ def load_benchmark_run(path: str) -> BenchmarkRun:
                          f"Actual: {benchmark_run_string_hasher(config)}")
 
     return BenchmarkRun.model_validate_json(content)
+
+
+def create_dataframe(run: BenchmarkRun) -> pd.DataFrame:
+    """
+    Create a dataframe from a benchmark run.
+    """
+    data = {}
+    for result in run.result:
+        result: BenchmarkResults
+
+        base_dict = {"cpu_count": result.cpu_count,
+                     "module": result.module,
+                     "benchmark_type": result.benchmark_type.value,
+                     "max_iter": result.input_model.max_iter,
+                     "nx": result.input_model.nx,
+                     "ny": result.input_model.ny,
+                     "cache_bs_1": result.input_model.cache_block_size_1,
+                     "cache_bs_2": result.input_model.cache_block_size_2}
+
+        counter = 0
+        for timing in result.timings:
+            timing: Timing
+            if timing.stage in (Stage.EPILOG, Stage.PREAMBLE):
+                continue
+
+            local_dict = copy.deepcopy(base_dict)
+            local_dict.update({"sample": counter,
+                               "duration": timing.duration,
+                               "name": timing.name,})
+
+            counter += 1
+
+    return pd.DataFrame(data)
