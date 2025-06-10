@@ -151,6 +151,8 @@ def load_benchmark_run(path: str) -> BenchmarkRun:
     with open(path, "r") as f:
         content = f.read()
 
+    config = get_config()
+
     # Return immediately, if we don't validate the hash
     if not config.validate_hash_on_read:
         return BenchmarkRun.model_validate_json(content)
