@@ -43,3 +43,13 @@ over the default path.**
 
 For more information about the content of the benchmark config, look at the `src/benchmark/config.py` file.
 
+Here's an example of a benchmarking config:
+```json
+{
+  "results_store": "/home/user/documents/Pyroclast/benchmarking/results",
+  "day_folders": true,
+  "hash_suffix":  true,
+  "validate_hash_on_read": true
+}
+```
+
