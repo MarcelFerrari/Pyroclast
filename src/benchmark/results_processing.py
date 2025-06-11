@@ -211,9 +211,12 @@ def create_dataframe(run: BenchmarkRun) -> pd.DataFrame:
             if timing.stage in (Stage.EPILOG, Stage.PREAMBLE):
                 continue
 
+            norm_factor =  result.input_model.nx *  result.input_model.ny * result.input_model.max_iter
+
             local_dict = copy.deepcopy(base_dict)
             local_dict.update({"sample": counter,
                                "duration": timing.duration,
+                               "normalized_duration": timing.duration / norm_factor,
                                "name": timing.name,})
 
             counter += 1
