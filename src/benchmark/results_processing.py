@@ -192,7 +192,7 @@ def create_dataframe(run: BenchmarkRun) -> pd.DataFrame:
     """
     Create a dataframe from a benchmark run.
     """
-    data = {}
+    data = []
     for result in run.result:
         result: BenchmarkResults
 
