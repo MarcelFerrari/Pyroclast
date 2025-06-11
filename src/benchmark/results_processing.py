@@ -100,7 +100,7 @@ def benchmark_run_string_hasher(benchmark: BenchmarkRun | str) -> str:
     elif isinstance(benchmark, BenchmarkRun):
         hash_result = hashlib.sha256(benchmark.model_dump_json().encode("utf-8")).digest()
     else:
-        raise TypeError("benchmark must be a string or BenchmarkRun")
+        raise TypeError(f"benchmark must be a string or BenchmarkRun. Got {type(benchmark).__name__}")
 
     return base64.urlsafe_b64encode(hash_result).decode("utf-8")
 
