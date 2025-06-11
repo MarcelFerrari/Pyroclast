@@ -180,7 +180,7 @@ def load_benchmark_run(path: str, config: Optional[BenchmarkConfig] = None) -> B
     hash_string = os.path.splitext("_".join(hash_blocks))[0]
 
     # Compute hash and verify
-    if hash_string != benchmark_run_string_hasher(config):
+    if hash_string != benchmark_run_string_hasher(content):
         raise ValueError("File Contents were modified. File hash doesn't match.\n"
                          f"Expected: {hash_string}\n”"
                          f"Actual: {benchmark_run_string_hasher(config)}")
