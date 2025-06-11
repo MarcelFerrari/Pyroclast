@@ -141,19 +141,30 @@ def store_benchmark_run(run: BenchmarkRun, bmc: Optional[BenchmarkConfig] = None
         f.write(json_string)
 
 
-def load_benchmark_run(path: str) -> BenchmarkRun:
+def load_benchmark_run(path: str, config: Optional[BenchmarkConfig] = None) -> BenchmarkRun:
     """
     Load a benchmark run from file.
 
     If indicated by the config, validates the hash of the file content against the hash in the file name
     """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"File {path} not found")
+    if config is None:
+         config = get_config()
 
-    with open(path, "r") as f:
-        content = f.read()
+    if os.path.isabs(path):
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"File {path} not found")
 
-    config = get_config()
+        with open(path, "r") as f:
+            content = f.read()
+    else:
+        # Not abs path, assume relative to results root
+        abs_path = os.path.abspath(os.path.join(config.results_store, path))
+
+        if not os.path.exists(abs_path):
+            raise FileNotFoundError(f"File {path} not found")
+
+        with open(abs_path, "r") as f:
+            content = f.read()
 
     # Return immediately, if we don't validate the hash
     if not config.validate_hash_on_read:
