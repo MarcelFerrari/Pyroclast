@@ -235,6 +235,7 @@ def create_dataframe(run: BenchmarkRun) -> pd.DataFrame:
                                "normalized_duration": timing.duration / norm_factor,
                                "name": timing.name,})
 
+            data.append(local_dict)
             counter += 1
 
     return pd.DataFrame(data)
