@@ -136,7 +136,8 @@ def store_benchmark_run(run: BenchmarkRun, bmc: Optional[BenchmarkConfig] = None
         os.makedirs(tgt_dir, exist_ok=True)
 
     # Write to folder
-    print(f"Writing run to file: {file_name}")
+    print(f"Writing run to file: "
+          f"{file_name if not bmc.day_folders else os.path.join(run.start.strftime("%Y-%m-%d"), file_name)}")
     with open(os.path.join(tgt_dir, file_name), "w") as f:
         f.write(json_string)
 
