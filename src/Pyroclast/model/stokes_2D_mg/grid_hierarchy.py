@@ -15,6 +15,9 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import numpy as np
 from .grid import Grid
+from Pyroclast.logging import get_logger
+
+logger = get_logger(__name__)
 
 class GridHierarchy:
     """
@@ -31,8 +34,8 @@ class GridHierarchy:
         self.nlevels = nlevels
         self.levels = [base]
 
-        print(f"Grid Hierarchy: {self.nlevels} levels, scaling {scaling:.2f}")
-        print(f"Fine grid: {base.ny1} x {base.nx1}")
+        logger.info(f"Grid Hierarchy: {self.nlevels} levels, scaling {scaling:.2f}")
+        logger.info(f"Fine grid: {base.ny1} x {base.nx1}")
     
         # Build coarse grids and propagate properties
         for lvl in range(1, self.nlevels):
@@ -42,7 +45,7 @@ class GridHierarchy:
             coarse = Grid(ny_coarse, nx_coarse, lvl, ctx)
             coarse.restrict_properties(prev)
             self.levels.append(coarse)
-            print(f"Coarse grid {lvl}: {coarse.ny1} x {coarse.nx1}")
+            logger.info(f"Coarse grid {lvl}: {coarse.ny1} x {coarse.nx1}")
 
     def __getitem__(self, idx):
         return self.levels[idx]

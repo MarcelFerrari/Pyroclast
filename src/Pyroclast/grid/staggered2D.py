@@ -19,6 +19,9 @@ from Pyroclast.grid.base_grid import BaseGrid
 from Pyroclast.profiling import timer
 from Pyroclast.interpolation.linear_2D_cpu \
     import interpolate_markers2grid as interpolate
+from Pyroclast.logging import get_logger
+
+logger = get_logger(__name__)
 
 class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
                                    # this automatically does some magic
@@ -124,13 +127,13 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
     
     def info(self, ctx):
         s, p, o = ctx
-        print(10*"-" + " Grid Information " + 10*"-")
-        print("Basic staggered 2D grid initialized.")
-        print(f"Domain size: {p.xsize:.1f} x {p.ysize:.1f}")
-        print(f"Grid size: {s.nx1} x {s.ny1}")
-        print(f"Grid spacing: {s.dx:.1f} x {s.dy:.1f}")
-        print(f"Total nodes: {s.nx1 * s.ny1}")
-        print(38*"-")
+        logger.info(10*"-" + " Grid Information " + 10*"-")
+        logger.info("Basic staggered 2D grid initialized.")
+        logger.info(f"Domain size: {p.xsize:.1f} x {p.ysize:.1f}")
+        logger.info(f"Grid size: {s.nx1} x {s.ny1}")
+        logger.info(f"Grid spacing: {s.dx:.1f} x {s.dy:.1f}")
+        logger.info(f"Total nodes: {s.nx1 * s.ny1}")
+        logger.info(38*"-")
         
 
 

@@ -1,4 +1,7 @@
 import numpy as np
+from Pyroclast.logging import get_logger
+
+logger = get_logger(__name__)
 
 class AndersonAccelerator:
     def __init__(self, m, shape, beta=0.7):
@@ -73,5 +76,5 @@ class AndersonAccelerator:
             return x_acc.reshape(self.shape)
 
         except np.linalg.LinAlgError:
-            print("Singular KKT matrix in Anderson update")
+            logger.error("Singular KKT matrix in Anderson update")
             return None

@@ -20,6 +20,9 @@ import numpy as np
 from Pyroclast.model.base_model import BaseModel
 from Pyroclast.profiling import timer
 import scipy.sparse as sp
+from Pyroclast.logging import get_logger
+
+logger = get_logger(__name__)
 
 # Model class
 class IncompressibleStokes2D(BaseModel):
@@ -139,7 +142,7 @@ class IncompressibleStokes2D(BaseModel):
 
         # Compute the residual
         res = np.linalg.norm(rhs - A @ u)/np.linalg.norm(rhs)
-        print("Residual: ", res)
+        logger.debug(f"Residual: {res}")
 
         # Extract solution quantities
         u = u.reshape((s.ny1, s.nx1, 3))
@@ -157,7 +160,7 @@ class IncompressibleStokes2D(BaseModel):
             np.savez(f, vx=s.vx, vy=s.vy, p=s.p,
                     rho=s.rho, etab=s.etab, etap=s.etap)
         
-        print(f"Frame {self.frame} written to file.")
+        logger.info(f"Frame {self.frame} written to file.")
         self.frame += 1 # Increment frame counter
 
 
@@ -166,7 +169,7 @@ class IncompressibleStokes2D(BaseModel):
         s, p, o = ctx
 
         # Write rho, eta_b, eta_p, vx, vy and p to npz file
-        print("Writing solution to file...")
+        logger.info("Writing solution to file...")
         np.savez("solution.npz", p=s.p, vx=s.vx, vy=s.vy, rho=s.rho, etab=s.etab, etap=s.etap)
                 
 # Numba compiled functions - Not part of the class
