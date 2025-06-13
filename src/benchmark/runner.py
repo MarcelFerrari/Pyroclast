@@ -114,11 +114,55 @@ bench_opt.add_argument("-o", "--output",
 bench_opt.add_argument("-l", "--list",
                        action="store_true",
                        help="List available benchmarks.")
+bench_opt.add_argument(f"-B", "--no-burn-in",
+                       action="store_true",
+                       help="Skip Burn-In Phase base_rb_gb.vx benchmark for 60s to preheat CPU.")
 
 
 # ======================================================================================================================
 # Functions used to perform main benchmarking operations
 # ======================================================================================================================
+
+
+def burn_in():
+    """
+    Run base_rb_gs vx routine for a given amount of time to preheat the cpu.
+    """
+    module = importlib.import_module(f"Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs")
+    factory = getattr(module, "benchmark_factory")
+    # Annotated factory
+    factory: Callable[[], tuple[Optional[Type[BenchmarkSmoother]],
+                                Optional[Type[BenchmarkVX]],
+                                Optional[Type[BenchmarkVY]]]]
+
+    # Execute factory
+    bm_s, bm_vx, bm_vy = factory()
+
+    # Attempt to get the config
+    try:
+        cfg = config.get_config()
+    except FileNotFoundError:
+        cfg = None
+
+    timeout = cfg.burn_in_timeout if cfg is not None else 60
+
+    args = BenchmarkValidatorVX(
+        nx=1024, ny=1024,
+        max_iter=128,
+        profile=False, samples=15,
+        cache_block_size_1=None,
+        cache_block_size_2=None,
+    )
+
+    print(f"Starting Burn-In")
+
+    # Do burn in
+    start = dtf()
+    while (dtf() - start).total_seconds() < timeout:
+        bm_vx(args).benchmark()
+        print(f"{timeout - (dtf() - start).total_seconds()} seconds remaining")
+
+    print(f"Burn in for {timeout} seconds done.")
 
 
 def benchmark_single_module(module_name: str,
@@ -433,6 +477,9 @@ def main():
 
     # Start of overall benchmark
     start = dtf()
+
+    if not ns.no_burn_in:
+        burn_in()
 
     for ca in ns.cache_a:
         if len(ns.cache_a) > 1:
