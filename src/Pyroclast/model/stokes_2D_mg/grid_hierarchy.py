@@ -15,7 +15,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import numpy as np
 from .grid import Grid
-from logging import get_logger
+from Pyroclast.logging import get_logger
 
 logger = get_logger(__name__)
 

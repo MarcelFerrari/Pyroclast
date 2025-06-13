@@ -20,21 +20,27 @@ import pickle
 import time
 import numpy as np
 import numba as nb
-from logging import get_logger
 
+from Pyroclast.logging import get_logger
 from Pyroclast.context import Context, ContextNamespace
 from Pyroclast.profiling import timer
-from Pyroclast.banner import banner
+from Pyroclast.banner import get_banner
 import Pyroclast.format as fmt
 from Pyroclast.defaults import default_config
 from Pyroclast.rng import set_seed
+
+try:
+    import mpi4py
+    from mpi4py import MPI
+except ImportError:
+    MPI = None  # If mpi4py is not available, set MPI to None
 
 logger = get_logger(__name__)
 
 class Pyroclast():
     def __init__(self, args):
-        # Print Pyroclast banner
-        logger.info(banner)
+        # Grab MPI rank
+        logger.info(get_banner())
 
         # Initialize constants
         self.input_file = args['input']

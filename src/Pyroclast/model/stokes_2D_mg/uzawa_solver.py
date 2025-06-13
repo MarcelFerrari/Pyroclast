@@ -25,7 +25,7 @@ from .anderson import AndersonAccelerator
 from .utils import apply_BC
 from .viscosity_rescaler import ViscosityRescaler
 from .residual_tracker import ResidualTracker
-from logging import get_logger
+from Pyroclast.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -21,7 +21,7 @@ from random import uniform
 from Pyroclast.pool.base_pool import BasePool
 from Pyroclast.interpolation.linear_2D_cpu \
     import interpolate_grid2markers as interpolate
-from logging import get_logger
+from Pyroclast.logging import get_logger
 
 logger = get_logger(__name__)
 

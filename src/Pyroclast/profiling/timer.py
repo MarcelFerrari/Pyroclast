@@ -16,7 +16,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import time
 from collections import OrderedDict
 from tabulate import tabulate
-from logging import get_logger
+from Pyroclast.logging import get_logger
 
 logger = get_logger(__name__)
 

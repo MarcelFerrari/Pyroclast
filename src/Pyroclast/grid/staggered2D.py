@@ -19,7 +19,7 @@ from Pyroclast.grid.base_grid import BaseGrid
 from Pyroclast.profiling import timer
 from Pyroclast.interpolation.linear_2D_cpu \
     import interpolate_markers2grid as interpolate
-from logging import get_logger
+from Pyroclast.logging import get_logger
 
 logger = get_logger(__name__)
 

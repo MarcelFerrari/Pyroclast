@@ -20,7 +20,7 @@ import numpy as np
 from Pyroclast.model.base_model import BaseModel
 from Pyroclast.profiling import timer
 import scipy.sparse as sp
-from logging import get_logger
+from Pyroclast.logging import get_logger
 
 logger = get_logger(__name__)
 
