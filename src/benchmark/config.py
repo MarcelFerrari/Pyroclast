@@ -10,6 +10,7 @@ class BenchmarkConfig(BaseModel):
     validate_hash_on_read: bool = Field(True, description="Whether to validate the hash against the file content "
                                                           "when reading in the file")
 
+    burn_in_timeout: int = Field(60, description="The number of seconds to run burn in", ge=0)
 
 if os.environ.get("PYROCLAST_BENCHMARK_CONFIG") is not None:
     _config_path = os.path.abspath(os.environ.get("PYROCLAST_BENCHMARK_CONFIG"))
