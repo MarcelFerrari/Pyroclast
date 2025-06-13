@@ -25,6 +25,9 @@ from .anderson import AndersonAccelerator
 from .utils import apply_BC
 from .viscosity_rescaler import ViscosityRescaler
 from .residual_tracker import ResidualTracker
+from logging import get_logger
+
+logger = get_logger(__name__)
 
 class UzawaSolver:
     """Solve the Stokes system using Uzawa iterations and multigrid."""
@@ -100,7 +103,7 @@ class UzawaSolver:
         rmse_norm = np.sqrt(self.fine.nx1 * self.fine.ny1)
 
         for cycle in range(max_cycles):
-            print(f"Cycle: {cycle}")
+            logger.debug(f"Cycle: {cycle}")
 
             # Update velocity right hand sides using the current pressure
             self.fine.vx_rhs, self.fine.vy_rhs = uzawa_velocity_rhs(self.fine.nx1, self.fine.ny1,
@@ -145,13 +148,14 @@ class UzawaSolver:
             vx_res_rmse = np.linalg.norm(vx_res) / (rmse_norm * deta_norm)
             vy_res_rmse = np.linalg.norm(vy_res) / (rmse_norm * deta_norm)
 
-            print(f"RMSE residuals: p = {p_res_rmse:.2e}, "
-                  f"vx = {vx_res_rmse:.2e}, vy = {vy_res_rmse:.2e}")
+            logger.debug(
+                f"RMSE residuals: p = {p_res_rmse:.2e}, "
+                f"vx = {vx_res_rmse:.2e}, vy = {vy_res_rmse:.2e}")
 
             # Update the residual tracker
             converged = self.tracker.update(p_res_rmse, vx_res_rmse, vy_res_rmse)
             if converged and self.rescaler.done_rescaling():
-                    print("Converged!")
+                    logger.info("Converged!")
                     break
 
             if self.rescaler.update_viscosity(): # Return True if viscosity was rescaled

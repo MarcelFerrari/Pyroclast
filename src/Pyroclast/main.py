@@ -20,18 +20,21 @@ import pickle
 import time
 import numpy as np
 import numba as nb
+from logging import get_logger
 
 from Pyroclast.context import Context, ContextNamespace
 from Pyroclast.profiling import timer
-from Pyroclast.banner import print_banner
+from Pyroclast.banner import banner
 import Pyroclast.format as fmt
 from Pyroclast.defaults import default_config
 from Pyroclast.rng import set_seed
 
+logger = get_logger(__name__)
+
 class Pyroclast():
     def __init__(self, args):
         # Print Pyroclast banner
-        print_banner()
+        logger.info(banner)
 
         # Initialize constants
         self.input_file = args['input']
@@ -43,7 +46,7 @@ class Pyroclast():
         load_chkpt = options.get('load_checkpoint', False)
         chkpt_file = options.checkpoint_file
         if load_chkpt and os.path.exists(chkpt_file):
-            print(f"Checkpoint file {chkpt_file} found. Loading checkpoint...")
+            logger.info(f"Checkpoint file {chkpt_file} found. Loading checkpoint...")
             # Checkpoint file found -> load context from checkpoint
             with open(chkpt_file, 'rb') as f:
                 chkpt = pickle.load(f)
@@ -52,9 +55,9 @@ class Pyroclast():
             self.grid = chkpt['grid']
             self.pool = chkpt['pool']
             self.model = chkpt['model']
-            print("Checkpoint loaded successfully.")
+            logger.info("Checkpoint loaded successfully.")
         else:
-            print(f"No checkpoint file found. Starting fresh simulation.")
+            logger.info("No checkpoint file found. Starting fresh simulation.")
             # Create context object
             self.ctx = Context(state, params, options)
 
@@ -70,7 +73,7 @@ class Pyroclast():
         # Set random seed if provided
         seed = self.ctx.options.get('seed', None)
         if seed is not None:
-            print(f"Setting random seed to {seed}.")
+            logger.info(f"Setting random seed to {seed}.")
             set_seed(seed)
         
         # Set up threading layer
@@ -95,7 +98,7 @@ class Pyroclast():
     def set_threading(self, options):
         # Set up threading layer
         tl = options.threading_layer
-        print(f"Using threading layer: {tl}")
+        logger.info(f"Using threading layer: {tl}")
         nb.config.THREADING_LAYER = tl
         
         # Set up number of threads
@@ -103,7 +106,7 @@ class Pyroclast():
         if num_threads > 0:
             nb.set_num_threads(num_threads)
         num_threads = nb.get_num_threads()
-        print(f"Numba using {num_threads} threads.")
+        logger.debug(f"Numba using {num_threads} threads.")
         
     def load_component(self, comp, cls_name):
         # Check that the format is correct
@@ -124,7 +127,7 @@ class Pyroclast():
         """
         Pickle context, grid, pool, and model objects to a file.
         """
-        print(f"Writing checkpoint to {file_path}...")
+        logger.info(f"Writing checkpoint to {file_path}...")
         chkpt = {
             'ctx': self.ctx,
             'grid': self.grid,
@@ -135,14 +138,14 @@ class Pyroclast():
         with open(file_path, 'wb') as f:
             pickle.dump(chkpt, f)
 
-        print(f"Checkpoint written to {file_path}.")
+        logger.info(f"Checkpoint written to {file_path}.")
 
     def solve(self):
         # Read options
         s, p, o = self.ctx
         
-        print("Starting simulation...")
-        print(f"Saving model every {o.checkpoint_interval} timesteps.")
+        logger.info("Starting simulation...")
+        logger.info(f"Saving model every {o.checkpoint_interval} timesteps.")
 
         # Load initial timestep dt into state
         s.dt = p.dt_initial
@@ -155,7 +158,7 @@ class Pyroclast():
     
         
         # Main time integration loop
-        print("Starting time integration loop...")
+        logger.info("Starting time integration loop...")
         start = time.time()
         while s.iteration < p.max_iterations:
             # 1) Interpolate marker values to grid nodes
@@ -191,7 +194,8 @@ class Pyroclast():
             it = s.iteration
             t = fmt.s2yr(s.time)
             dt = fmt.s2yr(s.dt)
-            print(f"Progress: {percent:.2f}%, it = {it}, t = {t}, dt = {dt}")
+            logger.debug(
+                f"Progress: {percent:.2f}%, it = {it}, t = {t}, dt = {dt}")
 
             # 8) Increment iteration
             s.iteration += 1
@@ -199,15 +203,15 @@ class Pyroclast():
         # End of time integration loop
         end = time.time() 
 
-        print("Time loop complete!")
+        logger.info("Time loop complete!")
         
         # Finalize grid, pool, and model
-        print("Finalizing simulation...")
+        logger.info("Finalizing simulation...")
         self.grid.finalize(self.ctx)
         self.pool.finalize(self.ctx)
         self.model.finalize(self.ctx)
         
         timer.report()
-        print(f"\nTotal workload runtime {end-start:.4f} seconds.")
+        logger.info(f"Total workload runtime {end-start:.4f} seconds.")
 
 

@@ -19,6 +19,9 @@ import numba as nb
 import numpy as np
 from Pyroclast.model.base_model import BaseModel
 from Pyroclast.profiling import timer
+from logging import get_logger
+
+logger = get_logger(__name__)
 
 
 # Model class
@@ -87,8 +90,8 @@ class ConstantVelocityAdvection2D(BaseModel):
         with open(f"frame_{str(self.frame).zfill(self.zpad)}.npz", 'wb') as f:
             np.savez(f, vx=s.vx, vy=s.vy,
                     rho=s.rho, etab=s.etab, etap=s.etap)
-        
-        print(f"Frame {self.frame} written to file.")
+
+        logger.info(f"Frame {self.frame} written to file.")
         self.frame += 1 # Increment frame counter
         
     def solve(self, ctx):

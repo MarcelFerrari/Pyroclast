@@ -16,6 +16,9 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import time
 from collections import OrderedDict
 from tabulate import tabulate
+from logging import get_logger
+
+logger = get_logger(__name__)
 
 class Timer:
     def __init__(self):
@@ -40,10 +43,10 @@ class Timer:
 
     def report(self):
         """Generate a structured report detailing timings for each category and operation."""
-        print("\nPerformance Report:")
+        logger.info("\nPerformance Report:")
         for category, cat_data in self.data.items():
             total_cat_time = cat_data['total']
-            print(f"\n{category}")
+            logger.info(f"\n{category}")
 
             # Prepare table data for operations sorted by elapsed time (descending)
             table_data = []
@@ -61,7 +64,7 @@ class Timer:
                 table_data.append(["Total", f"{total_cat_time:.4f} sec", "100.00%"])
 
             # Print table using tabulate
-            print(tabulate(table_data, headers=["Operation", "Time", "Percentage"], tablefmt="simple"))
+            logger.info(tabulate(table_data, headers=["Operation", "Time", "Percentage"], tablefmt="simple"))
 
     def time_function(self, category, operation):
         def decorator(func):

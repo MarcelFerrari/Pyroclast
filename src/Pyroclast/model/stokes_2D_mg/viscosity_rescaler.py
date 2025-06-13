@@ -3,6 +3,9 @@ Utilities for optional viscosity rescaling during the multigrid solve.
 """
 
 import numpy as np
+from logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ViscosityRescaler:
@@ -73,9 +76,10 @@ class ViscosityRescaler:
         if self.rescale_count >= self.total_rescales:
             return False
 
-        print(f"Rescaling viscosity: cycle {self.cycle_count}, "
-              f"rescale {self.rescale_count + 1}/{self.total_rescales}, "
-              f"progress {self.progress:.2f}")
+        logger.info(
+            f"Rescaling viscosity: cycle {self.cycle_count}, "
+            f"rescale {self.rescale_count + 1}/{self.total_rescales}, "
+            f"progress {self.progress:.2f}")
 
         self.progress = min(1.0, self.progress + self.progress_step)
         self._apply_scaling()

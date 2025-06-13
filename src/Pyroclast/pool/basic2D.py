@@ -21,6 +21,9 @@ from random import uniform
 from Pyroclast.pool.base_pool import BasePool
 from Pyroclast.interpolation.linear_2D_cpu \
     import interpolate_grid2markers as interpolate
+from logging import get_logger
+
+logger = get_logger(__name__)
 
 class Basic2DStokes(BasePool): # Inherit from BasePool
                                # this automatically does some magic
@@ -93,18 +96,18 @@ class Basic2DStokes(BasePool): # Inherit from BasePool
 
     def info(self, ctx):
         s, p, o = ctx
-        
-        print(10*"-" + " Marker Pool Info " + 10*"-")
-        print(f"Initialized {self.__class__.__name__} marker pool.")
-        print(f"Number of markers in x-direction (per cell): {p.nmpcx}")
-        print(f"Number of markers in y-direction (per cell): {p.nmpcy}")
-        print(f"Number of markers per cell: {p.nmpcx*p.nmpcy}")
-        print(f"Number of markers in x-direction: {s.nmx}")
-        print(f"Number of markers in y-direction: {s.nmy}")
-        print(f"Total number of markers: {s.nm}")
-        print(f"Marker spacing in x-direction: {s.dxm:.1f}")
-        print(f"Marker spacing in y-direction: {s.dym:.1f}")
-        print(39*"-")
+
+        logger.info(10*"-" + " Marker Pool Info " + 10*"-")
+        logger.info(f"Initialized {self.__class__.__name__} marker pool.")
+        logger.info(f"Number of markers in x-direction (per cell): {p.nmpcx}")
+        logger.info(f"Number of markers in y-direction (per cell): {p.nmpcy}")
+        logger.info(f"Number of markers per cell: {p.nmpcx*p.nmpcy}")
+        logger.info(f"Number of markers in x-direction: {s.nmx}")
+        logger.info(f"Number of markers in y-direction: {s.nmy}")
+        logger.info(f"Total number of markers: {s.nm}")
+        logger.info(f"Marker spacing in x-direction: {s.dxm:.1f}")
+        logger.info(f"Marker spacing in y-direction: {s.dym:.1f}")
+        logger.info(39*"-")
 
 class RK42DStokes(Basic2DStokes):
     """

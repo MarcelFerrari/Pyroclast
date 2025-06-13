@@ -15,14 +15,15 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import termcolor
 
 banner = termcolor.colored(r"""
- ______   ______   ___   ____ _        _    ____ _____ 
+ ______   ______   ___   ____ _        _    ____ _____
 |  _ \ \ / /  _ \ / _ \ / ___| |      / \  / ___|_   _|
-| |_) \ V /| |_) | | | | |   | |     / _ \ \___ \ | |  
-|  __/ | | |  _ <| |_| | |___| |___ / ___ \ ___) || |  
+| |_) \ V /| |_) | | | | |   | |     / _ \ \___ \ | |
+|  __/ | | |  _ <| |_| | |___| |___ / ___ \ ___) || |
 |_|    |_| |_| \_\\___/ \____|_____/_/   \_\____/ |_|  (v0.1)
 """, 'red', attrs=['bold'])
-                               
-def print_banner():
-    print(banner)
+
+def get_banner():
+    """Return the ASCII banner string."""
+    return banner
     
 
