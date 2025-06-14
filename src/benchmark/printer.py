@@ -19,6 +19,9 @@ parser.add_argument("-c", "--config",
                     type=str,
                     default=None,
                     help="Path to config file overrides default path and environment option")
+parser.add_argument(f"-p", "--plots",
+                    action="store_true",
+                    help="Generate plots. ")
 
 
 def main():
