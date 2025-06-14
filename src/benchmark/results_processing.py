@@ -147,6 +147,9 @@ def load_benchmark_run(path: str, config: Optional[BenchmarkConfig] = None) -> B
     Load a benchmark run from file.
 
     If indicated by the config, validates the hash of the file content against the hash in the file name
+
+    :param path: if rel - relative to config.results_store is assume, if abs, no further processing is taken
+    :param config: BenchmarkConfig override the config used, defaults to the config from the default paths.
     """
     if config is None:
          config = get_config()
