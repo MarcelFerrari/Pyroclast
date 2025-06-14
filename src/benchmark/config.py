@@ -16,6 +16,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import os
 from pydantic import BaseModel, Field
+from typing import Optional
 
 
 class BenchmarkConfig(BaseModel):
@@ -34,14 +35,17 @@ else:
     _config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "scripts",
                                                 "benchmark_config.json"))
 
-def get_config():
+def get_config(cfg_pth: Optional[str] = None):
     """
     Created a config factory instead of loading the config at import time to prevent issues from the raise Error
     """
-    if not os.path.exists(_config_path):
-        raise FileNotFoundError(f"Config file {_config_path} not found.")
+    if cfg_pth is None:
+        cfg_pth = _config_path
 
-    with open(_config_path, "r") as f:
+    if not os.path.exists(cfg_pth):
+        raise FileNotFoundError(f"Config file {cfg_pth} not found.")
+
+    with open(cfg_pth, "r") as f:
         config = BenchmarkConfig.model_validate_json(f.read())
 
     return config
