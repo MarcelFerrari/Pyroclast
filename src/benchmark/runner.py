@@ -159,8 +159,8 @@ def burn_in():
     # Do burn in
     start = dtf()
     while (dtf() - start).total_seconds() < timeout:
-        bm_vx(args).benchmark()
         print(f"{timeout - (dtf() - start).total_seconds()} seconds remaining")
+        bm_vx(args).benchmark()
 
     print(f"Burn in for {timeout} seconds done.")
 
