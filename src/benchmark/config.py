@@ -13,11 +13,13 @@ class BenchmarkConfig(BaseModel):
 
     burn_in_timeout: int = Field(60, description="The number of seconds to run burn in", ge=0)
 
+
 if os.environ.get("PYROCLAST_BENCHMARK_CONFIG") is not None:
     _config_path = os.path.abspath(os.environ.get("PYROCLAST_BENCHMARK_CONFIG"))
 else:
     _config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "scripts",
                                                 "benchmark_config.json"))
+
 
 def get_config(cfg_pth: Optional[str] = None):
     """
