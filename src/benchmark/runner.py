@@ -93,7 +93,7 @@ bench_opt.add_argument("-t", "--test",
                        nargs="+",
                        type=BenchmarkType,
                        help=f"List of benchmark types to test (default is all, can be limited to only a subset). "
-                            f"Default: {defaults.types}")
+                            f"Default: {list(map(lambda t: t.value, defaults.types))}")
 bench_opt.add_argument("-f", "--force",
                        action="store_true",
                        help="Force execution of benchmark with pending changes.")
