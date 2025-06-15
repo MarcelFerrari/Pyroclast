@@ -55,3 +55,15 @@ def compute_neighbor_sum(i: int, j: int, relax_v: float,
 
     return (1.0 - relax_v) * vx[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / diag
 
+
+@nb.njit(cache=True, parallel=True, inline="always")
+def prep_vx_cache(nx1: int, ny1: int,
+                  dx: float, dy: float,
+                  etap: np.ndarray, etab: np.ndarray,
+                  vx_cache: np.ndarray) -> np.ndarray:
+    for i in nb.prange(1, ny1 - 1):
+        for j in range(1, nx1 - 2):
+            coeff_vec = np.array(compute_coeffs(i, j, dx, dy, etap, etab))
+            vx_cache[i, j] = coeff_vec
+
+    return vx_cache
