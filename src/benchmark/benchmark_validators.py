@@ -259,3 +259,29 @@ class BenchmarkRun(BaseModel):
         Get all vy benchmarks
         """
         return list(filter(lambda b: b.benchmark_type == BenchmarkType.VY, self.result))
+
+
+# ======================================================================================================================
+# Plotting Models
+# ======================================================================================================================
+
+
+class PlotType(str, Enum):
+    MODULE_VS_CPU_X_DIM = "module_vs_cpu_x_dim"
+    MODULE_VS_DIM_CPU16 = "module_vs_dim_cpu16"
+    MODULE_VS_DIM_CPU8 = "module_vs_dim_cpu8"
+    CPU_VS_MODULE_X_DIM = "cpu_vs_module_x_dim"
+    MODULE_X_CPU_VS_DIM = "module_x_cpu_vs_dim"
+    DIM_VS_MODULE_X_CPU = "dim_vs_module_x_cpu"
+
+
+class BenchmarkPlot(BaseModel):
+    git_branch: str = Field(..., description="Git branch of the benchmark run")
+    git_commit_msg: str = Field(..., description="Git commit message of current commit.")
+    git_commit_hash: str = Field(..., description="Git commit hash of the benchmark run")
+
+    dirty: bool = Field(False, description="Is set to true, if the runner was called with force and there were diffs in "
+                                           "the working tree.")
+    plot_types: list[PlotType] = Field(..., description="List of plot types to use.")
+    normalized: bool = False
+    filename: str = Field(..., description="Filename of the benchmark result that was plotted")
