@@ -236,7 +236,7 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python,cuda,c++,visualstudiocode
 
 # Extra scripts
-setup-env.sh
+# setup-env.sh
 
 # NumPy, CuPy, PyTorch, TensorFlow, etc.
 *.npz
