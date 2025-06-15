@@ -1,8 +1,14 @@
 import argparse
+import os.path
+from typing import Optional
+
+from numba.core.utils import BenchmarkResult
 
 import benchmark.results_processing as res_proc
 from Pyroclast.string_util import print_banner
-from benchmark.config import get_config
+from benchmark.config import get_config, BenchmarkConfig
+from benchmark.utils import dtf
+
 
 """
 File contains a script to fetch a given benchmark result. It then reproduces the output of the runner script if provided
