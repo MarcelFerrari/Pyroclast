@@ -488,6 +488,7 @@ def main():
 
         print(f"Benchmark of {start.isoformat()}, time taken: {(end - start).total_seconds()}")
         res_proc.print_statistics(benchmark_run, False)
+        print(f"Benchmarking took: {(end - start).total_seconds()}s")
 
     handle_store_run(benchmark_run, ns)
 
