@@ -227,3 +227,14 @@ def create_dataframe(run: BenchmarkRun) -> pd.DataFrame:
             counter += 1
 
     return pd.DataFrame(data)
+
+
+def augment_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add further columns to the dataframe for plotting
+    """
+    df["group-cpu-nx-ny"] = df.apply(lambda row: f"cpu:{row.cpu_count} dim:{row.nx} x {row.ny}", axis=1)
+    df["group-module-nx-ny"] = df.apply(lambda row: f"module:{row.module} dim:{row.nx} x {row.ny}", axis=1)
+    df["dim"] = df.apply(lambda row: f"dim: {row.nx} x {row.ny}", axis=1)
+    df["group-module-cpu"] = df.apply(lambda row: f"module:{row.module} cpu:{row.cpu_count}", axis=1)
+    return df
