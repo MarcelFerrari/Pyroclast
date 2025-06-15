@@ -2,12 +2,14 @@ import argparse
 import os.path
 from typing import Optional
 
-from numba.core.utils import BenchmarkResult
-
+import benchmark.defaults as defaults
 import benchmark.results_processing as res_proc
 from Pyroclast.string_util import print_banner
+from benchmark.benchmark_validators import PlotType, BenchmarkPlot
 from benchmark.config import get_config, BenchmarkConfig
 from benchmark.utils import dtf
+from benchmark.plotter import plot_factory
+import benchmark.git_checks as gc
 
 
 """
