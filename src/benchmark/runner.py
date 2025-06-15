@@ -447,22 +447,22 @@ def main():
     if not ns.no_burn_in:
         burn_in()
 
-    for ca in ns.cache_a:
-        if len(ns.cache_a) > 1:
-            print(f"Testing with Cache Size A = {ca}")
+    # Run benchmark on modules and dimension list
+    for module in ns.modules:
+        for cc in ns.cpu:
+            # Set the cpu count
+            nb.set_num_threads(cc)
+            if len(ns.cpu) > 1:
+                print(f"Working on {cc} cpu's")
 
-        for cb in ns.cache_b:
-            if len(ns.cache_b) > 1:
-                print(f"Testing with Cache Size B = {cb}")
+            for ca in ns.cache_a:
+                if len(ns.cache_a) > 1:
+                    print(f"Testing with Cache Size A = {ca}")
 
-            for cc in ns.cpu:
-                # Set the cpu count
-                nb.set_num_threads(cc)
-                if len(ns.cpu) > 1:
-                    print(f"Working on {cc} cpu's")
+                for cb in ns.cache_b:
+                    if len(ns.cache_b) > 1:
+                        print(f"Testing with Cache Size B = {cb}")
 
-                # Run benchmark on modules and dimension list
-                for module in ns.modules:
                     for dim in dim_list:
                         print(f"Running Module: {module} with dimensions: x={dim[0]}, y={dim[1]}")
                         all_res.extend(benchmark_single_module(module_name=module,
