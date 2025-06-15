@@ -89,11 +89,11 @@ bench_opt.add_argument("-s", "--samples",
                        type=int,
                        help=f"Number of samples to generate. Default: {defaults.number_of_samples}")
 bench_opt.add_argument("-t", "--test",
-                       default=defaults.types,
+                       default=defaults.benchmark_types,
                        nargs="+",
                        type=BenchmarkType,
                        help=f"List of benchmark types to test (default is all, can be limited to only a subset). "
-                            f"Default: {list(map(lambda t: t.value, defaults.types))}")
+                            f"Default: {list(map(lambda t: t.value, defaults.benchmark_types))}")
 bench_opt.add_argument("-f", "--force",
                        action="store_true",
                        help="Force execution of benchmark with pending changes.")
