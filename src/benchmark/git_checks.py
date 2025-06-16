@@ -1,4 +1,5 @@
 from git import Repo
+import os
 
 
 def check_git_status() -> tuple[bool, bool]:
@@ -7,7 +8,8 @@ def check_git_status() -> tuple[bool, bool]:
 
     returns: [has_staged_changes, has_unstaged_changes]
     """
-    repo = Repo(".", search_parent_directories=True)
+    repo_parent = os.path.dirname(__file__)
+    repo = Repo(repo_parent, search_parent_directories=True)
 
     # 1. Check for staged changes (ready to commit)
     staged = repo.index.diff("HEAD")  # staged vs HEAD
