@@ -28,7 +28,8 @@ def get_git_info() -> tuple[str, str, str]:
 
     :returns: <branch name>, <commit hash>, <commit message>
     """
-    repo = Repo(".", search_parent_directories=True)
+    repo_parent = os.path.dirname(__file__)
+    repo = Repo(repo_parent, search_parent_directories=True)
 
     branch_name = repo.active_branch.name
     commit_hash = repo.active_branch.commit.hexsha
