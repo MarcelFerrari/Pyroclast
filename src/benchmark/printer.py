@@ -34,7 +34,8 @@ parser.add_argument(f"-t", "--plot-type",
                     default=defaults.plot_types,
                     nargs="+",
                     type=PlotType,
-                    help="List of Plot Types to generate. By default, all plots are generated")
+                    help=f"List of Plot Types to generate. By default, all plots are generated. "
+                         f"Default: {list(map(lambda t: t.value, defaults.plot_types))}")
 parser.add_argument(f"-n", "--normalized",
                     action="store_true",
                     help="Normalize compute duration for a more comparable result across sizes")
