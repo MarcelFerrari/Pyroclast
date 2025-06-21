@@ -69,7 +69,8 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
             vx_jacobi_sweep(nx1=self.nx1, ny1=self.ny1,
                             vx=self.vx, vy=self.vy, vx_new=self.vx_new,
-                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
+                            vx_cache=self.vx_cache)
             end = dtf()
 
             # Add the timing information
