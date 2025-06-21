@@ -58,7 +58,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             if self.vx_new is None:
                 self.vx_new = np.zeros((self.nx1, self.ny1))
 
-            self.vx_cache = np.zeros((self.nx1, self.ny1))
+            self.vx_cache = np.zeros((self.nx1, self.ny1, 9))
 
         def benchmark_preamble(self):
             start = dtf()
@@ -89,7 +89,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
-            self.vx_cache = np.zeros((self.nx1, self.ny1))
+            self.vx_cache = np.zeros((self.nx1, self.ny1, 9))
             self.vx_cache = prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
                                           dx=self.dx, dy=self.dy,
                                           etab=self.eta_b, etap=self.eta_p,
