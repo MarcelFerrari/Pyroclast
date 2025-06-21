@@ -18,22 +18,12 @@ used here.
 
 @nb.njit(cache=True, parallel=True)
 def _vx_rb_gs_sweep(nx1: int, ny1: int,
-                    dx: float, dy: float,
-                    etap: np.ndarray, etab: np.ndarray,
                     vx: np.ndarray, vy: np.ndarray,
                     relax_v: float, rhs: np.ndarray, BC: float,
-                    vx_cache: np.ndarray = None) -> tuple[np.ndarray, np.ndarray]:
+                    vx_cache: np.ndarray = None) -> np.ndarray:
     """
     In-place Red-Black Gauss-Seidel update for vx.
     """
-    if vx_cache is None:
-        vx_cache = np.ndarray((ny1, nx1, 9), dtype=np.float64)
-
-        vx_cache = prep_vx_cache(nx1=nx1, ny1=ny1,
-                                 dx=dx, dy=dy,
-                                 etap=etap, etab=etab,
-                                 vx_cache=vx_cache)
-
     # ----------------------------
     #  Red pass: (i + j) % 2 == 0
     # ----------------------------
@@ -66,7 +56,7 @@ def _vx_rb_gs_sweep(nx1: int, ny1: int,
     # Apply vx boundary conditions
     apply_vx_BC(vx, BC)
 
-    return vx, vx_cache
+    return vx
 
 
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
@@ -82,13 +72,22 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     module_name = os.path.basename(__file__).replace(".py", "")
 
     class BaseImplementationVX(bw.BenchmarkVX):
+        def __init__(self, arguments: bw.BenchmarkValidatorVX):
+            super().__init__(arguments=arguments)
+
+            self.vx_cache = np.zeros((self.nx1, self.ny1, 9))
+
         def benchmark_preamble(self):
             start = dtf()
+            self.vx_cache = prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
+                                          dx=self.dx, dy=self.dy,
+                                          etab=self.eta_b, etap=self.eta_p,
+                                          vx_cache=self.vx_cache)
+
             _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
-                            dx=self.dx, dy=self.dy,
-                            etap=self.eta_p, etab=self.eta_b,
                             vx=self.vx, vy=self.vy,
-                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
+                            vx_cache=self.vx_cache)
             end = dtf()
 
             # Add the timing information
@@ -108,14 +107,17 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
-            vx_cache = None
+            self.vx_cache = np.zeros((self.nx1, self.ny1, 9))
+            self.vx_cache = prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
+                                          dx=self.dx, dy=self.dy,
+                                          etab=self.eta_b, etap=self.eta_p,
+                                          vx_cache=self.vx_cache)
+
             for _ in range(self.args.max_iter):
-                vx, vx_cache = _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
-                                               dx=self.dx, dy=self.dy,
-                                               etap=self.eta_p, etab=self.eta_b,
-                                               vx=self.vx, vy=self.vy,
-                                               relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
-                                               vx_cache=vx_cache)
+                vx = _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
+                                     vx=self.vx, vy=self.vy,
+                                     relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
+                                     vx_cache=self.vx_cache)
             end = dtf()
 
             # Add the timing information
