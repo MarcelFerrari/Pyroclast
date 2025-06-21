@@ -63,7 +63,17 @@ def prep_vx_cache(nx1: int, ny1: int,
                   vx_cache: np.ndarray) -> np.ndarray:
     for i in nb.prange(1, ny1 - 1):
         for j in range(1, nx1 - 2):
-            coeff_vec = np.array(compute_coeffs(i, j, dx, dy, etap, etab))
-            vx_cache[i, j] = coeff_vec
+            vx1, vx2, vx3, vx4, vx5, vy1, vy2, vy3, vy4 = compute_coeffs(i, j, dx, dy, etap, etab)
+
+            vx_cache[i, j, 0] = vx1
+            vx_cache[i, j, 1] = vx2
+            vx_cache[i, j, 2] = vx3
+            vx_cache[i, j, 3] = vx4
+            vx_cache[i, j, 4] = vx5
+            vx_cache[i, j, 5] = vy1
+            vx_cache[i, j, 6] = vy2
+            vx_cache[i, j, 7] = vy3
+            vx_cache[i, j, 8] = vy4
+
 
     return vx_cache
