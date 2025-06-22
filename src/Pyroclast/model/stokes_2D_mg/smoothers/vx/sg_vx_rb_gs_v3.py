@@ -46,7 +46,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
 
     i = 1 + 1
     j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
-    for j in nb.prange(j_start, nx1 - 2, 2):
+    for j in range(j_start, nx1 - 2, 2):
         vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
 
         # Gauss-Seidel in-place update
@@ -78,7 +78,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
     # Tear down pipeline with last two rows of the black pass
     i = nx1 - 1 - 2
     j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
-    for j in nb.prange(j_start, nx1 - 2, 2):
+    for j in range(j_start, nx1 - 2, 2):
         vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
 
         # Gauss-Seidel in-place update
@@ -88,7 +88,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
 
     i = nx1 - 1 - 1
     j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
-    for j in nb.prange(j_start, nx1 - 2, 2):
+    for j in range(j_start, nx1 - 2, 2):
         vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
 
         # Gauss-Seidel in-place update
