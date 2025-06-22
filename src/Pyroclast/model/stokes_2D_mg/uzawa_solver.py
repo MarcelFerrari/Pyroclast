@@ -58,7 +58,7 @@ class UzawaSolver:
         # Set the residual tracker to use the same window size as the accelerator
         # We need to ensure that AA can build up a long enough history to be effective
         # before signaling convergence.
-        self.tracker = ResidualTracker(m=accel_m, tol_p=1e-17, tol_vx=1e-7, tol_vy = 1e-7, convergence_thresh=1e-2, divergence_thresh=2.0)
+        self.tracker = ResidualTracker(m=int(accel_m*1.5), tol_p=1e-17, tol_vx=1e-7, tol_vy = 1e-7, plateau_thresh=1e-2)
 
     @property
     def fine(self):
@@ -133,13 +133,11 @@ class UzawaSolver:
             self.state_next[1] = vy
             self.state_next[2] = self.p
             state_accel = self.accel.update(self.state_k, self.state_next)
+            
             if state_accel is not None:
                 self.fine.vx[:, :] = state_accel[0]
                 self.fine.vy[:, :] = state_accel[1]
                 self.p[:, :] = state_accel[2]
-
-                dp = self.p_ref - self.p[1, 1]
-                self.p += dp
                 apply_BC(self.p, self.fine.vx, self.fine.vy, self.BC)
 
             # Compute residuals and their norms
@@ -153,10 +151,12 @@ class UzawaSolver:
                 f"vx = {vx_res_rmse:.2e}, vy = {vy_res_rmse:.2e}")
 
             # Update the residual tracker
-            converged = self.tracker.update(p_res_rmse, vx_res_rmse, vy_res_rmse)
-            if converged and self.rescaler.done_rescaling():
-                    logger.info("Converged!")
-                    break
+            self.tracker.update(p_res_rmse, vx_res_rmse, vy_res_rmse)
+
+            # Check for convergence
+            if self.rescaler.done_rescaling() and self.tracker.converged():
+                logger.info("Converged!")
+                break
 
             if self.rescaler.update_viscosity(): # Return True if viscosity was rescaled
                 # Reset the accelerator, tracker and viscosity contrast

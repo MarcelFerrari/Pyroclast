@@ -32,11 +32,6 @@ def pressure_sweep(nx1, ny1, dx, dy,
 
             # Point-wise update of pressure
             p[i, j] += res * beta[i, j] * relax_p
-
-    # Anchor pressure at (1,1) if reference pressure is given
-    if p_ref is not None:
-        dp = p_ref - p[1, 1]
-        p += dp
     
     # Apply pressure boundary conditions
     apply_p_BC(p)
