@@ -33,26 +33,49 @@ def _vx_rb_gs_sweep(nx1, ny1,
     """
     In-place Red-Black Gauss-Seidel update for vx.
     """
+    # INFO: Numba does not support increment by != 1
     # Setup pipeline with the first two rows of the red pass or red-black gauss-seidel
-    i = 1
-    j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
-    for j in nb.prange(j_start, nx1 - 2, 2):
-        vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+    th = nth
 
-        # Gauss-Seidel in-place update
-        vx[i, j] = compute_neighbor_sum(
-            i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
-        )
+    # Less cells than threads
+    if th < (nx1 - 4) / 2:
+        i = 1
+        j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
+        for j in range(j_start, nx1 - 2, 2):
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
 
-    i = 1 + 1
-    j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
-    for j in range(j_start, nx1 - 2, 2):
-        vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+            # Gauss-Seidel in-place update
+            vx[i, j] = compute_neighbor_sum(
+                i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+            )
 
-        # Gauss-Seidel in-place update
-        vx[i, j] = compute_neighbor_sum(
-            i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
-        )
+        i = 1 + 1
+        j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
+        for j in range(j_start, nx1 - 2, 2):
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+
+            # Gauss-Seidel in-place update
+            vx[i, j] = compute_neighbor_sum(
+                i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+            )
+    else:
+        for p in nb.prange(th):
+            start = p * (nx1 - 3) / th
+            end = (nx1 - 2) if p + 1 == th else (p + 1) * (nx1 - 3) / th
+
+            for i in range(start, end):
+                for j in range(1, 3):
+
+                    # Abort if we have odd pairing
+                    if i + j != 0:
+                        continue
+
+                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+
+                    # Gauss-Seidel in-place update
+                    vx[i, j] = compute_neighbor_sum(
+                        i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+                    )
 
     for i in nb.prange(1 + 2, ny1 - 1):
         assert 1 <= i < ny1 -1, "Error with bounds - red pass"
@@ -75,26 +98,48 @@ def _vx_rb_gs_sweep(nx1, ny1,
                 i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
 
-    # Tear down pipeline with last two rows of the black pass
-    i = nx1 - 1 - 2
-    j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
-    for j in range(j_start, nx1 - 2, 2):
-        vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
 
-        # Gauss-Seidel in-place update
-        vx[i - 2, j] = compute_neighbor_sum(
-            i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
-        )
+    if th < (nx1 - 4) / 2:
+        # Tear down pipeline with last two rows of the black pass
+        i = nx1 - 1 - 2
+        j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
+        for j in range(j_start, nx1 - 2, 2):
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
 
-    i = nx1 - 1 - 1
-    j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
-    for j in range(j_start, nx1 - 2, 2):
-        vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
+            # Gauss-Seidel in-place update
+            vx[i - 2, j] = compute_neighbor_sum(
+                i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+            )
 
-        # Gauss-Seidel in-place update
-        vx[i - 2, j] = compute_neighbor_sum(
-            i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
-        )
+        i = nx1 - 1 - 1
+        j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
+        for j in range(j_start, nx1 - 2, 2):
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
+
+            # Gauss-Seidel in-place update
+            vx[i - 2, j] = compute_neighbor_sum(
+                i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+            )
+
+    else:
+        for p in nb.prange(th):
+            start = p * (nx1 - 3) / th
+            end = (nx1 - 2) if p + 1 == th else (p + 1) * (nx1 - 3) / th
+
+            for i in range(start, end):
+                for j in range(1, 3):
+
+                    # Abort if we have odd pairing
+                    if i + j == 0:
+                        continue
+
+                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap,
+                                                                                                   etab)
+
+                    # Gauss-Seidel in-place update
+                    vx[i, j] = compute_neighbor_sum(
+                        i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+                    )
 
     apply_vx_BC(vx, BC)
 
