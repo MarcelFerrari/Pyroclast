@@ -14,7 +14,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 import numba as nb
-import numpy as np
 
 @nb.njit(cache=True)
 def compute_hydrostatic_pressure(nx1, ny1, dy, rho, gy, p_ref, p):
@@ -71,10 +70,6 @@ def apply_p_BC(p):
     """
     Apply boundary conditions to the pressure field in-place.
     """
-    # Ensure that average pressure is zero
-    pbar = np.mean(p[1:-1, 1:-1])
-    p -= pbar
-
     # Dirichlet zero on all boundaries
     p[0, :] = 0.0
     p[-1, :] = 0.0
