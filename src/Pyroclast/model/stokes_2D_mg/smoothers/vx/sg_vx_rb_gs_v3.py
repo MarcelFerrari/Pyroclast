@@ -29,14 +29,13 @@ def _vx_rb_gs_sweep(nx1, ny1,
                     dx, dy,
                     etap, etab,
                     vx, vy,
-                    relax_v, rhs, BC) -> np.ndarray:
+                    relax_v, rhs, BC,
+                    th: int) -> np.ndarray:
     """
     In-place Red-Black Gauss-Seidel update for vx.
     """
     # INFO: Numba does not support increment by != 1
     # Setup pipeline with the first two rows of the red pass or red-black gauss-seidel
-    th = nth
-
     # Less cells than threads
     if th < (nx1 - 4) / 2:
         i = 1
@@ -165,7 +164,8 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                             dx=self.dx, dy=self.dy,
                             etap=self.eta_p, etab=self.eta_b,
                             vx=self.vx, vy=self.vy,
-                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
+                            th=nb.get_num_threads())
             end = dtf()
 
             # Add the timing information
@@ -190,7 +190,8 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                 dx=self.dx, dy=self.dy,
                                 etap=self.eta_p, etab=self.eta_b,
                                 vx=self.vx, vy=self.vy,
-                                relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+                                relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
+                                th=nb.get_num_threads())
             end = dtf()
 
             # Add the timing information
