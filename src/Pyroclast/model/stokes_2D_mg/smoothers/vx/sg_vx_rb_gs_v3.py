@@ -97,7 +97,6 @@ def _vx_rb_gs_sweep(nx1, ny1,
                 i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
 
-
     if th < (nx1 - 4) / 2:
         # Tear down pipeline with last two rows of the black pass
         i = nx1 - 1 - 2
