@@ -33,6 +33,8 @@ def vx_jacobi_sweep(nx1: int, ny1: int,
                     vx_new: np.ndarray,
                     relax_v:float, BC: float, rhs: np.ndarray,
                     cache_a: int):
+    # TODO rethink the loop that needs to be cache optimized
+
     # Loop only over the interior cells
     for i1 in nb.prange(1, ny1 - 1, cache_a):
         for i2 in range(cache_a):

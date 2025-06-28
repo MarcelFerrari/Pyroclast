@@ -35,6 +35,8 @@ def _vx_rb_gs_sweep(nx1, ny1,
     """
     In-place Red-Black Gauss-Seidel update for vx.
     """
+    # TODO rethink the loop that needs to be cache optimized
+
     for i1 in nb.prange(1, ny1 - 1 + 2, cache_a):
         for i2 in range(cache_a):
             i = i1 + i2
