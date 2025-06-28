@@ -448,22 +448,22 @@ def main():
         burn_in()
 
     # Run benchmark on modules and dimension list
-    for module in ns.modules:
-        for cc in ns.cpu:
+    for module in sorted(ns.modules):
+        for cc in sorted(ns.cpu, reverse=True):
             # Set the cpu count
             nb.set_num_threads(cc)
             if len(ns.cpu) > 1:
                 print(f"Working on {cc} cpu's")
 
-            for ca in ns.cache_a:
+            for ca in sorted(ns.cache_a):
                 if len(ns.cache_a) > 1:
                     print(f"Testing with Cache Size A = {ca}")
 
-                for cb in ns.cache_b:
+                for cb in sorted(ns.cache_b):
                     if len(ns.cache_b) > 1:
                         print(f"Testing with Cache Size B = {cb}")
 
-                    for dim in dim_list:
+                    for dim in sorted(dim_list, key=lambda d: d[0] * d[1], reverse=True):
                         print(f"Running Module: {module} with dimensions: x={dim[0]}, y={dim[1]}")
                         all_res.extend(benchmark_single_module(module_name=module,
                                                                nx=dim[0], ny=dim[1], max_iter=ns.iterations,
