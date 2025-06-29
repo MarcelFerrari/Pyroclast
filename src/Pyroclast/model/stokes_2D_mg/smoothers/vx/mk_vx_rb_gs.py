@@ -72,7 +72,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
 
                 # Iterate through j
                 for j in range(1, nx1 - 2):
-                    for i in range(start_y, end_b):
+                    for i in range(start_b, end_b):
                         if (i + j) % 2 == 1:
                             continue
 
@@ -100,7 +100,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
 
                 # Iterate through j
                 for j in range(1, nx1 - 2):
-                    for i in  range(start_y, end_b):
+                    for i in  range(start_b, end_b):
                         if (i + j) % 2 == 0:
                             continue
 
