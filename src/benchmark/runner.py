@@ -163,6 +163,108 @@ def burn_in():
     print(f"Burn in for {timeout} seconds done.")
 
 
+def benchmark_smoother(nx: int, ny: int,
+                       max_iter: int,
+                       profiling: bool, samples: int,
+                       cache_block_size_1: int, cache_block_size_2: int,
+                       module_name: str,
+                       cpu_count: int,
+                       benchmark: Type[BenchmarkSmoother]) -> BenchmarkResults:
+    """
+    Run the smoother benchmark
+    """
+    args = BenchmarkValidatorSmoother(
+        nx=nx, ny=ny,
+        max_iter=max_iter,
+        profile=profiling, samples=samples,
+        cache_block_size_1=cache_block_size_1,
+        cache_block_size_2=cache_block_size_2,
+    )
+
+    ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_2 else ""
+    cb_str = f"Cache Size 2: {cache_block_size_2}" if benchmark.needs_cache_block_size_2 else ""
+
+    print(f"Running Smoother Benchmark of: {module_name}\nDimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}")
+    local_benchmark = benchmark(arguments=args)
+    local_benchmark.benchmark()
+
+    return BenchmarkResults(
+        module=module_name,
+        benchmark_type=BenchmarkType.SMOOTHER,
+        input_model=args,
+        timings=local_benchmark.timings,
+        cpu_count=cpu_count,
+    )
+
+
+def benchmark_vx(nx: int, ny: int,
+                 max_iter: int,
+                 profiling: bool, samples: int,
+                 cache_block_size_1: int, cache_block_size_2: int,
+                 module_name: str,
+                 cpu_count: int,
+                 benchmark: Type[BenchmarkVX]) -> BenchmarkResults:
+    """
+    Run the smoother benchmark
+    """
+    args = BenchmarkValidatorVX(
+        nx=nx, ny=ny,
+        max_iter=max_iter,
+        profile=profiling, samples=samples,
+        cache_block_size_1=cache_block_size_1,
+        cache_block_size_2=cache_block_size_2,
+    )
+
+    ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_2 else ""
+    cb_str = f"Cache Size 2: {cache_block_size_2}" if benchmark.needs_cache_block_size_2 else ""
+
+    print(f"Running Benchmark VX of: {module_name}\nDimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}")
+    local_benchmark = benchmark(arguments=args)
+    local_benchmark.benchmark()
+
+    return BenchmarkResults(
+        module=module_name,
+        benchmark_type=BenchmarkType.SMOOTHER,
+        input_model=args,
+        timings=local_benchmark.timings,
+        cpu_count=cpu_count,
+    )
+
+
+def benchmark_vy(nx: int, ny: int,
+                 max_iter: int,
+                 profiling: bool, samples: int,
+                 cache_block_size_1: int, cache_block_size_2: int,
+                 module_name: str,
+                 cpu_count: int,
+                 benchmark: Type[BenchmarkVY]) -> BenchmarkResults:
+    """
+    Run the smoother benchmark
+    """
+    args = BenchmarkValidatorVY(
+        nx=nx, ny=ny,
+        max_iter=max_iter,
+        profile=profiling, samples=samples,
+        cache_block_size_1=cache_block_size_1,
+        cache_block_size_2=cache_block_size_2,
+    )
+
+    ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_2 else ""
+    cb_str = f"Cache Size 2: {cache_block_size_2}" if benchmark.needs_cache_block_size_2 else ""
+
+    print(f"Running Benchmark VY of: {module_name}\nDimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}")
+    local_benchmark = benchmark(arguments=args)
+    local_benchmark.benchmark()
+
+    return BenchmarkResults(
+        module=module_name,
+        benchmark_type=BenchmarkType.SMOOTHER,
+        input_model=args,
+        timings=local_benchmark.timings,
+        cpu_count=cpu_count,
+    )
+
+
 def benchmark_single_module(module_name: str,
                             nx: int,
                             ny: int,
