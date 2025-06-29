@@ -301,7 +301,7 @@ def benchmark_single_module(module_name: str,
     # Run benchmark for entire smoother
     if bm_s is not None and BenchmarkType.SMOOTHER in test_set:
         caches_a = cache_a.copy() if bm_s.needs_cache_block_size_1 else [None]
-        caches_b = cache_b.copy() if bm_s.needs_cache_block_size_1 else [None]
+        caches_b = cache_b.copy() if bm_s.needs_cache_block_size_2 else [None]
 
         for ca, cb, dim, cc in itertools.product(sorted(caches_a),
                                                  sorted(caches_b),
@@ -320,7 +320,7 @@ def benchmark_single_module(module_name: str,
     # Run benchmark on vx_subroutine
     if bm_vx is not None and BenchmarkType.VX in test_set:
         caches_a = cache_a.copy() if bm_vx.needs_cache_block_size_1 else [None]
-        caches_b = cache_b.copy() if bm_vx.needs_cache_block_size_1 else [None]
+        caches_b = cache_b.copy() if bm_vx.needs_cache_block_size_2 else [None]
 
         for ca, cb, dim, cc in itertools.product(sorted(caches_a),
                                                  sorted(caches_b),
@@ -339,7 +339,7 @@ def benchmark_single_module(module_name: str,
     # Run benchmark on vy_subroutine
     if bm_vy is not None and BenchmarkType.VY in test_set:
         caches_a = cache_a.copy() if bm_vy.needs_cache_block_size_1 else [None]
-        caches_b = cache_b.copy() if bm_vy.needs_cache_block_size_1 else [None]
+        caches_b = cache_b.copy() if bm_vy.needs_cache_block_size_2 else [None]
 
         for ca, cb, dim, cc in itertools.product(sorted(caches_a),
                                                  sorted(caches_b),
