@@ -198,7 +198,7 @@ def benchmark_smoother(nx: int, ny: int,
         cache_block_size_2=cache_block_size_2,
     )
 
-    ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_2 else ""
+    ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
     cb_str = f"Cache Size 2: {cache_block_size_2}" if benchmark.needs_cache_block_size_2 else ""
 
     print(f"Running Smoother Benchmark of: {module_name}\nDimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}")
@@ -232,7 +232,7 @@ def benchmark_vx(nx: int, ny: int,
         cache_block_size_2=cache_block_size_2,
     )
 
-    ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_2 else ""
+    ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
     cb_str = f"Cache Size 2: {cache_block_size_2}" if benchmark.needs_cache_block_size_2 else ""
 
     print(f"Running Benchmark VX of: {module_name}\nDimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}")
@@ -266,7 +266,7 @@ def benchmark_vy(nx: int, ny: int,
         cache_block_size_2=cache_block_size_2,
     )
 
-    ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_2 else ""
+    ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
     cb_str = f"Cache Size 2: {cache_block_size_2}" if benchmark.needs_cache_block_size_2 else ""
 
     print(f"Running Benchmark VY of: {module_name}\nDimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}")
