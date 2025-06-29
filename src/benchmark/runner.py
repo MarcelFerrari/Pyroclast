@@ -7,6 +7,7 @@ import os
 import warnings
 from typing import Callable, Type, Optional
 
+import numba as nb
 import benchmark.config as config
 import benchmark.defaults as defaults
 import benchmark.results_processing as res_proc
@@ -307,6 +308,7 @@ def benchmark_single_module(module_name: str,
                                                  sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
                                                  sorted(cpu_count, reverse=True)):
 
+            nb.set_num_threads(cc)
             results.append(benchmark_smoother(nx=dim[0], ny=dim[1],
                                               max_iter=max_iter,
                                               profiling=profiling, samples=samples,
@@ -325,6 +327,7 @@ def benchmark_single_module(module_name: str,
                                                  sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
                                                  sorted(cpu_count, reverse=True)):
 
+            nb.set_num_threads(cc)
             results.append(benchmark_vx(nx=dim[0], ny=dim[1],
                                         max_iter=max_iter,
                                         profiling=profiling, samples=samples,
@@ -343,6 +346,7 @@ def benchmark_single_module(module_name: str,
                                                  sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
                                                  sorted(cpu_count, reverse=True)):
 
+            nb.set_num_threads(cc)
             results.append(benchmark_vy(nx=dim[0], ny=dim[1],
                                         max_iter=max_iter,
                                         profiling=profiling, samples=samples,
