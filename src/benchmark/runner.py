@@ -266,15 +266,14 @@ def benchmark_vy(nx: int, ny: int,
 
 
 def benchmark_single_module(module_name: str,
-                            nx: int,
-                            ny: int,
+                            dim: list[tuple[int, int]],
                             max_iter: int,
                             profiling: bool,
                             samples: int,
                             test_set: list[BenchmarkType],
-                            cache_a: int,
-                            cache_b: int,
-                            cpu_count: int,
+                            cache_a: list[int],
+                            cache_b: list[int],
+                            cpu_count: list[int],
                             ) -> list[BenchmarkResults]:
     """
     Run the benchmark for a single module. Requires this module to have defined a benchmark factory.
@@ -300,69 +299,57 @@ def benchmark_single_module(module_name: str,
 
     # Run benchmark for entire smoother
     if bm_s is not None and BenchmarkType.SMOOTHER in test_set:
-        args = BenchmarkValidatorSmoother(
-            nx=nx, ny=ny,
-            max_iter=max_iter,
-            profile=profiling, samples=samples,
-            cache_block_size_1=cache_a,
-            cache_block_size_2=cache_b,
-        )
+        caches_a = cache_a.copy() if bm_s.needs_cache_block_size_1 else [None]
+        caches_b = cache_b.copy() if bm_s.needs_cache_block_size_1 else [None]
 
-        print(f"Running Smoother Benchmark of: {module_name}")
-        local_benchmark = bm_s(arguments=args)
-        local_benchmark.benchmark()
+        for ca, cb, dim, cc in itertools.product(sorted(caches_a),
+                                                 sorted(caches_b),
+                                                 sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
+                                                 sorted(cpu_count, reverse=True)):
 
-        results.append(BenchmarkResults(
-            module=module_name,
-            benchmark_type=BenchmarkType.SMOOTHER,
-            input_model=args,
-            timings=local_benchmark.timings,
-            cpu_count=cpu_count,
-        ))
+            results.append(benchmark_smoother(nx=dim[0], ny=dim[1],
+                                              max_iter=max_iter,
+                                              profiling=profiling, samples=samples,
+                                              cache_block_size_1=ca, cache_block_size_2=cb,
+                                              module_name=module_name,
+                                              cpu_count=cc,
+                                              benchmark=bm_s))
 
     # Run benchmark on vx_subroutine
     if bm_vx is not None and BenchmarkType.VX in test_set:
-        args = BenchmarkValidatorVX(
-            nx=nx, ny=ny,
-            max_iter=max_iter,
-            profile=profiling, samples=samples,
-            cache_block_size_1=cache_a,
-            cache_block_size_2=cache_b,
-        )
+        caches_a = cache_a.copy() if bm_vx.needs_cache_block_size_1 else [None]
+        caches_b = cache_b.copy() if bm_vx.needs_cache_block_size_1 else [None]
 
-        print(f"Running VX Benchmark of: {module_name}")
-        local_benchmark = bm_vx(arguments=args)
-        local_benchmark.benchmark()
+        for ca, cb, dim, cc in itertools.product(sorted(caches_a),
+                                                 sorted(caches_b),
+                                                 sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
+                                                 sorted(cpu_count, reverse=True)):
 
-        results.append(BenchmarkResults(
-            module=module_name,
-            benchmark_type=BenchmarkType.VX,
-            input_model=args,
-            timings=local_benchmark.timings,
-            cpu_count=cpu_count,
-        ))
+            results.append(benchmark_vx(nx=dim[0], ny=dim[1],
+                                        max_iter=max_iter,
+                                        profiling=profiling, samples=samples,
+                                        cache_block_size_1=ca, cache_block_size_2=cb,
+                                        module_name=module_name,
+                                        cpu_count=cc,
+                                        benchmark=bm_vx))
 
     # Run benchmark on vy_subroutine
     if bm_vy is not None and BenchmarkType.VY in test_set:
-        args = BenchmarkValidatorVY(
-            nx=nx, ny=ny,
-            max_iter=max_iter,
-            profile=profiling, samples=samples,
-            cache_block_size_1=cache_a,
-            cache_block_size_2=cache_b,
-        )
+        caches_a = cache_a.copy() if bm_vy.needs_cache_block_size_1 else [None]
+        caches_b = cache_b.copy() if bm_vy.needs_cache_block_size_1 else [None]
 
-        print(f"Running VY Benchmark of: {module_name}")
-        local_benchmark = bm_vy(arguments=args)
-        local_benchmark.benchmark()
+        for ca, cb, dim, cc in itertools.product(sorted(caches_a),
+                                                 sorted(caches_b),
+                                                 sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
+                                                 sorted(cpu_count, reverse=True)):
 
-        results.append(BenchmarkResults(
-            module=module_name,
-            benchmark_type=BenchmarkType.VY,
-            input_model=args,
-            timings=local_benchmark.timings,
-            cpu_count=cpu_count,
-        ))
+            results.append(benchmark_vy(nx=dim[0], ny=dim[1],
+                                        max_iter=max_iter,
+                                        profiling=profiling, samples=samples,
+                                        cache_block_size_1=ca, cache_block_size_2=cb,
+                                        module_name=module_name,
+                                        cpu_count=cc,
+                                        benchmark=bm_vy))
 
     return results
 
