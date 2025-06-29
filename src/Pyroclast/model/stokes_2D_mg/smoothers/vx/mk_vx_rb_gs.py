@@ -22,7 +22,7 @@ from typing import Type
 import numba as nb
 import numpy as np
 
-from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
+from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
 from .inline_vx import compute_coeffs, compute_neighbor_sum
 
 
