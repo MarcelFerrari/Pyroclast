@@ -137,19 +137,26 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     not being available in a production environment.
     """
     import benchmark.benchmark_wrapper as bw
-    from benchmark.benchmark_validators import Stage, Timing
+    from benchmark.benchmark_validators import Stage, Timing, BenchmarkValidatorVX
     from benchmark.utils import dtf
 
     module_name = os.path.basename(__file__).replace(".py", "")
 
     class BaseImplementationVX(bw.BenchmarkVX):
+        def __init__(self, arguments: BenchmarkValidatorVX):
+            super().__init__(arguments=arguments)
+            self.cache_block_size_1 = arguments.cache_block_size_1
+            self.needs_cache_block_size_1 = True
+
         def benchmark_preamble(self):
+            th = nb.get_num_threads()
             start = dtf()
             _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
                             dx=self.dx, dy=self.dy,
                             etap=self.eta_p, etab=self.eta_b,
                             vx=self.vx, vy=self.vy,
-                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
+                            th=th, cache_a=self.cache_block_size_1)
             end = dtf()
 
             # Add the timing information
@@ -168,13 +175,15 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             Perform the actual run of the benchmark.
             """
+            th = nb.get_num_threads()
             start = dtf()
             for _ in range(self.args.max_iter):
                 _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
                                 dx=self.dx, dy=self.dy,
                                 etap=self.eta_p, etab=self.eta_b,
                                 vx=self.vx, vy=self.vy,
-                                relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+                                relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
+                                th=th, cache_a=self.cache_block_size_1)
             end = dtf()
 
             # Add the timing information
