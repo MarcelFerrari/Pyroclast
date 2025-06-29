@@ -15,53 +15,99 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 
+import math
 import os.path
 from typing import Type
 
 import numba as nb
 import numpy as np
 
-from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
+from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
 from .inline_vx import compute_coeffs, compute_neighbor_sum
 
 
+# Cache optimized version of the regular red-black gauss-seidel
+
+>>>>>>> 4bfd759 (+ Implemented non-if optimized implementation rb_gs staggered)
 @nb.njit(cache=True, parallel=True)
 def _vx_rb_gs_sweep(nx1, ny1,
                     dx, dy,
                     etap, etab,
                     vx, vy,
                     relax_v, rhs, BC,
-                    cache_a: int) -> np.ndarray:
+                    th: int, cache_a: int) -> np.ndarray:
     """
     In-place Red-Black Gauss-Seidel update for vx.
     """
-    # TODO rethink the loop that needs to be cache optimized
+    # Case when we less cores than we want
+    if th < (ny1 - 2):
+        # ----------------------------
+        #  Red pass: (i + j) % 2 == 0
+        # ----------------------------
+        for i in nb.prange(1, ny1 - 1):
+            j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
+            for j in range(j_start, nx1 - 2, 2):
+                vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
 
-    for i1 in nb.prange(1, ny1 - 1 + 2, cache_a):
-        for i2 in range(cache_a):
-            i = i1 + i2
-            # Staggered Red pass
-            if 1 <= i < ny1 - 1:
-                j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
-                for j in range(j_start, nx1 - 2, 2):
-                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+                # Gauss-Seidel in-place update
+                vx[i, j] = compute_neighbor_sum(
+                    i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+                )
 
-                    # Gauss-Seidel in-place update
-                    vx[i, j] = compute_neighbor_sum(
-                        i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
-                    )
+        # Apply vx boundary conditions
+        apply_vx_BC(vx, BC)
 
-            # Staggered black pass
-            if 1 <= i - 2 <= ny1 - 1:
-                j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
-                for j in range(j_start, nx1 - 2, 2):
-                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
+        # ----------------------------
+        #  Black pass: (i + j) % 2 == 1
+        # ----------------------------
+        for i in nb.prange(1, ny1 - 1):
+            j_start = 2 if i % 2 == 0 else 1  # Black pass starts on odd (i+j)
+            for j in range(j_start, nx1 - 2, 2):
+                vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
 
-                    # Gauss-Seidel in-place update
-                    vx[i - 2, j] = compute_neighbor_sum(
-                        i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
-                    )
+                # Gauss-Seidel in-place update
+                vx[i, j] = compute_neighbor_sum(
+                    i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+                )
 
+    else:
+        # Work Split for red pass
+        for p in nb.prange(th):
+            start_y = p * (ny1 - 2) / th + 1
+            end_y = (ny1 - 1) if p + 1 == th else (p + 1) * (ny1 - 2) / th + 1
+
+            blocks = math.ceil((end_y - start_y) / cache_a)
+
+            # Iterate through the cache blocks
+            for b in range(blocks):
+                start_b = start_y + b * cache_a
+                end_b = end_y if b + 1 == blocks else start_y + (b + 1) * cache_a
+
+                # Iterate through j
+                for j in range(1, nx1):
+                    for i in range(start_b, end_b):
+                        # Red pass
+                        if 1 <= j <= nx1 - 2 and i + j % 2 == 0:
+                            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy,
+                                                                                                           etap, etab)
+
+                            # Gauss-Seidel in-place update
+                            vx[i, j] = compute_neighbor_sum(
+                                i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+                            )
+
+                        # black pass
+                        if 1 <= j-2 <= nx1 - 2 and i + j - 2 % 2 == 0:
+                            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j - 2, dx, dy,
+                                                                                                           etap, etab)
+
+                            # Gauss-Seidel in-place update
+                            vx[i, j - 2] = compute_neighbor_sum(
+                                i, j - 2, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy,
+                                rhs
+                            )
+
+    # Apply vx boundary conditions
     apply_vx_BC(vx, BC)
 
     return vx
@@ -74,19 +120,27 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     not being available in a production environment.
     """
     import benchmark.benchmark_wrapper as bw
-    from benchmark.benchmark_validators import Stage, Timing
+    from benchmark.benchmark_validators import Stage, Timing, BenchmarkValidatorVX
     from benchmark.utils import dtf
 
     module_name = os.path.basename(__file__).replace(".py", "")
 
     class BaseImplementationVX(bw.BenchmarkVX):
+        needs_cache_block_size_1: bool = True
+
+        def __init__(self, arguments: BenchmarkValidatorVX):
+            super().__init__(arguments=arguments)
+            self.cache_block_size_1 = arguments.cache_block_size_1
+
         def benchmark_preamble(self):
+            th = nb.get_num_threads()
             start = dtf()
             _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
                             dx=self.dx, dy=self.dy,
                             etap=self.eta_p, etab=self.eta_b,
                             vx=self.vx, vy=self.vy,
-                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
+                            th=th, cache_a=self.cache_block_size_1)
             end = dtf()
 
             # Add the timing information
@@ -105,13 +159,15 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             Perform the actual run of the benchmark.
             """
+            th = nb.get_num_threads()
             start = dtf()
             for _ in range(self.args.max_iter):
                 _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
                                 dx=self.dx, dy=self.dy,
                                 etap=self.eta_p, etab=self.eta_b,
                                 vx=self.vx, vy=self.vy,
-                                relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+                                relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs,
+                                th=th, cache_a=self.cache_block_size_1)
             end = dtf()
 
             # Add the timing information

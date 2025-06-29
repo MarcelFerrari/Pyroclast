@@ -41,7 +41,7 @@ def vx_jacobi_sweep(nx1: int, ny1: int,
 
         blocks = math.ceil((end_y - start_y) / cache_a)
 
-        for b in blocks:
+        for b in range(blocks):
             start_b = start_y + b * cache_a
             end_b = end_y if blocks == b + 1 else start_y + (b + 1) * cache_a
 
