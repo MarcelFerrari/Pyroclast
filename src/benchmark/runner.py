@@ -552,27 +552,11 @@ def main():
 
     # Run benchmark on modules and dimension list
     for module in sorted(ns.modules):
-        for ca in sorted(ns.cache_a):
-            if len(ns.cache_a) > 1:
-                print(f"Testing with Cache Size A = {ca}")
-
-            for cb in sorted(ns.cache_b):
-                if len(ns.cache_b) > 1:
-                    print(f"Testing with Cache Size B = {cb}")
-
-                for dim in sorted(dim_list, key=lambda d: d[0] * d[1], reverse=True):
-                    for cc in sorted(ns.cpu, reverse=True):
-                        # Set the cpu count
-                        nb.set_num_threads(cc)
-                        if len(ns.cpu) > 1:
-                            print(f"Working on {cc} cpu's")
-
-                        print(f"Running Module: {module} with dimensions: x={dim[0]}, y={dim[1]}")
-                        all_res.extend(benchmark_single_module(module_name=module,
-                                                               nx=dim[0], ny=dim[1], max_iter=ns.iterations,
-                                                               profiling=ns.profiling, samples=ns.samples,
-                                                               cache_a=ca, cache_b=cb,
-                                                               test_set=ns.test, cpu_count=cc))
+        all_res.extend(benchmark_single_module(module_name=module,
+                                               dim=dim_list, max_iter=ns.iterations,
+                                               profiling=ns.profiling, samples=ns.samples,
+                                               cache_a=ns.cache_a, cache_b=ns.cache_b,
+                                               test_set=ns.test, cpu_count=ns.cpu))
 
     # End of overall benchmark
     end = dtf()
