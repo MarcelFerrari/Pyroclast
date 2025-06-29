@@ -32,6 +32,9 @@ class BaseBenchmark:
 
     args: BaseBenchmarkValidator
 
+    needs_cache_block_size_1: bool = False
+    needs_cache_block_size_2: bool = False
+
     def __init__(self,
                  arguments: BaseBenchmarkValidator):
         """
