@@ -23,8 +23,6 @@ import os
 import warnings
 from typing import Callable, Type, Optional
 
-import numba as nb
-
 import benchmark.config as config
 import benchmark.defaults as defaults
 import benchmark.results_processing as res_proc
