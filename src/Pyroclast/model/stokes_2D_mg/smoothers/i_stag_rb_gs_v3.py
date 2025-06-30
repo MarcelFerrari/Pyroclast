@@ -23,18 +23,21 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
     """
     Full Uzawa smoother for velocity and pressure.
     """
+    th = nb.get_num_threads()
     for _ in range(max_iter):
         vx = _vx_rb_gs_sweep(nx1, ny1,
                              dx, dy,
                              etap, etab,
                              vx, vy,
-                             relax_v, vx_rhs, BC)
+                             relax_v, vx_rhs, BC,
+                             th)
 
         vy = _vy_rb_gs_sweep(nx1, ny1,
                              dx, dy,
                              etap, etab,
                              vx, vy,
-                             relax_v, vy_rhs, BC)
+                             relax_v, vy_rhs, BC,
+                             th)
 
     return vx, vy
 
