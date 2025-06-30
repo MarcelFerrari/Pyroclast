@@ -3,8 +3,8 @@ import numpy as np
 import  os
 from typing import Type
 
-from vx.sg_vx_rb_gs_v1 import _vx_rb_gs_sweep
-from vy.sg_vy_rb_gs_v1 import _vy_rb_gs_sweep
+from Pyroclast.model.stokes_2D_mg.smoothers.vx.sg_vx_rb_gs_v1 import _vx_rb_gs_sweep
+from Pyroclast.model.stokes_2D_mg.smoothers.vy.sg_vy_rb_gs_v1 import _vy_rb_gs_sweep
 
 
 """
