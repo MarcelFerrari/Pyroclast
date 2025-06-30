@@ -25,7 +25,7 @@ from .inline_vy import compute_coeffs, compute_neighbor_sum
 
 
 @nb.njit(cache=True, parallel=True)
-def _vx_rb_gs_sweep(nx1, ny1,
+def _vy_rb_gs_sweep(nx1, ny1,
                     dx, dy,
                     etap, etab,
                     vx, vy,
