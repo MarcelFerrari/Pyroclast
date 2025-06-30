@@ -81,12 +81,12 @@ def _vy_rb_gs_sweep(nx1, ny1,
         # assert 1 <= i - 2 < ny1 -1, "Error with bounds - black pass"
         j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+            vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
 
-            vy[i, j] = compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
-                                            vx=vx, vy=vy, rhs=rhs,
-                                            vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                            vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
+            vy[i - 2, j] = compute_neighbor_sum(i=i - 2, j=j, relax_v=relax_v,
+                                                vx=vx, vy=vy, rhs=rhs,
+                                                vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
+                                                vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
 
     if th < (nx1 - 4) / 2:
         # Tear down pipeline with last two rows of the black pass
