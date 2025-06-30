@@ -66,60 +66,41 @@ def _vx_rb_gs_sweep(nx1, ny1,
                 )
 
     else:
-        # Work Split for red pass
-        for p in nb.prange(th):
-            start_y = p * (ny1 - 2) / th + 1
-            end_y = (ny1 - 1) if p + 1 == th else (p + 1) * (ny1 - 2) / th + 1
+        blocks = math.ceil((ny1 - 2) / cache_a)
 
-            blocks = math.ceil((end_y - start_y) / cache_a)
+        # Red pass
+        for b in nb.prange(blocks):
+            start = 1 + (b * cache_a)
+            end = ny1-1 if b + 1 == blocks else 1 + ((b + 1) * cache_a)
 
-            # Iterate through the cache blocks
-            for b in range(blocks):
-                start_b = start_y + b * cache_a
-                end_b = end_y if b + 1 == blocks else start_y + (b + 1) * cache_a
+            # Iterate through slab of matrix
+            for j in range(1, nx1 - 2):
+                start_b = start if (start + j) % 2 == 0 else start + 1
+                for i in range(start_b, end, 2):
+                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap,
+                                                                                                   etab)
 
-                # Iterate through j
-                for j in range(1, nx1 - 2):
+                    # Gauss-Seidel in-place update
+                    vx[i, j] = compute_neighbor_sum(
+                        i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+                    )
 
-                    for i in range(start_b, end_b):
-                        if (i + j) % 2 == 1:
-                            continue
+    # Black pass
+    for b in nb.prange(blocks):
+        start = 1 + (b * cache_a)
+        end = ny1 - 1 if b + 1 == blocks else 1 + ((b + 1) * cache_a)
 
-                        vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy,
-                                                                                                       etap, etab)
+        # Iterate through slab of matrix
+        for j in range(1, nx1 - 2):
+            start_b = start if (start + j) % 2 == 1 else start + 1
+            for i in range(start_b, end, 2):
+                vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap,
+                                                                                               etab)
 
-                        # Gauss-Seidel in-place update
-                        vx[i, j] = compute_neighbor_sum(
-                            i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
-                        )
-
-        # INFO: Join needed for race conditions
-
-        # Work Split for red pass
-        for p in nb.prange(th):
-            start_y = p * (ny1 - 2) / th + 1
-            end_y = (ny1 - 1) if p + 1 == th else (p + 1) * (ny1 - 2) / th + 1
-
-            blocks = math.ceil((end_y - start_y) / cache_a)
-
-            # Iterate through the cache blocks
-            for b in range(blocks):
-                start_b = start_y + b * cache_a
-                end_b = end_y if b + 1 == blocks else start_y + (b + 1) * cache_a
-
-                # Iterate through j
-                for j in range(1, nx1 - 2):
-                    for i in  range(start_b, end_b):
-                        if (i + j) % 2 == 0:
-                            continue
-
-                        vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy,
-                                                                                                       etap, etab)
-
-                        # Gauss-Seidel in-place update
-                        vx[i, j] = compute_neighbor_sum(
-                            i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
-                        )
+                # Gauss-Seidel in-place update
+                vx[i, j] = compute_neighbor_sum(
+                    i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
+                )
 
     # Apply vx boundary conditions
     apply_vx_BC(vx, BC)
