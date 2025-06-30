@@ -19,9 +19,11 @@ import numpy as np
 import  os
 from typing import Type
 
+
 import Pyroclast.model.stokes_2D_mg.smoothers.vx.inline_vx as vx_op
 import Pyroclast.model.stokes_2D_mg.smoothers.vy.inline_vy as vy_op
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
+
 
 @nb.njit(cache=True, parallel=True)
 def velocity_smoother_rb_gs(nx1: int, ny1: int,
@@ -32,50 +34,62 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int):
     for _ in range(max_iter):
         for i in nb.prange(1, ny1 - 1 + 6):
-            if 1 <= i < ny1 - 1:
-                j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
+            i_loc_1 = i
+            if 1 <= i_loc_1 < ny1 - 1:
+                j_start = 1 if i_loc_1 % 2 == 0 else 2  # Red pass starts on even (i+j)
                 for j in range(j_start, nx1 - 2, 2):
-                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = vx_op.compute_coeffs(i, j, dx, dy, etap, etab)
+                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = vx_op.compute_coeffs(
+                        i=i_loc_1, j=j, dx=dx, dy=dy, etap=etap, etab=etab)
 
                     # Gauss-Seidel in-place update
-                    vx[i, j] = vx_op.compute_neighbor_sum(
-                        i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, vx_rhs
+                    vx[i_loc_1, j] = vx_op.compute_neighbor_sum(
+                        i=i_loc_1, j=j, relax_v=relax_v,
+                        vx=vx, vy=vy, rhs=vx_rhs,
+                        vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4, vx_c5=vx_c5,
+                        vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4
                     )
 
             # Staggered black pass
-            if 1 <= i - 2 <= ny1 - 1:
-                j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
+            i_loc_2 = i - 2
+            if 1 <= i_loc_2 <= ny1 - 1:
+                j_start = 2 if i_loc_2 % 2 == 0 else 1  # Black pass starts on odd (i+j)
                 for j in range(j_start, nx1 - 2, 2):
-                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = vx_op.compute_coeffs(i - 2, j, dx, dy,
-                                                                                                   etap, etab)
+                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = vx_op.compute_coeffs(
+                        i=i_loc_2, j=j, dx=dx, dy=dy, etap=etap, etab=etab)
 
                     # Gauss-Seidel in-place update
-                    vx[i - 2, j] = vx_op.compute_neighbor_sum(
-                        i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, vx_rhs
+                    vx[i_loc_2, j] = vx_op.compute_neighbor_sum(
+                        i=i_loc_2, j=j, relax_v=relax_v,
+                        vx=vx, vy=vy, rhs=vx_rhs,
+                        vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4, vx_c5=vx_c5,
+                        vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4
                     )
 
-            if 1 <= i - 4 <= ny1 - 1:
-                j_start = 1 if (i - 4) % 2 == 0 else 2  # Red pass starts on even (i+j)
+            i_loc_3 = i - 4
+            if 1 <= i_loc_3 <= ny1 - 1:
+                j_start = 1 if i_loc_3 % 2 == 0 else 2  # Red pass starts on even (i+j)
                 for j in range(j_start, nx1 - 2, 2):
-                    vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = vy_op.compute_coeffs(i - 4, j, dx, dy, etap, etab)
+                    vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = vy_op.compute_coeffs(
+                        i=i_loc_3, j=j, dx=dx, dy=dy, etap=etap, etab=etab)
 
-                    vy[i - 4, j] = vy_op.compute_neighbor_sum(i=i - 4, j=j, relax_v=relax_v,
-                                                              vx=vx, vy=vy, rhs=vy_rhs,
-                                                              vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                                              vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
+                    vy[i_loc_3, j] = vy_op.compute_neighbor_sum(
+                        i=i_loc_3, j=j, relax_v=relax_v,
+                        vx=vx, vy=vy, rhs=vy_rhs,
+                        vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
+                        vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
 
-
-            if 1 <= i - 6 <= ny1 - 1:
-                j_start = 2 if (i - 6) % 2 == 0 else 1  # Black pass starts on odd (i+j)
+            i_loc_4 = i - 6
+            if 1 <= i_loc_4 <= ny1 - 1:
+                j_start = 2 if i_loc_4 % 2 == 0 else 1  # Black pass starts on odd (i+j)
                 for j in range(j_start, nx1 - 2, 2):
-                    vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = vy_op.compute_coeffs(i - 6, j, dx,
-                                                                                                         dy, etap, etab)
+                    vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = vy_op.compute_coeffs(
+                        i=i_loc_4, j=j, dx=dx, dy=dy, etap=etap, etab=etab)
 
-                    vy[i - 6, j] = vy_op.compute_neighbor_sum(i=i - 6, j=j, relax_v=relax_v,
-                                                              vx=vx, vy=vy, rhs=vy_rhs,
-                                                              vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4,
-                                                              vy_c5=vy_c5,
-                                                              vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
+                    vy[i_loc_4, j] = vy_op.compute_neighbor_sum(
+                        i=i_loc_4, j=j, relax_v=relax_v,
+                        vx=vx, vy=vy, rhs=vy_rhs,
+                        vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
+                        vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
 
         apply_vx_BC(vx, BC)
         apply_vy_BC(vy, BC)
