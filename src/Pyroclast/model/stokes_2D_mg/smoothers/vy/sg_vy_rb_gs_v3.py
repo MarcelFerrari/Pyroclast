@@ -15,7 +15,7 @@ pipeline is faster than compiling an if into the the for loop.
 
 
 @nb.njit(cache=True, parallel=True)
-def _vx_rb_gs_sweep(nx1, ny1,
+def _vy_rb_gs_sweep(nx1, ny1,
                     dx, dy,
                     etap, etab,
                     vx, vy,
