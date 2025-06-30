@@ -308,6 +308,13 @@ def benchmark_single_module(module_name: str,
                                                  sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
                                                  sorted(cpu_count, reverse=True)):
 
+            if cc == 16:
+                os.sched_setaffinity(0, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+            elif cc == 8:
+                os.sched_setaffinity(0, {0, 2, 4, 6, 8, 10, 12, 14})
+            else:
+                os.sched_setaffinity(0, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+
             nb.set_num_threads(cc)
             results.append(benchmark_smoother(nx=dim[0], ny=dim[1],
                                               max_iter=max_iter,
