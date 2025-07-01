@@ -38,7 +38,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
     In-place Red-Black Gauss-Seidel update for vx.
     """
     # Case when we less cores than we want
-    if th < (ny1 - 2):
+    if th > (ny1 - 2):
         # ----------------------------
         #  Red pass: (i + j) % 2 == 0
         # ----------------------------
