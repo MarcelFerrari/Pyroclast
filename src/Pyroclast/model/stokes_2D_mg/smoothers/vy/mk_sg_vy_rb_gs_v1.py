@@ -74,7 +74,7 @@ def _vy_rb_gs_sweep(nx1, ny1,
                 for j in range(1, nx1 - 2):
                     for i in range(start_b, end_b):
                         # Red pass
-                        if 1 <= j <= nx1 - 2 and i + j % 2 == 0:
+                        if 1 <= j <= nx1 - 2 and (i + j) % 2 == 0:
                             vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j, dx, dy,
                                                                                                            etap, etab)
 
@@ -85,7 +85,7 @@ def _vy_rb_gs_sweep(nx1, ny1,
                                                             vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
 
                         # black pass
-                        if 1 <= j-2 <= nx1 - 2 and i + j - 2 % 2 == 1:
+                        if 1 <= j-2 <= nx1 - 2 and (i + j - 2) % 2 == 1:
                             vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j-2, dx, dy,
                                                                                                            etap, etab)
 
