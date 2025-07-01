@@ -89,7 +89,7 @@ def _vy_rb_gs_sweep(nx1, ny1,
                             vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j-2, dx, dy,
                                                                                                            etap, etab)
 
-                            vy[i, j-2] = compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
+                            vy[i, j-2] = compute_neighbor_sum(i=i, j=j-2, relax_v=relax_v,
                                                             vx=vx, vy=vy, rhs=rhs,
                                                             vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4,
                                                             vy_c5=vy_c5,
