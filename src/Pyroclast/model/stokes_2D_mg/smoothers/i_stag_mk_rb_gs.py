@@ -55,7 +55,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     module_name = os.path.basename(__file__).replace(".py", "")
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
-        needs_cache_block_size_1: bool = False
+        needs_cache_block_size_1: bool = True
 
         def __init__(self, arguments: BenchmarkValidatorSmoother):
             super().__init__(arguments=arguments)
