@@ -97,7 +97,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
                             )
 
                         # black pass
-                        if 1 <= j-2 <= nx1 - 2 and i + j - 2 % 2 == 0:
+                        if 1 <= j-2 <= nx1 - 2 and i + j - 2 % 2 == 1:
                             vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j - 2, dx, dy,
                                                                                                            etap, etab)
 
