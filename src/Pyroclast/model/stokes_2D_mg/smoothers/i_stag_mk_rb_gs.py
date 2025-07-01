@@ -6,7 +6,6 @@ File: Pyroclast/model/stokes_2D_mg/smoothers/i_stag_mk_rb_gs.py
 Description: Benchmark the full smoother with the both vx and vy sweep being internally staggered (no staggering in 
              the smoother for loop.) Uses v1 staggering algorithm (internal if)
 
-
 Author: Alexander Sotoudeh
 Copyright (c) 2024 Marcel Ferrari.
 
@@ -68,7 +67,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     module_name = os.path.basename(__file__).replace(".py", "")
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
-        needs_cache_block_size_1: bool = False
+        needs_cache_block_size_1: bool = True
 
         def __init__(self, arguments: BenchmarkValidatorSmoother):
             super().__init__(arguments=arguments)
