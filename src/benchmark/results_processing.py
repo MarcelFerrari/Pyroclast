@@ -109,6 +109,8 @@ def store_benchmark_run(run: BenchmarkRun, bmc: Optional[BenchmarkConfig] = None
         -> str:
     """
     Store the benchmark on file system.
+
+    :returns: path to benchmark json file
     """
     json_string = run.model_dump_json()
     # This format of datetime string is needed to ensure the file name can be taken on.
