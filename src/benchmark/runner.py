@@ -475,17 +475,31 @@ def benchmark_lister() -> tuple[list[str], list[str], list[str]]:
 # Main function which calls all other functions (needed to expose this command)
 # ======================================================================================================================
 
-
-def main():
+def perform_benchmark_run(arg_dict: dict):
     """
-    Main function to make it runnable from other locations.
+    Function contains everything necessary to perform a full benchmark run
     """
-    print_banner()
-
-    ns = parser.parse_args()
-
-    # if __debug__:
-    #     print(ns)
+    # Check arg dict contains the necessary keys
+    assert set(arg_dict.keys()) == {
+        "iterations",
+        "dimension",
+        "x_dimension",
+        "y_dimension",
+        "modules",
+        "cache_a",
+        "cache_b",
+        "cpu",
+        "profiling",
+        "samples",
+        "test",
+        "force",
+        "quiet",
+        "no_env",
+        "print_table",
+        "output",
+        "list",
+        "no_burn_in"
+    }, "INCORRECT ARGUMENTS. Check arguments provided match expected arguments dict."
 
     # Dim in x, y tuple
     dim_list: list[tuple[int, int]] = []
@@ -494,40 +508,40 @@ def main():
 
     branch, c_hash, c_msg = get_git_info()
 
-    if ns.list is True:
+    if arg_dict["list"] is True:
         vx, vy, smoother = benchmark_lister()
         print(f"VX Benchmarks:\n" + "\n".join(vx) + "\n")
         print(f"VY Benchmarks:\n" + "\n".join(vy) + "\n")
         print(f"Smoother Benchmarks:\n" + "\n".join(smoother) + "\n")
         return
 
-    if ns.modules is None:
+    if arg_dict["modules"] is None:
         raise ValueError("At least one Module is required for benchmarking.")
 
     # dimension is given
-    if ns.dimension is not None and ns.x_dimension is None or ns.y_dimension is None:
-        dim_list = [(d, d) for d in ns.dimension]
+    if arg_dict["dimension"] is not None and arg_dict["x_dimension"] is None or arg_dict["y_dimension"] is None:
+        dim_list = [(d, d) for d in arg_dict["dimension"]]
 
     # x and y are given
-    elif ns.x_dimension is not None and ns.y_dimension is not None and ns.dimension is None:
-        for x, y in itertools.product(ns.x_dimension, ns.y_dimension):
+    elif arg_dict["x_dimension"] is not None and arg_dict["y_dimension"] is not None and arg_dict["dimension"] is None:
+        for x, y in itertools.product(arg_dict["x_dimension"], arg_dict["y_dimension"]):
             dim_list.append((x, y))
     else:
         raise ValueError("Invalid Dimension specification. Either provide -d <list of dimensions> or "
                          "-x <list of x sizes> and -y <list of y sizes>")
 
     # Warn that there's an issue with the configuration.
-    if ns.samples > 1 and ns.profiling and not ns.quiet:
+    if arg_dict["samples"] > 1 and arg_dict["profiling"] and not arg_dict["quiet"]:
         warnings.warn("Profiling in Combination with multiple samples increases runtime drastically")
 
-    if ns.cpu is None:
+    if arg_dict["cpu"] is None:
         print(f"Process count not given, defaulting to os.cpu_count()={os.cpu_count()}")
-        ns.cpu = [os.cpu_count()]
+        arg_dict["cpu"] = [os.cpu_count()]
 
     # Check git status
     staged, unstaged = check_git_status()
     if staged or unstaged:
-        if not ns.force:
+        if not arg_dict["force"]:
 
             raise ValueError("Your working tree contains uncommited changes. Please commit or stash them. "
                              "By pass this guard with -f")
@@ -537,37 +551,49 @@ def main():
     # Start of overall benchmark
     start = dtf()
 
-    if not ns.no_burn_in:
+    if not arg_dict["no_burn_in"]:
         burn_in()
 
     # Run benchmark on modules and dimension list
-    for module in sorted(ns.modules):
+    for module in sorted(arg_dict["modules"]):
         all_res.extend(benchmark_single_module(module_name=module,
-                                               dim=dim_list, max_iter=ns.iterations,
-                                               profiling=ns.profiling, samples=ns.samples,
-                                               cache_a=ns.cache_a, cache_b=ns.cache_b,
-                                               test_set=ns.test, cpu_count=ns.cpu))
+                                               dim=dim_list, max_iter=arg_dict["iterations"],
+                                               profiling=arg_dict["profiling"], samples=arg_dict["samples"],
+                                               cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"],
+                                               test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
 
     # End of overall benchmark
     end = dtf()
 
     benchmark_run = BenchmarkRun(
         start=start, end=end,
-        args=ns.__dict__,
+        args=arg_dict,
         dirty=dirty, git_branch=branch, git_commit_hash=c_hash, git_commit_msg=c_msg,
         result=all_res,
-        env=None if ns.no_env else os.environ,
+        env=None if arg_dict["no_env"] else os.environ,
     )
 
     # Print
-    if ns.print_table:
+    if arg_dict["print_table"]:
         print(benchmark_run.model_dump_json(indent=2))
 
         print(f"Benchmark of {start.isoformat()}, time taken: {(end - start).total_seconds()}")
         res_proc.print_statistics(benchmark_run, False)
         print(f"Benchmarking took: {(end - start).total_seconds()}s")
 
-    handle_store_run(benchmark_run, ns)
+    handle_store_run(benchmark_run, arg_dict)
+
+
+def main():
+    """
+    Main function to make it runnable from other locations.
+    """
+    print_banner()
+
+    ns = parser.parse_args()
+
+    arg_dict = vars(ns)
+    perform_benchmark_run(arg_dict)
 
 
 if __name__ == "__main__":
