@@ -10,7 +10,8 @@ from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 
 
 """
-Internal If implementation of staggered red-black gauss-seidel, offset is 1, and half staggered implementation.
+Internal If implementation of staggered red-black gauss-seidel, offset is 1, and half staggered implementation, 
+using cache optimized blocking
 """
 
 
@@ -23,7 +24,7 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
                             th: int, cache_a: int):
     for _ in range(max_iter):
-        # Work Split for red pass
+        # Work Split
         for p in nb.prange(th):
             start_y = p * (ny1 - 2) / th + 1
             end_y = (ny1 - 1) if p + 1 == th else (p + 1) * (ny1 - 2) / th + 1
@@ -76,6 +77,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
     module_name = os.path.basename(__file__).replace(".py", "")
 
+    # TODO finish benchmark
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
         def benchmark_preamble(self):
             start = dtf()
