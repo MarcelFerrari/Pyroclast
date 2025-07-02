@@ -75,7 +75,7 @@ def compute_neighbor_sum(i: int, j: int, relax_v: float,
 
 @nb.njit(cache=True, inline="always")
 def inline_loop_body_vy(i: int, j: int,
-                        dx: float, dy: float,
+                        dx: float, dy: float, relax_v: float,
                         etap: np.ndarray, etab: np.ndarray,
                         vx: np.ndarray, vy: np.ndarray, rhs: np.ndarray) -> float:
     """
@@ -85,7 +85,7 @@ def inline_loop_body_vy(i: int, j: int,
                                                                                    dx=dx, dy=dy,
                                                                                    etap=etap, etab=etab)
 
-    return compute_neighbor_sum(i=i, j=j,
+    return compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
                                 vx=vx, vy=vy, rhs=rhs,
                                 vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4,
                                 vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5)
