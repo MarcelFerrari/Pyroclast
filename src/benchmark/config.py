@@ -32,7 +32,6 @@ def get_config(cfg_pth: Optional[str] = None):
     if not os.path.exists(cfg_pth):
         raise FileNotFoundError(f"Config file {cfg_pth} not found.")
 
-
     with open(cfg_pth, "r") as f:
         config = BenchmarkConfig.model_validate_json(f.read())
 
