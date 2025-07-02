@@ -73,6 +73,24 @@ def compute_neighbor_sum(i: int, j: int, relax_v: float,
     return (1.0 - relax_v) * vy[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / diag
 
 
+@nb.njit(cache=True, inline="always")
+def inline_loop_body_vy(i: int, j: int,
+                        dx: float, dy: float,
+                        etap: np.ndarray, etab: np.ndarray,
+                        vx: np.ndarray, vy: np.ndarray, rhs: np.ndarray) -> float:
+    """
+    Contains full loop body for vx pass.
+    """
+    vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i=i, j=j,
+                                                                                   dx=dx, dy=dy,
+                                                                                   etap=etap, etab=etab)
+
+    return compute_neighbor_sum(i=i, j=j,
+                                vx=vx, vy=vy, rhs=rhs,
+                                vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4,
+                                vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5)
+
+
 @nb.njit(cache=True, parallel=True, inline="always")
 def prep_vy_cache(nx1: int, ny1: int,
                   dx: float, dy: float,
