@@ -358,14 +358,16 @@ def benchmark_single_module(module_name: str,
     return results
 
 
-def handle_store_run(run: BenchmarkRun, ns: argparse.Namespace):
+def handle_store_run(run: BenchmarkRun, arg_dict: dict) -> Optional[str]:
     """
     Function implements the storage handling functionality.
+
+    :returns: path to benchmark json file if successful, None otherwise
     """
     # Parse output script parameter
     dest = None
-    if ns.output is not None:
-        dest = os.path.abspath(ns.output)
+    if arg_dict["output"] is not None:
+        dest = os.path.abspath(arg_dict["output"])
 
     # Attempt to get the config
     try:
@@ -376,18 +378,18 @@ def handle_store_run(run: BenchmarkRun, ns: argparse.Namespace):
     # No output provided, config doesn't exist. -> Dump to stdout
     if dest is None:
         # Print warning
-        if not ns.quiet and cfg is None:
+        if not arg_dict["quiet"] and cfg is None:
             warnings.warn("No config file present. Writing benchmark data to stdout:")
 
         # Dump to stdout if config doesn't exist and now output is provided
         if cfg is None:
             print(run.model_dump_json())
+            return None
 
         # Dump to directory specified in config
         else:
             # Store the run on the file system, using defaults
-            res_proc.store_benchmark_run(run)
-        return
+            return res_proc.store_benchmark_run(run)
 
     assert dest is not None, "INVARIANT: Destination must exist."
 
@@ -398,18 +400,18 @@ def handle_store_run(run: BenchmarkRun, ns: argparse.Namespace):
         tgt_dir = dest
         file_name = None
     else:
-        if not ns.quiet:
+        if not arg_dict["quiet"]:
             warnings.warn("Invalid Destination. Destination must be a directory or file. Dumping result to stdout")
 
         # Edge case of weird target (e.g. socket)
         print(run.model_dump_json())
-        return
+        return None
 
     # INFO: BenchmarkConfig correct, validate_hash_on_read has default.
     new_cfg = config.BenchmarkConfig(results_store=tgt_dir, day_folders=False, hash_suffix=True, plot_store=".")
 
     # store with new config
-    res_proc.store_benchmark_run(run, bmc=new_cfg, file_name=file_name)
+    return res_proc.store_benchmark_run(run, bmc=new_cfg, file_name=file_name)
 
 
 def benchmark_lister() -> tuple[list[str], list[str], list[str]]:
