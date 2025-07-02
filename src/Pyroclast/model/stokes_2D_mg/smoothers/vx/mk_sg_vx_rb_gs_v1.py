@@ -83,7 +83,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
                 start_b = start_y + b * cache_a
                 end_b = end_y if b + 1 == blocks else start_y + (b + 1) * cache_a
 
-                # Iterate through j
+                # Iterate through j, added +2 for staggered pass
                 for j in range(1, nx1 - 2 + 2):
                     for i in range(start_b, end_b):
                         # Red pass
