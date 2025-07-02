@@ -160,20 +160,16 @@ def load_benchmark_run(path: str, config: Optional[BenchmarkConfig] = None) -> B
          config = get_config()
 
     if os.path.isabs(path):
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"File {path} not found")
-
-        with open(path, "r") as f:
-            content = f.read()
+        fpath = path
     else:
         # Not abs path, assume relative to results root
-        abs_path = os.path.abspath(os.path.join(config.results_store, path))
+        fpath = os.path.abspath(os.path.join(config.results_store, path))
 
-        if not os.path.exists(abs_path):
-            raise FileNotFoundError(f"File {path} not found")
+    if not os.path.exists(fpath):
+        raise FileNotFoundError(f"File {fpath} not found")
 
-        with open(abs_path, "r") as f:
-            content = f.read()
+    with open(fpath, "r") as f:
+        content = f.read()
 
     # Return immediately, if we don't validate the hash
     if not config.validate_hash_on_read:
