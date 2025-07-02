@@ -71,7 +71,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
                 end_b = end_y if b + 1 == blocks else start_y + (b + 1) * cache_a
 
                 # Iterate through j
-                for j in range(1, nx1 - 2):
+                for j in range(1, nx1 - 2 + 2):
                     for i in range(start_b, end_b):
                         # Red pass
                         if 1 <= j <= nx1 - 2 and (i + j) % 2 == 0:
