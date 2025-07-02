@@ -40,6 +40,7 @@ class BaseBenchmarkValidator(BaseModel):
     # Performance options
     cache_block_size_1: Optional[int] = Field(None, gt=0)
     cache_block_size_2: Optional[int] = Field(None, gt=0)
+    iter_unroll: Optional[int] = Field(None, gt=0)
 
     # Inspection Options
     profile: bool = False

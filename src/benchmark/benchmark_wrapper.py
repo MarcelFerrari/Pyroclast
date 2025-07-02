@@ -34,6 +34,7 @@ class BaseBenchmark:
 
     needs_cache_block_size_1: bool = False
     needs_cache_block_size_2: bool = False
+    needs_iter_unroll: bool = False
 
     def __init__(self,
                  arguments: BaseBenchmarkValidator):
