@@ -105,7 +105,8 @@ def benchmark_run_string_hasher(benchmark: BenchmarkRun | str) -> str:
     return base64.urlsafe_b64encode(hash_result).decode("utf-8")
 
 
-def store_benchmark_run(run: BenchmarkRun, bmc: Optional[BenchmarkConfig] = None, file_name: Optional[str] = None):
+def store_benchmark_run(run: BenchmarkRun, bmc: Optional[BenchmarkConfig] = None, file_name: Optional[str] = None)\
+        -> str:
     """
     Store the benchmark on file system.
     """
@@ -138,8 +139,12 @@ def store_benchmark_run(run: BenchmarkRun, bmc: Optional[BenchmarkConfig] = None
     # Write to folder
     print(f"Writing run to file: "
           f"{file_name if not bmc.day_folders else os.path.join(run.start.strftime("%Y-%m-%d"), file_name)}")
-    with open(os.path.join(tgt_dir, file_name), "w") as f:
+    tgt = os.path.join(tgt_dir, file_name)
+
+    with open(tgt, "w") as f:
         f.write(json_string)
+
+    return tgt
 
 
 def load_benchmark_run(path: str, config: Optional[BenchmarkConfig] = None) -> BenchmarkRun:
