@@ -429,7 +429,7 @@ def handle_store_run(run: BenchmarkRun, ns: argparse.Namespace):
         return
 
     # INFO: BenchmarkConfig correct, validate_hash_on_read has default.
-    new_cfg = config.BenchmarkConfig(results_store=tgt_dir, day_folders=False, hash_suffix=True)
+    new_cfg = config.BenchmarkConfig(results_store=tgt_dir, day_folders=False, hash_suffix=True, plot_store=".")
 
     # store with new config
     res_proc.store_benchmark_run(run, bmc=new_cfg, file_name=file_name)
