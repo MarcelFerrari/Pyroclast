@@ -66,6 +66,8 @@ class BaseBenchmark:
         self.cache_block_size_2 = arguments.cache_block_size_2
         self.iter_unroll = arguments.iter_unroll
 
+        self.validate_self()
+
     def validate_self(self):
         """
         Validate that supplementary values are provided
