@@ -44,3 +44,6 @@ def _vy_red_black_gs_sweep(nx1: int, ny1: int,
     apply_vy_BC(vy, BC)
 
     return vy
+
+
+# TODO add benchmark
