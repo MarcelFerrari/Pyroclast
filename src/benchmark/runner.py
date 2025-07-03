@@ -205,6 +205,7 @@ def benchmark_smoother(nx: int, ny: int,
         profile=profiling, samples=samples,
         cache_block_size_1=cache_block_size_1,
         cache_block_size_2=cache_block_size_2,
+        iter_unroll=iter_unroll
     )
 
     ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
@@ -242,6 +243,7 @@ def benchmark_vx(nx: int, ny: int,
         profile=profiling, samples=samples,
         cache_block_size_1=cache_block_size_1,
         cache_block_size_2=cache_block_size_2,
+        iter_unroll=iter_unroll
     )
 
     ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
@@ -279,6 +281,7 @@ def benchmark_vy(nx: int, ny: int,
         profile=profiling, samples=samples,
         cache_block_size_1=cache_block_size_1,
         cache_block_size_2=cache_block_size_2,
+        iter_unroll=iter_unroll
     )
 
     ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
