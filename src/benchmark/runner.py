@@ -574,7 +574,7 @@ def perform_benchmark_run(arg_dict: dict):
     # Run benchmark on modules and dimension list
     for module in sorted(arg_dict["modules"]):
         all_res.extend(benchmark_single_module(module_name=module,
-                                               dim=dim_list, max_iter=arg_dict["iterations"],
+                                               dim_list=dim_list, max_iter=arg_dict["iterations"],
                                                profiling=arg_dict["profiling"], samples=arg_dict["samples"],
                                                cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"],
                                                test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
