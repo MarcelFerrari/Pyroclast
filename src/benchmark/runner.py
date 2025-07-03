@@ -43,7 +43,9 @@ perf_opt = parser.add_argument_group(
     title="Performance Options",
     description="Variables which have a major impact on performance. "
                 "All variables accept >= 1 arguments. The benchmarking algorithm will test the "
-                "cartesian product of all configurations.")
+                "cartesian product of all configurations. The benchmark will warn you, if you need to provide another "
+                "performance option (like caches) for the benchmark to run successfully. However, it will not inform "
+                "you, if a given benchmark is not influenced by a given variable")
 
 bench_opt = parser.add_argument_group(
     title="Benchmark Options",
