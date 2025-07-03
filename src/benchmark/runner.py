@@ -585,6 +585,7 @@ def perform_benchmark_run(arg_dict: dict):
         else:
             dirty = True
 
+    nb.config.THREADING_LAYER = "omp"
     # Start of overall benchmark
     start = dtf()
 
