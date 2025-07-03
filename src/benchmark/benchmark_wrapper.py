@@ -28,6 +28,10 @@ class BaseBenchmark:
 
     max_iter: int
 
+    cache_block_size_1: Optional[int]
+    cache_block_size_2: Optional[int]
+    iter_unroll: Optional[int]
+
     timings: list[Timing]
 
     args: BaseBenchmarkValidator
@@ -57,6 +61,23 @@ class BaseBenchmark:
 
         self.timings = []
         self.args = arguments
+
+        self.cache_block_size_1 = arguments.cache_block_size_1
+        self.cache_block_size_2 = arguments.cache_block_size_2
+        self.iter_unroll = arguments.iter_unroll
+
+    def validate_self(self):
+        """
+        Validate that supplementary values are provided
+        """
+        if self.needs_cache_block_size_1 and self.cache_block_size_1 is None:
+            raise ValueError("cache_block_size_1 or cache_a is needed.")
+
+        if self.needs_cache_block_size_2 and self.cache_block_size_2 is None:
+            raise ValueError("cache_block_size_1 or cache_a is needed.")
+
+        if self.needs_iter_unroll and self.iter_unroll is None:
+            raise ValueError("iter_unroll is needed.")
 
     def benchmark(self):
         """
