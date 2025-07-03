@@ -24,7 +24,7 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             vx: np.ndarray, vy: np.ndarray,
                             relax_v: float, BC: float,
                             vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
-                            th: int, cache_a: int, cache_b, iter_unroll: int):
+                            th: int, cache_a: int, cache_b: int, iter_unroll: int):
     x_upper_limit = nx1 - 2 + 2
     x_lower_limit = 1
 
