@@ -100,7 +100,7 @@ perf_opt.add_argument("-c", "--cpu",
 perf_opt.add_argument("-u", "--unroll",
                       type=int,
                       nargs="+",
-                      default=[None],
+                      default=[4],
                       help=f"Number of Loop unrolls to do with second layer caching")
 
 # Testing Options
