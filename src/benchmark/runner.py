@@ -284,7 +284,7 @@ def benchmark_vy(nx: int, ny: int,
 
 
 def benchmark_single_module(module_name: str,
-                            dim: list[tuple[int, int]],
+                            dim_list: list[tuple[int, int]],
                             max_iter: int,
                             profiling: bool,
                             samples: int,
@@ -322,7 +322,7 @@ def benchmark_single_module(module_name: str,
 
         for ca, cb, dim, cc in itertools.product(sorted(caches_a),
                                                  sorted(caches_b),
-                                                 sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
+                                                 sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
                                                  sorted(cpu_count, reverse=True)):
 
             nb.set_num_threads(cc)
@@ -341,7 +341,7 @@ def benchmark_single_module(module_name: str,
 
         for ca, cb, dim, cc in itertools.product(sorted(caches_a),
                                                  sorted(caches_b),
-                                                 sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
+                                                 sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
                                                  sorted(cpu_count, reverse=True)):
 
             nb.set_num_threads(cc)
@@ -360,7 +360,7 @@ def benchmark_single_module(module_name: str,
 
         for ca, cb, dim, cc in itertools.product(sorted(caches_a),
                                                  sorted(caches_b),
-                                                 sorted(dim, reverse=True, key=lambda d: d[0] * d[1]),
+                                                 sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
                                                  sorted(cpu_count, reverse=True)):
 
             nb.set_num_threads(cc)
