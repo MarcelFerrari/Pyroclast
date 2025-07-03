@@ -45,3 +45,5 @@ def _vy_rb_gs_sweep(nx1, ny1,
     apply_vy_BC(vx, BC)
 
     return vx
+
+# TODO add benchmark
