@@ -79,7 +79,6 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
         def __init__(self, arguments: bw.BenchmarkValidatorVX):
             super().__init__(arguments=arguments)
 
-            self.cache_block_size_1 = arguments.cache_block_size_1
             if self.vx_new is None:
                 self.vx_new = np.zeros((self.nx1, self.ny1))
 

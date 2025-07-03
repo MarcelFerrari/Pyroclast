@@ -145,10 +145,6 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     class BaseImplementationVX(bw.BenchmarkVX):
         needs_cache_block_size_1: bool = True
 
-        def __init__(self, arguments: BenchmarkValidatorVX):
-            super().__init__(arguments=arguments)
-            self.cache_block_size_1 = arguments.cache_block_size_1
-
         def benchmark_preamble(self):
             th = nb.get_num_threads()
             start = dtf()
