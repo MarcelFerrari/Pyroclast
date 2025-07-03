@@ -113,6 +113,8 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
         needs_cache_block_size_1: bool = True
+        needs_cache_block_size_2: bool = True
+        needs_iter_unroll: bool = True
 
         def benchmark_preamble(self):
             th = nb.get_num_threads()
