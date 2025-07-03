@@ -19,9 +19,11 @@ class Stage(Enum):
     BENCHMARK = "benchmark"
     EPILOG = "epilog"
 
+
 # ======================================================================================================================
 # Models which are arguments to the benchmark
 # ======================================================================================================================
+
 
 class BaseBenchmarkValidator(BaseModel):
     max_iter: int = Field(..., gt=0)
