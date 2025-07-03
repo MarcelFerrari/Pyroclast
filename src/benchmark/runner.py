@@ -17,7 +17,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """     
 
 import argparse
-import copy
 import importlib
 import itertools
 import os
@@ -25,6 +24,7 @@ import warnings
 from typing import Callable, Type, Optional
 
 import numba as nb
+
 import benchmark.config as config
 import benchmark.defaults as defaults
 import benchmark.results_processing as res_proc
@@ -574,7 +574,7 @@ def perform_benchmark_run(arg_dict: dict):
     # Run benchmark on modules and dimension list
     for module in sorted(arg_dict["modules"]):
         all_res.extend(benchmark_single_module(module_name=module,
-                                               dim=copy.deepcopy(dim_list), max_iter=arg_dict["iterations"],
+                                               dim=dim_list, max_iter=arg_dict["iterations"],
                                                profiling=arg_dict["profiling"], samples=arg_dict["samples"],
                                                cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"],
                                                test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
