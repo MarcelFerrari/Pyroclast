@@ -97,6 +97,11 @@ perf_opt.add_argument("-c", "--cpu",
                       nargs="+",
                       default=None,
                       help=f"Number of CPU cores to use. Default: {os.cpu_count()}")
+perf_opt.add_argument("-u", "--unroll",
+                      type=int,
+                      nargs="+",
+                      default=[None],
+                      help=f"Number of Loop unrolls to do with second layer caching")
 
 # Testing Options
 bench_opt.add_argument("-p", "--profiling",
@@ -189,6 +194,7 @@ def benchmark_smoother(nx: int, ny: int,
                        cache_block_size_1: int, cache_block_size_2: int,
                        module_name: str,
                        cpu_count: int,
+                       iter_unroll: int,
                        benchmark: Type[BenchmarkSmoother]) -> BenchmarkResults:
     """
     Run the smoother benchmark
@@ -203,8 +209,10 @@ def benchmark_smoother(nx: int, ny: int,
 
     ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
     cb_str = f"Cache Size 2: {cache_block_size_2}" if benchmark.needs_cache_block_size_2 else ""
+    iu_str = f"Iter Unroll: {iter_unroll}" if benchmark.needs_iter_unroll else ""
 
-    print(f"Running Smoother Benchmark of: {module_name}\nDimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}")
+    print(f"Running Smoother Benchmark of: {module_name}\n"
+          f"Dimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}\n{iu_str}")
     local_benchmark = benchmark(arguments=args)
     local_benchmark.benchmark()
 
@@ -223,6 +231,7 @@ def benchmark_vx(nx: int, ny: int,
                  cache_block_size_1: int, cache_block_size_2: int,
                  module_name: str,
                  cpu_count: int,
+                 iter_unroll: int,
                  benchmark: Type[BenchmarkVX]) -> BenchmarkResults:
     """
     Run the smoother benchmark
@@ -237,8 +246,10 @@ def benchmark_vx(nx: int, ny: int,
 
     ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
     cb_str = f"Cache Size 2: {cache_block_size_2}" if benchmark.needs_cache_block_size_2 else ""
+    iu_str = f"Iter Unroll: {iter_unroll}" if benchmark.needs_iter_unroll else ""
 
-    print(f"Running Benchmark VX of: {module_name}\nDimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}")
+    print(f"Running Benchmark VX of: {module_name}\n"
+          f"Dimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}\n{iu_str}")
     local_benchmark = benchmark(arguments=args)
     local_benchmark.benchmark()
 
@@ -257,6 +268,7 @@ def benchmark_vy(nx: int, ny: int,
                  cache_block_size_1: int, cache_block_size_2: int,
                  module_name: str,
                  cpu_count: int,
+                 iter_unroll: int,
                  benchmark: Type[BenchmarkVY]) -> BenchmarkResults:
     """
     Run the smoother benchmark
@@ -271,8 +283,10 @@ def benchmark_vy(nx: int, ny: int,
 
     ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
     cb_str = f"Cache Size 2: {cache_block_size_2}" if benchmark.needs_cache_block_size_2 else ""
+    iu_str = f"Iter Unroll: {iter_unroll}" if benchmark.needs_iter_unroll else ""
 
-    print(f"Running Benchmark VY of: {module_name}\nDimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}")
+    print(f"Running Benchmark VY of: {module_name}\n"
+          f"Dimension: {nx} x {ny}\nCPUs: {cpu_count}\n{ca_str}\n{cb_str}\n{iu_str}")
     local_benchmark = benchmark(arguments=args)
     local_benchmark.benchmark()
 
@@ -294,6 +308,7 @@ def benchmark_single_module(module_name: str,
                             cache_a: list[int],
                             cache_b: list[int],
                             cpu_count: list[int],
+                            iter_unroll = list[int],
                             ) -> list[BenchmarkResults]:
     """
     Run the benchmark for a single module. Requires this module to have defined a benchmark factory.
@@ -321,11 +336,13 @@ def benchmark_single_module(module_name: str,
     if bm_s is not None and BenchmarkType.SMOOTHER in test_set:
         caches_a = cache_a.copy() if bm_s.needs_cache_block_size_1 else [None]
         caches_b = cache_b.copy() if bm_s.needs_cache_block_size_2 else [None]
+        local_iur = iter_unroll.copy() if bm_s.needs_iter_unroll else [None]
 
-        for ca, cb, dim, cc in itertools.product(sorted(caches_a),
-                                                 sorted(caches_b),
-                                                 sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
-                                                 sorted(cpu_count, reverse=True)):
+        for ca, cb, dim, cc, iu in itertools.product(sorted(caches_a),
+                                                     sorted(caches_b),
+                                                     sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
+                                                     sorted(cpu_count, reverse=True),
+                                                     sorted(local_iur, reverse=True)):
 
             nb.set_num_threads(cc)
             results.append(benchmark_smoother(nx=dim[0], ny=dim[1],
@@ -334,17 +351,20 @@ def benchmark_single_module(module_name: str,
                                               cache_block_size_1=ca, cache_block_size_2=cb,
                                               module_name=module_name,
                                               cpu_count=cc,
-                                              benchmark=bm_s))
+                                              benchmark=bm_s,
+                                              iter_unroll=iu))
 
     # Run benchmark on vx_subroutine
     if bm_vx is not None and BenchmarkType.VX in test_set:
         caches_a = cache_a.copy() if bm_vx.needs_cache_block_size_1 else [None]
         caches_b = cache_b.copy() if bm_vx.needs_cache_block_size_2 else [None]
+        local_iur = iter_unroll.copy() if bm_s.needs_iter_unroll else [None]
 
-        for ca, cb, dim, cc in itertools.product(sorted(caches_a),
-                                                 sorted(caches_b),
-                                                 sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
-                                                 sorted(cpu_count, reverse=True)):
+        for ca, cb, dim, cc, iu in itertools.product(sorted(caches_a),
+                                                     sorted(caches_b),
+                                                     sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
+                                                     sorted(cpu_count, reverse=True),
+                                                     sorted(local_iur, reverse=True)):
 
             nb.set_num_threads(cc)
             results.append(benchmark_vx(nx=dim[0], ny=dim[1],
@@ -353,17 +373,20 @@ def benchmark_single_module(module_name: str,
                                         cache_block_size_1=ca, cache_block_size_2=cb,
                                         module_name=module_name,
                                         cpu_count=cc,
-                                        benchmark=bm_vx))
+                                        benchmark=bm_vx,
+                                        iter_unroll=iu))
 
     # Run benchmark on vy_subroutine
     if bm_vy is not None and BenchmarkType.VY in test_set:
         caches_a = cache_a.copy() if bm_vy.needs_cache_block_size_1 else [None]
         caches_b = cache_b.copy() if bm_vy.needs_cache_block_size_2 else [None]
+        local_iur = iter_unroll.copy() if bm_s.needs_iter_unroll else [None]
 
-        for ca, cb, dim, cc in itertools.product(sorted(caches_a),
-                                                 sorted(caches_b),
-                                                 sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
-                                                 sorted(cpu_count, reverse=True)):
+        for ca, cb, dim, cc, iu in itertools.product(sorted(caches_a),
+                                                     sorted(caches_b),
+                                                     sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
+                                                     sorted(cpu_count, reverse=True),
+                                                     sorted(local_iur, reverse=True)):
 
             nb.set_num_threads(cc)
             results.append(benchmark_vy(nx=dim[0], ny=dim[1],
@@ -372,7 +395,8 @@ def benchmark_single_module(module_name: str,
                                         cache_block_size_1=ca, cache_block_size_2=cb,
                                         module_name=module_name,
                                         cpu_count=cc,
-                                        benchmark=bm_vy))
+                                        benchmark=bm_vy,
+                                        iter_unroll=iu))
 
     return results
 
@@ -517,7 +541,8 @@ def perform_benchmark_run(arg_dict: dict):
         "print_table",
         "output",
         "list",
-        "no_burn_in"
+        "no_burn_in",
+        "unroll"
     }, "INCORRECT ARGUMENTS. Check arguments provided match expected arguments dict."
 
     # Dim in x, y tuple
@@ -526,6 +551,12 @@ def perform_benchmark_run(arg_dict: dict):
     dirty = False
 
     branch, c_hash, c_msg = get_git_info()
+
+    # Validate iter unroll
+    for unroll in arg_dict["unroll"]:
+        if unroll is not None and unroll > arg_dict["iterations"]:
+            raise ValueError(f"Cannot unroll more loops than number of iterations"
+                             f" {unroll} of loops to unroll with {arg_dict['iterations']}")
 
     if arg_dict["list"] is True:
         vx, vy, smoother = benchmark_lister()
@@ -575,11 +606,12 @@ def perform_benchmark_run(arg_dict: dict):
 
     # Run benchmark on modules and dimension list
     for module in sorted(arg_dict["modules"]):
-        all_res.extend(benchmark_single_module(module_name=module,
-                                               dim_list=dim_list, max_iter=arg_dict["iterations"],
-                                               profiling=arg_dict["profiling"], samples=arg_dict["samples"],
-                                               cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"],
-                                               test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
+        all_res.extend(benchmark_single_module(
+            module_name=module,
+            dim_list=dim_list, max_iter=arg_dict["iterations"],
+            profiling=arg_dict["profiling"], samples=arg_dict["samples"],
+            cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"], iter_unroll=arg_dict["unroll"],
+            test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
 
     # End of overall benchmark
     end = dtf()
