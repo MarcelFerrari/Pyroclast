@@ -1,6 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import Optional
 
+import numba as nb
 import numpy as np
 import pyinstrument
 
@@ -99,6 +100,21 @@ class BaseBenchmark:
                 self.run_benchmark()
 
         self.benchmark_epilogue()
+
+    def validate_run_args(self):
+        """
+        Call this function prior to executing the benchmark function. Checks that the cache block sizes work.
+        **Assumes cache_block_size_1 is for y and cache_block_size_2 is for x with iter_unroll**
+
+        """
+        th = nb.get_num_threads()
+        if self.needs_cache_block_size_1:
+            if (self.ny1 / th) < self.cache_block_size_1:
+                raise ValueError("cache_block_size_1 must be greater than work split.")
+
+        if self.needs_cache_block_size_2:
+            if self.nx1 < self.cache_block_size_2:
+                raise ValueError("cache_block_size_2 must be greater than work split.")
 
     @abstractmethod
     def benchmark_preamble(self):
