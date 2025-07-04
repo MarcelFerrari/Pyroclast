@@ -29,6 +29,8 @@ def compute_coeffs(i: int, j: int,
     vy3_coeff = -eta1 / (dx * dy)
     vy4_coeff = eta2 / (dx * dy)
 
+    # 22 fp mul
+    # 2 fp add
     return vx1_coeff, vx2_coeff, vx3_coeff, vx4_coeff, vx5_coeff, vy1_coeff, vy2_coeff, vy3_coeff, vy4_coeff
 
 
@@ -53,6 +55,9 @@ def compute_neighbor_sum(i: int, j: int, relax_v: float,
 
     diag = vx_c3
 
+    # 11 fp mul
+    # 7 fp add
+    # 4 int add
     return (1.0 - relax_v) * vx[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / diag
 
 
