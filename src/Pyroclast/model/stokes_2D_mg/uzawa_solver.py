@@ -17,7 +17,8 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import numpy as np
 
-from .multigrid import Multigrid
+# Use the solver-agnostic multigrid base with Stokes-specific hooks
+from Pyroclast.solvers.stokes_2d import StokesMultigrid
 from .smoother import pressure_sweep
 from .mg_routines import uzawa_velocity_rhs
 from .implicit_operators import p_residual, vx_residual, vy_residual
@@ -37,7 +38,7 @@ class UzawaSolver:
         self.ctx = ctx
 
         # Set up multigrid solver for the velocity field
-        self.mg = Multigrid(ctx, levels, scaling)
+        self.mg = StokesMultigrid(ctx, levels, scaling)
         self.rescaler = ViscosityRescaler(ctx, self.mg.hierarchy)
 
         # Allocate space for pressure solution and residuals
