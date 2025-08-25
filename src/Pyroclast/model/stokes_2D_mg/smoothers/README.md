@@ -1,4 +1,4 @@
-# The Profiler Subpackage
+# The Smoothers Subpackage
 
 As this project is co-developed as part of Master's Thesis and a Bachelor's Thesis, there's some segmentation in 
 ownership and modularity of a given submodule.
@@ -40,3 +40,31 @@ The exact structure of the outer smoother loop as well as the inner loops and th
 change and experimentation. The general idea for files are:
 - If they are public: they expose `velocity_smoother` (a common definition will be provided later) and other submethods (tho this is not standardized)
 - If they are private, they don't follow any standard and the user needs to be aware of the file contents.
+
+# TODOS:
+Imporvement Ideas:
+Red-Black-Gauss-Seidel
+- Fully Staggered / Four loops fused, LTR 
+- Fully Staggered / Four Loops fused, LTR + random offset
+- Half Staggered / VX, VY Red fused, VX, VY Black Fused
+- Half Staggered / VX, VY Red fused, VX, VY Black Fused + LTR
+- Half Staggered / VX, VY Red fused, VX, VY Black Fused + LTR + Random Offset
+
+Jacobi:
+- Fully staggered / Two loops fused
+- Fully staggered / Two loops fused, LTR
+- Fully staggered / Two Loops fused, LTR + Rando Offset^
+
+
+
+## File Table of Contents
+| File                   | Has Inline | Has Blocking A | Has Blocking B | Has VX | Has VY | Has Smoother | Comment                                                     |
+|------------------------|------------|----------------|----------------|--------|--------|--------------|-------------------------------------------------------------|
+| `base_rb_gs.py`        | F          | F              | F              | T      | T      | T            |                                                             |
+| `base_rb_gs_reorder`   | F          | F              | F              | T      | F      | F            | Reordered Computation for Fused-Multiply-Addition           |
+| `vx.base_vx_gs`        | F          | F              | F              | T      | F      | F            | Testing Pure Gauss Seidel                                   |
+| `vx.base_vx_jacobi`    | F          | F              | F              | T      | F      | F            | Testing Pure Jacobi Iteration                               |
+| `vx.caching_vx_jacobi` | F          | F              | F              | T      | F      | F            | Testing Caching of Coefficients with Jacobi                 |
+| `vx.caching_vx_rb_gs`  | F          | F              | F              | T      | F      | F            | Testing Caching of Coefficients with Red-Black Gauss-Seidel |
+| `vx.inline_vx`         | F          | F              | F              | T      | F      | F            |                                                    |
+ 

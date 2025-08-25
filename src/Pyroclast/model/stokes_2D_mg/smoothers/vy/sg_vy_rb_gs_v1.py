@@ -2,7 +2,7 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vy_BC
-from .inline_vy import compute_coeffs, compute_neighbor_sum
+from ._inline_vy import compute_coeffs, compute_neighbor_sum
 
 """
 In this file we aim to test if the staggered approach to red-black gauss seidel is faster than the regular approach.
