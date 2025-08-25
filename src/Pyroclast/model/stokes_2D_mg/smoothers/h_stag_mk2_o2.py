@@ -6,8 +6,8 @@ import math
 
 from numpy.ma.core import argsort
 
-from Pyroclast.model.stokes_2D_mg.smoothers.vx.inline_vx import inline_loop_body_vx
-from Pyroclast.model.stokes_2D_mg.smoothers.vy.inline_vy import inline_loop_body_vy
+from Pyroclast.model.stokes_2D_mg.smoothers.vx import inline_loop_body_vx
+from Pyroclast.model.stokes_2D_mg.smoothers.vy import inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 
 

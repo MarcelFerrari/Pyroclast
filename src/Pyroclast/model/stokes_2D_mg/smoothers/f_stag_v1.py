@@ -4,8 +4,8 @@ import  os
 from typing import Type
 
 
-import Pyroclast.model.stokes_2D_mg.smoothers.vx.inline_vx as vx_op
-import Pyroclast.model.stokes_2D_mg.smoothers.vy.inline_vy as vy_op
+import Pyroclast.model.stokes_2D_mg.smoothers.vx as vx_op
+import Pyroclast.model.stokes_2D_mg.smoothers.vy as vy_op
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 
 
