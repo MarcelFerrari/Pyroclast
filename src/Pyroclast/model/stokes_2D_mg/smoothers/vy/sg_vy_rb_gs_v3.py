@@ -144,4 +144,60 @@ def _vy_rb_gs_sweep(nx1, ny1,
 
     return vy
 
-# TODO add benchmark
+
+# INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
+def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"], Type["BenchmarkVY"]]:
+    """
+    Returns Benchmark Classes needed for benchmarking. Done via factory to avoid issues with the `benchmark` package
+    not being available in a production environment.
+    """
+    import benchmark.benchmark_wrapper as bw
+    from benchmark.benchmark_validators import Stage, Timing
+    from benchmark.utils import dtf
+
+    module_name = os.path.basename(__file__).replace(".py", "")
+
+    class BaseImplementationVY(bw.BenchmarkVY):
+        def benchmark_preamble(self):
+            start = dtf()
+            _vy_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
+                            dx=self.dx, dy=self.dy,
+                            etap=self.eta_p, etab=self.eta_b,
+                            vx=self.vx, vy=self.vy,
+                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vy_rhs,
+                            th=nb.get_num_threads())
+            end = dtf()
+
+            # Add the timing information
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
+                                       stage=Stage.PREAMBLE,
+                                       start=start,
+                                       end=end))
+
+        def benchmark_epilogue(self):
+            """
+            No post-processing
+            """
+            pass
+
+        def run_benchmark(self):
+            """
+            Perform the actual run of the benchmark.
+            """
+            start = dtf()
+            for _ in range(self.args.max_iter):
+                _vy_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
+                                dx=self.dx, dy=self.dy,
+                                etap=self.eta_p, etab=self.eta_b,
+                                vx=self.vx, vy=self.vy,
+                                relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vy_rhs,
+                                th=nb.get_num_threads())
+            end = dtf()
+
+            # Add the timing information
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
+                                       stage=Stage.BENCHMARK,
+                                       start=start,
+                                       end=end))
+
+    return None, None, BaseImplementationVY
