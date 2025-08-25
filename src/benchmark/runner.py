@@ -561,6 +561,7 @@ def perform_benchmark_run(arg_dict: dict):
             raise ValueError(f"Cannot unroll more loops than number of iterations"
                              f" {unroll} of loops to unroll with {arg_dict['iterations']}")
 
+    # Only list benchmarks
     if arg_dict["list"] is True:
         vx, vy, smoother = benchmark_lister()
         print(f"VX Benchmarks:\n" + "\n".join(vx) + "\n")
