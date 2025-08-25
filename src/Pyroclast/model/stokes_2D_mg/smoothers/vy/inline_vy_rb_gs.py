@@ -18,7 +18,7 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vy_BC
-from Pyroclast.model.stokes_2D_mg.smoothers.vy.inline_vy import compute_coeffs, compute_neighbor_sum
+from ._inline_vy import compute_coeffs, compute_neighbor_sum
 
 
 @nb.njit(cache=True, parallel=True)

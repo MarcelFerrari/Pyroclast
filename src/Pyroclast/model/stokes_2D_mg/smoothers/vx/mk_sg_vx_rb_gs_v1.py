@@ -23,13 +23,9 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
-from .inline_vx import compute_coeffs, compute_neighbor_sum
+from ._inline_vx import compute_coeffs, compute_neighbor_sum
 
 
-# Cache optimized version of the regular red-black gauss-seidel
-
->>>>>>> 4bfd759 (+ Implemented non-if optimized implementation rb_gs staggered)
-@nb.njit(cache=True, parallel=True)
 def _vx_rb_gs_sweep(nx1, ny1,
                     dx, dy,
                     etap, etab,
