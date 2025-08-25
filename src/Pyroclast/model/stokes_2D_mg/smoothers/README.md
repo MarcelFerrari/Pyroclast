@@ -53,18 +53,28 @@ Red-Black-Gauss-Seidel
 Jacobi:
 - Fully staggered / Two loops fused
 - Fully staggered / Two loops fused, LTR
-- Fully staggered / Two Loops fused, LTR + Rando Offset^
+- Fully staggered / Two Loops fused, LTR + Rando Offset
 
 
 
 ## File Table of Contents
-| File                   | Has Inline | Has Blocking A | Has Blocking B | Has VX | Has VY | Has Smoother | Comment                                                     |
-|------------------------|------------|----------------|----------------|--------|--------|--------------|-------------------------------------------------------------|
-| `base_rb_gs.py`        | F          | F              | F              | T      | T      | T            |                                                             |
-| `base_rb_gs_reorder`   | F          | F              | F              | T      | F      | F            | Reordered Computation for Fused-Multiply-Addition           |
-| `vx.base_vx_gs`        | F          | F              | F              | T      | F      | F            | Testing Pure Gauss Seidel                                   |
-| `vx.base_vx_jacobi`    | F          | F              | F              | T      | F      | F            | Testing Pure Jacobi Iteration                               |
-| `vx.caching_vx_jacobi` | F          | F              | F              | T      | F      | F            | Testing Caching of Coefficients with Jacobi                 |
-| `vx.caching_vx_rb_gs`  | F          | F              | F              | T      | F      | F            | Testing Caching of Coefficients with Red-Black Gauss-Seidel |
-| `vx.inline_vx`         | F          | F              | F              | T      | F      | F            |                                                    |
+| File                   | Has Inline | Has Blocking A Thread | Has Blocking A Stride | Has Time Blocking  | Loop Fusion | Has VX | Has VY | Has Smoother | Comment                                                                                          |
+|------------------------|------------|-----------------------|-----------------------|--------------------|-------------|--------|--------|--------------|--------------------------------------------------------------------------------------------------|
+| `base_rb_gs.py`        | F          | F                     | F                     | F                  | F           | T      | T      | T            |                                                                                                  |
+| `base_rb_gs_reorder`   | F          | F                     | F                     | F                  | F           | T      | F      | F            | Reordered Computation for Fused-Multiply-Addition                                                |
+| `vx._inline_vx`        | F          | F                     | F                     | F                  | F           | T      | F      | F            | Contains shared loop bodies (functions to be inlined)                                            |
+| `vx.base_vx_gs`        | F          | F                     | F                     | F                  | F           | T      | F      | F            | Testing Pure Gauss Seidel                                                                        |
+| `vx.base_vx_jacobi`    | F          | F                     | F                     | F                  | F           | T      | F      | F            | Testing Pure Jacobi Iteration                                                                    |
+| `vx.caching_vx_jacobi` | T          | F                     | F                     | F                  | F           | T      | F      | F            | Testing Caching of Coefficients with Jacobi                                                      |
+| `vx.caching_vx_rb_gs`  | T          | F                     | F                     | F                  | F           | T      | F      | F            | Testing Caching of Coefficients with Red-Black Gauss-Seidel                                      |
+| `vx.inline_vx_gs`      | T          | F                     | F                     | F                  | F           | T      | F      | F            | Checking no performance impact when using inlined functions                                      |
+| `vx.inline_vx_jacobi`  | T          | F                     | F                     | F                  | F           | T      | F      | F            | Checking no performance impact when using inlined functions                                      |
+| `vx.inline_vx_rb_gs`   | T          | F                     | F                     | F                  | F           | T      | F      | F            | Checking no performance impact when using inlined functions                                      |
+| `vx.mk_sg_vx_rb_gs_v1` | T          | T                     | F                     | F                  | T           | T      | F      | F            | Implementation 1 of Red-Black Loop Fusion AND Blocking                                           |
+| `vx.mk_vx_jacobi_v1`   | T          | T                     | F                     | F                  | F           | T      | F      | F            | Implementation 1 of Jacobi Thread Blocking                                                       |
+| `vx.mk_vx_rb_gs`       | T          | T                     | F                     | F                  | F           | T      | F      | F            | Red-Black Gauss-Seidel with Thread Blocking                                                      |
+| `vx.mk_vx_rb_gs_v2`    | T          | F                     | T                     | F                  | F           | T      | F      | F            | Red-Black Gauss-Seidel with Stride Blocking                                                      |
+| `vx.sg_vx_rb_gs_v1`    | T          | T                     | T                     | F                  | T           | T      | F      | F            | Implementation 1 of Red-Black Gauss-Seidel (Internal If)                                         |
+| `vx.sg_vx_rb_gs_v2`    | T          | T                     | F                     | F                  | T           | T      | F      | F            | Implementation 2 of Red-Black Gauss-Seidel (Start and End Unrolled)                              |
+| `vx.sg_vx_rb_gs_v3`    | T          | T                     | F                     | F                  | T           | T      | F      | F            | Implementation 3 of Red-Black Gauss-Seidel (Start and End Unrolled with Support for small grids) |
  
