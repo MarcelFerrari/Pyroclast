@@ -10,7 +10,8 @@ from ._inline_vx import compute_coeffs, compute_neighbor_sum
 
 
 """
-In this file we test both a cache optimized version of the red_black gauss_seidel sweep with a staggered computation of the red and black stage using an iff
+In this file we test both a cache optimized version of the red_black gauss_seidel sweep with a staggered computation of 
+the red and black stage using an if
 """
 
 
