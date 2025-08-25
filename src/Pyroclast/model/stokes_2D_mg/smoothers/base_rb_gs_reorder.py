@@ -7,6 +7,12 @@ import numpy as np
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 
 
+"""
+This file contains an experiment on the optimization capabilities of Numba. The aim was to see if vectorization would 
+improve, if the code was restructured in a way that allows for quicker reuse of values.
+"""
+
+
 @nb.njit(cache=True, parallel=True)
 def _vx_rb_gs_sweep(nx1, ny1,
                     dx, dy,
