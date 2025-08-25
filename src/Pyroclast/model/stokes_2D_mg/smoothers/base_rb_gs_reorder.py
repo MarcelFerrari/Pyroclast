@@ -3,8 +3,9 @@ Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
 File: Pyroclast/model/stokes_2D_mg/smoothers/base_rb_gs_reorder.py 
-Description: File contains reordered implementation of the loop body. This is a sanity check, that numba already does 
-             the smart reordering.
+Description: This file contains an experiment on the optimization capabilities of Numba. The aim was to see if 
+             vectorization would improve, if the code was restructured in a way that allows for quicker reuse 
+             of values.
 
 Author: Alexander Sotoudeh
 Copyright (c) 2024 Marcel Ferrari.
