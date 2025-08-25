@@ -6,7 +6,7 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
-from .inline_vx import compute_coeffs, compute_neighbor_sum
+from ._inline_vx import compute_coeffs, compute_neighbor_sum
 
 
 """

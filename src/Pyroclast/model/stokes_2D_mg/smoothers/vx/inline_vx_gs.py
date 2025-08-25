@@ -4,7 +4,7 @@ from typing import Type
 import numba as nb
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
-from .inline_vx import compute_coeffs, compute_neighbor_sum
+from _inline_vx import compute_coeffs, compute_neighbor_sum
 
 
 # Gauss-Seidel update for vx
