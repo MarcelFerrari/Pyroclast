@@ -27,14 +27,14 @@ from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_
 
 
 @nb.njit(cache=True, parallel=True)
-def velocity_smoother_rb_gs(nx1: int, ny1: int,
-                            dx: float, dy: float,
-                            etap: np.ndarray, etab: np.ndarray,
-                            vx: np.ndarray, vy: np.ndarray,
-                            relax_v: float, BC: float,
-                            vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
-                            vx_new, vy_new,
-                            th: int, cache_a: int) -> tuple[np.ndarray, np.ndarray]:
+def velocity_smoother_jacobi(nx1: int, ny1: int,
+                             dx: float, dy: float,
+                             etap: np.ndarray, etab: np.ndarray,
+                             vx: np.ndarray, vy: np.ndarray,
+                             relax_v: float, BC: float,
+                             vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
+                             vx_new, vy_new,
+                             th: int, cache_a: int) -> tuple[np.ndarray, np.ndarray]:
     # Fast Implementation for big problems
     if th * cache_a > nx1 - 2:
         for _ in range(max_iter):

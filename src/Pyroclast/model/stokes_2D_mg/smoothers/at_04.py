@@ -3,8 +3,7 @@ Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
 File: Pyroclast/model/stokes_2D_mg/smoothers/at_04.py 
-Description: Attempt 4: Reimplement the fully staggered loop with row major indexing, correct staggering. And 
-             Thread Blocking 
+Description: Attempt 4: Reimplement the fully staggered loop with correct staggering. And Thread Blocking 
 
 Author: Alexander Sotoudeh
 Copyright (c) 2024 Marcel Ferrari.
