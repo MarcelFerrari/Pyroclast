@@ -32,7 +32,6 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             relax_v: float, BC: float,
                             vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
                             th: int, cache_a: int, step_size: int, max_jitter: int = None):
-
     if max_jitter is None:
         max_jitter = cache_a // 4
 
