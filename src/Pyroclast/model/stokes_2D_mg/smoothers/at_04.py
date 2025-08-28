@@ -32,7 +32,7 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             vx: np.ndarray, vy: np.ndarray,
                             relax_v: float, BC: float,
                             vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
-                            th: int, cache_a: int, step_size: int,
+                            th: int, cache_a: int,
                             vx_new: np.ndarray, vy_new: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     # Fast Implementation for big problems
     if th * cache_a > ny1 - 2:
@@ -50,20 +50,14 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                     end_b = end_y if b + 1 == blocks else start_y + (b + 1) * cache_a
 
                     # Iterate through j, add + 3 for offset for second pass, and vy pass
-                    for j in range(1, nx1 - 1 + step_size):
+                    for j in range(1, nx1 - 1):
                         for i in range(start_b, end_b):
-
-                            # Red Pass vx
-                            jloc0 = j
-                            if (i + jloc0) % 2 == 0 and 1 <= jloc0 <= nx1 - 2 and 1 <= i <= ny1 - 1:
-                                vx_new[i, jloc0] = inline_loop_body_vx(i=i, j=jloc0, dx=dx, dy=dy, relax_v=relax_v,
+                            if 1 <= j <= nx1 - 2 and 1 <= i <= ny1 - 1:
+                                vx_new[i, j] = inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
                                                                        etap=etap, etab=etab,
                                                                        vx=vx, vy=vy, rhs=vx_rhs)
-
-                            # Red Pass vy
-                            jloc2 = j - (step_size * 1)
-                            if (i + jloc2) % 2 == 0 and 1 <= jloc2 <= nx1 - 2 and 1 <= i <= ny1 - 1:
-                                    vy_new[i, jloc2] = inline_loop_body_vy(i=i, j=jloc2, dx=dx, dy=dy, relax_v=relax_v,
+                            if 1 <= j <= nx1 - 1 and 1 <= i <= ny1 - 2:
+                                    vy_new[i, j] = inline_loop_body_vy(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
                                                                            etap=etap, etab=etab,
                                                                            vx=vx, vy=vy, rhs=vy_rhs)
 
