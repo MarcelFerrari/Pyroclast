@@ -37,7 +37,7 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                              th: int, cache_a: int) -> tuple[np.ndarray, np.ndarray]:
     # Fast Implementation for big problems
     if th * cache_a > nx1 - 2:
-        for _ in range(max_iter):
+        for _ in range(max_iter // 2 * 2):
             # Work Split
             for p in nb.prange(th):
                 start_x = p * (nx1 - 2) // th + 1
