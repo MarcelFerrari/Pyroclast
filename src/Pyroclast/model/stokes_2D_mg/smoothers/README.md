@@ -42,18 +42,22 @@ change and experimentation. The general idea for files are:
 - If they are private, they don't follow any standard and the user needs to be aware of the file contents.
 
 # TODOS:
-Imporvement Ideas:
+Improvement Ideas:
 Red-Black-Gauss-Seidel
-- Fully Staggered / Four loops fused, LTR 
-- Fully Staggered / Four Loops fused, LTR + random offset
+- `at_01` Fully Staggered Reimplementation / Four Loop Fused, Thread blocking: **WORKS**
+- `at_02` Fully Staggered / Four loops fused, LTR **WORKS - But Slow as Fuck** False Sharing$
+- `at_03` Fully Staggered / Four Loops fused, LTR + random offset **WORKS - But Slow as Fuck** False Sharing
+- `at_04` From at_01 but with j in the innermost for loop
+=> Will also all run into Fals sharing.
 - Half Staggered / VX, VY Red fused, VX, VY Black Fused
 - Half Staggered / VX, VY Red fused, VX, VY Black Fused + LTR
 - Half Staggered / VX, VY Red fused, VX, VY Black Fused + LTR + Random Offset
 
 Jacobi:
-- Fully staggered / Two loops fused
-- Fully staggered / Two loops fused, LTR
-- Fully staggered / Two Loops fused, LTR + Rando Offset
+- Fully staggered / Two loops fused, old only
+- Fully staggered / Two loops fused, partially new.
+- Fully staggered / Two loops fused, LTR **WORKS - But Slow as Fuck** False Sharing
+- Fully staggered / Two Loops fused, LTR + Rando Offset **WORKS - But Slow as Fuck** False Sharing
 
 
 
