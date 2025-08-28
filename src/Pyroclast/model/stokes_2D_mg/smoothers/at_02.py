@@ -38,7 +38,7 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
     if th * cache_a > ny1 - 2:
         for _ in range(max_iter):
             # Work Split
-            lim = (ny1 - 2) / cache_a
+            lim = (ny1 - 2) // cache_a
 
             for b in nb.prange(lim):
                 start_y = cache_a * b + 1
