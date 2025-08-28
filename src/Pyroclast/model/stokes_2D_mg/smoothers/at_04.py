@@ -10,7 +10,7 @@ from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
 
 """
-Attempt 1: Reimplement the fully staggered loop with correct staggering. And Thread Blocking
+Attempt 4: Reimplement the fully staggered loop with correct staggering. And Thread Blocking
 """
 
 @nb.njit(cache=True, parallel=True)
