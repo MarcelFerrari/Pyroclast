@@ -3,6 +3,7 @@ Utilities for optional viscosity rescaling during the multigrid solve.
 """
 
 import numpy as np
+import numba as nb
 from Pyroclast.logging import get_logger
 
 logger = get_logger(__name__)
@@ -12,30 +13,35 @@ class ViscosityRescaler:
     """Manage viscosity rescaling for a grid hierarchy."""
 
     def __init__(self, ctx, hierarchy):
-        state, params, _opts = ctx
+        s, p, o = ctx
         self.hierarchy = hierarchy
-        self.enable = params.get("eta_scaling", False)
+        self.enable = p.get("eta_scaling", False)
+
+        # If no scaling, skip
         if not self.enable:
             return
+        
+        # Set up computational viscosity
+        s.stokes.etab_comp = np.zeros_like(s.etab)
+        s.stokes.etap_comp = np.zeros_like(s.etap)
+        self.etab_comp = s.stokes.etab_comp
+        self.etap_comp = s.stokes.etap_comp
+        self.etab = s.etab
+        self.etap = s.etap
 
-        # Original viscosity fields
-        self.orig_etab = state.etab
-        self.orig_etap = state.etap
+        # Overwrite viscosity of fine grid
+        hierarchy[0].etab = s.stokes.etab_comp
+        hierarchy[0].etap = s.stokes.etap_comp
 
         # Rescaling parameters
         self.cycle_count = 0
         self.rescale_count = 0
-        self.rescale_interval = params.eta_cycle_interval
-        self.total_rescales = params.eta_ncycles
+        self.rescale_interval = p.eta_cycle_interval
+        self.total_rescales = p.eta_ncycles
         self.progress = 0.0
         self.progress_step = 1.0 / max(self.total_rescales - 1, 1)
-        self.etab_min = np.nanmin(self.orig_etab[:-1, :-1])
-        self.etap_min = np.nanmin(self.orig_etap[:-1, :-1])
-
-        # Optional tolerances
-        self.tol_p = params.get("tol_p", 1e-16)
-        self.tol_vx = params.get("tol_vx", 1e-6)
-        self.tol_vy = params.get("tol_vy", 1e-6)
+        self.etab_min = np.min(s.etab[:-1, :-1])
+        self.etap_min = np.min(s.etap[:-1, :-1])
 
         # Apply initial scaling
         self._apply_scaling()
@@ -51,8 +57,8 @@ class ViscosityRescaler:
         """Propagate viscosity values down the grid hierarchy."""
         for lvl in range(1, len(self.hierarchy)):
             prev = self.hierarchy[lvl - 1]
-            coarse = self.hierarchy[lvl]
-            coarse.restrict_properties(prev)
+            curr = self.hierarchy[lvl]
+            curr.restrict_properties(prev)
 
     def _apply_scaling(self):
         """Apply viscosity rescaling to the finest level."""
@@ -60,10 +66,10 @@ class ViscosityRescaler:
             return
         theta = min(self.progress, 1.0)
         fine = self.hierarchy[0]
-        fine.etab = self.etab_min * (1.0 - theta) + self.orig_etab * theta
-        fine.etap = self.etap_min * (1.0 - theta) + self.orig_etap * theta
-        fine.etab = np.nan_to_num(fine.etab, copy=False)
-        fine.etap = np.nan_to_num(fine.etap, copy=False)
+        _interpolate_viscosity(fine.nx1, fine.ny1, theta,
+                               self.etab_min, self.etap_min,
+                               self.etab, self.etap,
+                               self.etab_comp, self.etap_comp)
 
     def update_viscosity(self):
         """Possibly rescale viscosity based on current cycle count."""
@@ -88,3 +94,10 @@ class ViscosityRescaler:
         self.cycle_count = 0
         self.rescale_count += 1
         return True
+
+@nb.njit(parallel=True, cache=True)
+def _interpolate_viscosity(nx1, ny1, theta, etab_min, etap_min, etab, etap, etab_comp, etap_comp):
+    for i in nb.prange(ny1):
+        for j in nb.prange(nx1):
+            etab_comp[i, j] = (1.0 - theta) * etab_min + theta * etab[i, j]
+            etap_comp[i, j] = (1.0 - theta) * etap_min + theta * etap[i, j]

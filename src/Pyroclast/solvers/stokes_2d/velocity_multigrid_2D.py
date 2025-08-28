@@ -9,10 +9,10 @@ V-cycle logic to the Stokes grid hierarchy and smoothing operators.
 from __future__ import annotations
 
 from Pyroclast.solvers.multigrid import BaseMultigrid
-from Pyroclast.model.stokes_2D_mg.grid_hierarchy import GridHierarchy
+from .grid_hierarchy import GridHierarchy
 
 
-class StokesMultigrid(BaseMultigrid):
+class VelocityMultigrid2D(BaseMultigrid):
     """Multigrid solver tailored for the 2-D Stokes system."""
 
     def __init__(self, ctx, levels: int, scaling: float = 2.0) -> None:

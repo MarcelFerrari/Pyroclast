@@ -14,7 +14,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 import numba as nb
-from .utils import apply_p_BC, apply_vx_BC, apply_vy_BC
+from .bc import apply_p_BC, apply_vx_BC, apply_vy_BC
 
 @nb.njit(cache=True, parallel=True)
 def pressure_sweep(nx1, ny1, dx, dy,

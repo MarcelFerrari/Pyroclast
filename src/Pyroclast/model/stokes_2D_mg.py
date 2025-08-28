@@ -22,12 +22,11 @@ from Pyroclast.interpolation.linear_2D_cpu \
     import interpolate_markers2grid as interpolate
 from Pyroclast.profiling import timer
 
-from .smoother import *
+from Pyroclast.solvers.stokes_2d.smoother import *
 from .utils import *
 from .uzawa_solver import UzawaSolver
 from Pyroclast.model.stokes_2D import IncompressibleStokes2D
-
-import pickle
+from Pyroclast.context import ContextNamespace
 
 # Model class
 class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
@@ -61,15 +60,6 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
                                            p.p_ref,
                                            s.p)
         
-        # Store rhs arrays for problem
-        self.p_rhs = np.zeros((s.ny1, s.nx1))
-        self.vx_rhs = np.zeros((s.ny1, s.nx1))
-        self.vy_rhs = np.zeros((s.ny1, s.nx1))
-
-        self.p_res = np.zeros((s.ny1, s.nx1))
-        self.vx_res = np.zeros((s.ny1, s.nx1))
-        self.vy_res = np.zeros((s.ny1, s.nx1))
-
     def interpolate_rhop(self, ctx):
         # Read the context
         s, p, o = ctx
@@ -87,7 +77,7 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         s, p, o = ctx
 
         # Recompute vy rhs
-        self.vy_rhs[...] = -self.gy * s.rho
+        s.stokes.vy_rhs[...] = -p.gy * s.rho
 
         # Create Uzawa solver
         solver = UzawaSolver(ctx, levels=4, scaling=2.5)
@@ -95,8 +85,24 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         # Solve the system
         max_cycles = p.get('max_uzawa_iterations', 1000)
         s.p, s.vx, s.vy = solver.solve(
-            self.p_rhs, self.vx_rhs, self.vy_rhs,
+            s.stokes.p_rhs, s.stokes.vx_rhs, s.stokes.vy_rhs,
             p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy,
             max_cycles=max_cycles,
             nu1=5, nu2=5)
 
+
+@nb.njit(cache=True)
+def compute_hydrostatic_pressure(nx1, ny1, dy, rho, gy, p_ref, p):
+    """
+    Compute the hydrostatic pressure field in-place, returning the modified array.
+    """
+    # Set pressure at the top boundary
+    for j in range(1, nx1-1):
+        p[1, j] = p_ref
+
+    # Compute pressure field
+    for i in range(2, ny1-1):
+        for j in range(1, nx1-1):
+            p[i, j] = p[i-1, j] + gy * dy * (rho[i, j] + rho[i-1, j]) / 2
+
+    return p

@@ -18,15 +18,16 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import numpy as np
 
 # Use the solver-agnostic multigrid base with Stokes-specific hooks
-from Pyroclast.solvers.stokes_2d import StokesMultigrid
+from Pyroclast.logging import get_logger
+from Pyroclast.context import ContextNamespace
+
+from .velocity_multigrid_2D import VelocityMultigrid2D
 from .smoother import pressure_sweep
 from .mg_routines import uzawa_velocity_rhs
 from .implicit_operators import p_residual, vx_residual, vy_residual
-from .anderson import AndersonAccelerator
 from .utils import apply_BC
 from .viscosity_rescaler import ViscosityRescaler
-from .residual_tracker import ResidualTracker
-from Pyroclast.logging import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -36,30 +37,25 @@ class UzawaSolver:
     def __init__(self, ctx, levels, scaling=2.0, accel_m=30):
         """Initialize the solver and allocate working arrays."""
         self.ctx = ctx
+        s, p, o = ctx
 
         # Set up multigrid solver for the velocity field
-        self.mg = StokesMultigrid(ctx, levels, scaling)
+        self.mg = VelocityMultigrid2D(ctx, levels, scaling)
         self.rescaler = ViscosityRescaler(ctx, self.mg.hierarchy)
+        
+        s.stokes = s.get("stokes", ContextNamespace())
+        s.stokes.p_rhs = np.zeros((s.ny1, s.nx1))
+        s.stokes.p_res = np.zeros((s.ny1, s.nx1))
 
         # Allocate space for pressure solution and residuals
-        ny1, nx1 = self.fine.ny1, self.fine.nx1
-        self.p = np.zeros((ny1, nx1), dtype=np.float64)
-        self.p_res = np.zeros((ny1, nx1), dtype=np.float64)
+        self.p = s.p
+        self.p_res = s.stokes.p_uzawa_res
+        self.p_rhs = s.stokes.p_uzawa_rhs
         
         # Set up solver parameters
         self.relax_p = ctx.params.get("relax_p", 0.7)
         self.p_ref = ctx.params.get("p_ref", None)
         self.BC = ctx.params.BC
-
-        # Temporary storage for Anderson acceleration
-        self.state_k = np.zeros((3, self.fine.ny1, self.fine.nx1))
-        self.state_next = np.zeros_like(self.state_k)
-        
-        self.accel = AndersonAccelerator(m=accel_m, shape=(self.fine.ny1, self.fine.nx1))
-        # Set the residual tracker to use the same window size as the accelerator
-        # We need to ensure that AA can build up a long enough history to be effective
-        # before signaling convergence.
-        self.tracker = ResidualTracker(m=accel_m, tol_p=1e-17, tol_vx=1e-7, tol_vy = 1e-7, convergence_thresh=1e-2, divergence_thresh=2.0)
 
     @property
     def fine(self):
