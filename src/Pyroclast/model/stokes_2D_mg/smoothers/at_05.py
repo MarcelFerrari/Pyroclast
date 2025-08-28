@@ -3,7 +3,7 @@ Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
 File: Pyroclast/model/stokes_2D_mg/smoothers/at_05.py 
-Description: Attempt 5: Reimplement the fully staggered loop with correct staggering. And Thread Blocking Jacobi.
+Description: Attempt 5: Implemented Blocking Jacobi. And Thread Blocking
 
 Author: Alexander Sotoudeh
 Copyright (c) 2024 Marcel Ferrari.
