@@ -48,6 +48,7 @@ Red-Black-Gauss-Seidel
 - `at_02` Fully Staggered / Four loops fused, LTR **WORKS - But Slow as Fuck** False Sharing$
 - `at_03` Fully Staggered / Four Loops fused, LTR + random offset **WORKS - But Slow as Fuck** False Sharing
 - `at_04` From `at_01` but with j in the innermost for loop
+- `at_08` From `at_04` but with boundary jitter
 => Will also all run into Fals sharing.
 - Half Staggered / VX, VY Red fused, VX, VY Black Fused
 - Half Staggered / VX, VY Red fused, VX, VY Black Fused + LTR
@@ -57,6 +58,9 @@ Jacobi:
 - `at_05` Fully staggered / Two loops fused, old only
 - `at_06` Fully staggered / Two loops fused, new vx in vy
 - `at_07` Fully staggered / Two loops fused, new vy in vx
+- `at_09` From `at_05` Fully staggered / Two loops fused, old only
+- `at_10` From `at_06` Fully staggered / Two loops fused, new vx in vy
+- `at_11` From `at_07` Fully staggered / Two loops fused, new vy in vx
 - Fully staggered / Two loops fused, partially new.
 - Fully staggered / Two loops fused, LTR **WORKS - But Slow as Fuck** False Sharing
 - Fully staggered / Two Loops fused, LTR + Rando Offset **WORKS - But Slow as Fuck** False Sharing
