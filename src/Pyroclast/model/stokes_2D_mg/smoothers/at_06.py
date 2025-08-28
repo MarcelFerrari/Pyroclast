@@ -2,8 +2,8 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: Pyroclast/model/stokes_2D_mg/smoothers/at_07.py 
-Description: Attempt 6: Implemented Blocking Jacobi. And Thread Blocking. Cascading VX
+File: Pyroclast/model/stokes_2D_mg/smoothers/at_06.py 
+Description: Attempt 6: Implemented Blocking Jacobi. And Thread Blocking. Cascading VY
 
 Author: Alexander Sotoudeh
 Copyright (c) 2024 Marcel Ferrari.
@@ -12,7 +12,6 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
-
 
 
 import numba as nb
@@ -58,18 +57,19 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                     # Iterate through j, add + 3 for offset for second pass, and vy pass
                     for i in range(1, ny1 - 1 + step_size):
                         for j in range(start_bx, end_bx):
-                            # Pass vy
-                            iloc0 = i
-                            if 1 <= j <= nx1 - 1 and 1 <= iloc0 <= ny1 - 2:
-                                vy_new[iloc0, j] = inline_loop_body_vy(i=iloc0, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                                       etap=etap, etab=etab,
-                                                                       vx=vx, vy=vy, rhs=vy_rhs)
                             # Pass vx
-                            iloc1 = i - step_size
-                            if 1 <= j <= nx1 - 2 and 1 <= iloc1 <= ny1 - 1:
-                                vx_new[iloc1, j] = inline_loop_body_vx(i=iloc1, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                            iloc0 = i
+                            if 1 <= j <= nx1 - 2 and 1 <= iloc0 <= ny1 - 1:
+                                vx_new[iloc0, j] = inline_loop_body_vx(i=iloc0, j=j, dx=dx, dy=dy, relax_v=relax_v,
                                                                        etap=etap, etab=etab,
-                                                                       vx=vx, vy=vy_new, rhs=vx_rhs)
+                                                                       vx=vx, vy=vy, rhs=vx_rhs)
+
+                            # Pass vy
+                            iloc1 = i - step_size
+                            if 1 <= j <= nx1 - 1 and 1 <= iloc1 <= ny1 - 2:
+                                vy_new[iloc1, j] = inline_loop_body_vy(i=iloc1, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                                       etap=etap, etab=etab,
+                                                                       vx=vx_new, vy=vy, rhs=vy_rhs)
 
             # Copy the results vx_new to vx
             vx[:] = vx_new[:]
