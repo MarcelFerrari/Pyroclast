@@ -60,7 +60,6 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                                                                    vx=vx, vy=vy, rhs=vx_rhs)
 
                             # Pass vy
-                            i = i
                             if 1 <= j <= nx1 - 1 and 1 <= i <= ny1 - 2:
                                 vy_new[i, j] = inline_loop_body_vy(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
                                                                    etap=etap, etab=etab,
