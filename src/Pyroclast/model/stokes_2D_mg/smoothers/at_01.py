@@ -39,8 +39,8 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
         for _ in range(max_iter):
             # Work Split
             for p in nb.prange(th):
-                start_y = p * (ny1 - 1) / th + 1
-                end_y = (ny1 - 1) if p + 1 == th else (p + 1) * (ny1 - 1) / th + 1
+                start_y = p * (ny1 - 2) // th + 1
+                end_y = (ny1 - 1) if p + 1 == th else (p + 1) * (ny1 - 2) // th + 1
 
                 blocks = math.ceil((end_y - start_y) / cache_a)
 
