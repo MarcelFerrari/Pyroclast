@@ -15,8 +15,7 @@ from .grid_hierarchy import GridHierarchy
 class VelocityMultigrid2D(BaseMultigrid):
     """Multigrid solver tailored for the 2-D Stokes system."""
 
-    def __init__(self, ctx, levels: int, scaling: float = 2.0) -> None:
-        hierarchy = GridHierarchy(ctx, levels, scaling)
+    def __init__(self, hierarchy, scaling) -> None:
         super().__init__(hierarchy, scaling)
 
     def pre_smooth(self, grid, iterations: int) -> None:
@@ -26,7 +25,7 @@ class VelocityMultigrid2D(BaseMultigrid):
         grid.smooth(iterations)
 
     def compute_residual(self, grid) -> None:
-        grid.update_residual()
+        grid.update_residuals()
 
     def restrict(self, fine, coarse) -> None:
         coarse.restrict_residuals(fine)

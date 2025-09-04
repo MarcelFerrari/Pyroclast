@@ -21,17 +21,13 @@ class ViscosityRescaler:
         if not self.enable:
             return
         
-        # Set up computational viscosity
-        s.stokes.etab_comp = np.zeros_like(s.etab)
-        s.stokes.etap_comp = np.zeros_like(s.etap)
-        self.etab_comp = s.stokes.etab_comp
-        self.etap_comp = s.stokes.etap_comp
-        self.etab = s.etab
-        self.etap = s.etap
+        # Store reference to original viscosity
+        self.stokes_etab = s.etab
+        self.stokes_etap = s.etap
 
-        # Overwrite viscosity of fine grid
-        hierarchy[0].etab = s.stokes.etab_comp
-        hierarchy[0].etap = s.stokes.etap_comp
+        # Ensure that shapes match
+        assert self.stokes_etab.shape == self.etab_comp.shape
+        assert self.stokes_etap.shape == self.etap_comp.shape
 
         # Rescaling parameters
         self.cycle_count = 0
@@ -46,6 +42,16 @@ class ViscosityRescaler:
         # Apply initial scaling
         self._apply_scaling()
         self._propagate()
+    
+    @property
+    def etab_comp(self):
+        """Computational Viscosity in basic Nodes"""
+        return self.hierarchy[0].etab
+    
+    @property
+    def etap_comp(self):
+        """Computational Viscosity in pressure Nodes"""
+        return self.hierarchy[0].etap
 
     def done_rescaling(self):
         """Check whether all planned rescaling cycles are done."""
@@ -68,7 +74,7 @@ class ViscosityRescaler:
         fine = self.hierarchy[0]
         _interpolate_viscosity(fine.nx1, fine.ny1, theta,
                                self.etab_min, self.etap_min,
-                               self.etab, self.etap,
+                               self.stokes_etab, self.stokes_etap,
                                self.etab_comp, self.etap_comp)
 
     def update_viscosity(self):

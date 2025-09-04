@@ -1,5 +1,5 @@
 """Stokes-specific multigrid solver wrappers."""
 
-from .multigrid import StokesMultigrid
+from .uzawa_solver import UzawaSolver
 
-__all__ = ["StokesMultigrid"]
+__all__ = ["UzawaSolver"]

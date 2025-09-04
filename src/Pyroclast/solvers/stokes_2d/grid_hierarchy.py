@@ -16,7 +16,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import numpy as np
 from Pyroclast.logging import get_logger
 
-from .grid import FineGrid, CoarseGrid
+from .grid import Grid
 
 logger = get_logger(__name__)
 
@@ -27,11 +27,17 @@ class GridHierarchy:
     def __init__(self, ctx, nlevels, scaling):
         state, params, _opts = ctx
 
-        # Fine grid
-        base = FineGrid(ctx)
+        # Init grid
+        base = Grid(state.nx1 - 1, state.ny1 - 1, 0, ctx)
+        
+        # Copy over material properties
+        base.rho[:,:] = state.rho
+        base.etab[:,:] = state.etab
+        base.etap[:,:] = state.etap
+
+        # Initialize coarse levels
         self.nlevels = nlevels
         self.levels = [base]
-
         logger.info(f"Grid Hierarchy: {self.nlevels} levels, scaling {scaling:.2f}")
         logger.info(f"Fine grid: {base.ny1} x {base.nx1}")
     
@@ -40,7 +46,7 @@ class GridHierarchy:
             prev = self.levels[-1]
             nx_coarse = int(prev.nx / scaling)
             ny_coarse = int(prev.ny / scaling)
-            coarse = CoarseGrid(ny_coarse, nx_coarse, lvl, ctx)
+            coarse = Grid(ny_coarse, nx_coarse, lvl, ctx)
             coarse.restrict_properties(prev)
             self.levels.append(coarse)
             logger.info(f"Coarse grid {lvl}: {coarse.ny1} x {coarse.nx1}")
@@ -50,4 +56,9 @@ class GridHierarchy:
 
     def __len__(self):
         return len(self.levels)
+
+    def reset(self):
+        # Reset all grid levels
+        for level in self.levels:
+            level.reset()
 

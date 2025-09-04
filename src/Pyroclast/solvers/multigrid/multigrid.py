@@ -43,7 +43,7 @@ class BaseMultigrid(ABC):
         self.hierarchy = hierarchy
         self.scaling = scaling
 
-    def vcycle(self, level: int = 0, nu1: int = 3, nu2: int = 3):
+    def vcycle(self, level: int, nu1: int, nu2: int) -> None:
         """Perform a single V-cycle starting at ``level``.
 
         Parameters
@@ -74,9 +74,6 @@ class BaseMultigrid(ABC):
 
         if nu2 > 0:
             self.post_smooth(fine, nu2)
-
-        self.compute_residual(fine)
-        return self.extract_solution(fine)
 
     @abstractmethod
     def pre_smooth(self, grid: Any, iterations: int) -> None:

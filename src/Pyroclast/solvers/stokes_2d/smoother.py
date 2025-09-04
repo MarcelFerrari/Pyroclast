@@ -14,14 +14,14 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 import numba as nb
+import numpy as np
 from .bc import apply_p_BC, apply_vx_BC, apply_vy_BC
 
 @nb.njit(cache=True, parallel=True)
 def pressure_sweep(nx1, ny1, dx, dy,
                    vx, vy, p,
                    beta,
-                   relax_p, rhs,
-                   p_ref = None):
+                   relax_p, rhs):
     
     # 1) Update only interior cells
     for i in nb.prange(1, ny1 - 1):
@@ -33,11 +33,10 @@ def pressure_sweep(nx1, ny1, dx, dy,
             # Point-wise update of pressure
             p[i, j] += res * beta[i, j] * relax_p
 
-    # Anchor pressure at (1,1) if reference pressure is given
-    if p_ref is not None:
-        dp = p_ref - p[1, 1]
-        p += dp
-    
+    # Ensure zero-mean
+    pbar = np.mean(p[1:-1, 1:-1])
+    p -= pbar
+
     # Apply pressure boundary conditions
     apply_p_BC(p)
 

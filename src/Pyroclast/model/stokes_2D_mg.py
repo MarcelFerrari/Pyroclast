@@ -22,11 +22,10 @@ from Pyroclast.interpolation.linear_2D_cpu \
     import interpolate_markers2grid as interpolate
 from Pyroclast.profiling import timer
 
-from Pyroclast.solvers.stokes_2d.smoother import *
-from .utils import *
-from .uzawa_solver import UzawaSolver
+from Pyroclast.solvers.stokes_2d import UzawaSolver
 from Pyroclast.model.stokes_2D import IncompressibleStokes2D
 from Pyroclast.context import ContextNamespace
+
 
 # Model class
 class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
@@ -60,6 +59,15 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
                                            p.p_ref,
                                            s.p)
         
+        # Store rhs arrays for problem
+        self.p_rhs = np.zeros((s.ny1, s.nx1))
+        self.vx_rhs = np.zeros((s.ny1, s.nx1))
+        self.vy_rhs = np.zeros((s.ny1, s.nx1))
+
+        self.p_res = np.zeros((s.ny1, s.nx1))
+        self.vx_res = np.zeros((s.ny1, s.nx1))
+        self.vy_res = np.zeros((s.ny1, s.nx1))
+
     def interpolate_rhop(self, ctx):
         # Read the context
         s, p, o = ctx
@@ -77,15 +85,15 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         s, p, o = ctx
 
         # Recompute vy rhs
-        s.stokes.vy_rhs[...] = -p.gy * s.rho
+        self.vy_rhs[...] = -self.gy * s.rho
 
         # Create Uzawa solver
-        solver = UzawaSolver(ctx, levels=4, scaling=2.5)
+        solver = UzawaSolver(ctx, nlevels=4, scaling=2.5)
 
         # Solve the system
         max_cycles = p.get('max_uzawa_iterations', 1000)
         s.p, s.vx, s.vy = solver.solve(
-            s.stokes.p_rhs, s.stokes.vx_rhs, s.stokes.vy_rhs,
+            self.p_rhs, self.vx_rhs, self.vy_rhs,
             p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy,
             max_cycles=max_cycles,
             nu1=5, nu2=5)
