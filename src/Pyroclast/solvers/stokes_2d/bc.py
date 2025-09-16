@@ -1,36 +1,4 @@
-"""
-Pyroclast: Scalable Geophysics Models
-https://github.com/MarcelFerrari/Pyroclast
-
-File: utils.py
-Description: This file implements utility functions for the multigrid method
-
-Author: Marcel Ferrari
-Copyright (c) 2024 Marcel Ferrari.
-
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at https://mozilla.org/MPL/2.0/.
-"""
-
 import numba as nb
-
-@nb.njit(cache=True)
-def compute_hydrostatic_pressure(nx1, ny1, dy, rho, gy, p_ref, p):
-    """
-    Compute the hydrostatic pressure field in-place, returning the modified array.
-    """
-    # Set pressure at the top boundary
-    for j in range(1, nx1-1):
-        p[1, j] = p_ref
-
-    # Compute pressure field
-    for i in range(2, ny1-1):
-        for j in range(1, nx1-1):
-            p[i, j] = p[i-1, j] + gy * dy * (rho[i, j] + rho[i-1, j]) / 2
-
-    return p
-
 
 # ======== Utilities for boundary conditions ========
 # JIT-compiled to be callable from other JIT-compiled functions.

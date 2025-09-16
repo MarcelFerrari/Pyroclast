@@ -14,8 +14,9 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 import numpy as np
-from .grid import Grid
 from Pyroclast.logging import get_logger
+
+from .grid import Grid
 
 logger = get_logger(__name__)
 
@@ -26,14 +27,17 @@ class GridHierarchy:
     def __init__(self, ctx, nlevels, scaling):
         state, params, _opts = ctx
 
-        # Fine grid
-        base = Grid(params.ny, params.nx, 0, ctx)
-        base.rho[:] = state.rho
-        base.etab[:] = state.etab
-        base.etap[:] = state.etap
+        # Init grid
+        base = Grid(state.nx1 - 1, state.ny1 - 1, 0, ctx)
+        
+        # Copy over material properties
+        base.rho[:,:] = state.rho
+        base.etab[:,:] = state.etab
+        base.etap[:,:] = state.etap
+
+        # Initialize coarse levels
         self.nlevels = nlevels
         self.levels = [base]
-
         logger.info(f"Grid Hierarchy: {self.nlevels} levels, scaling {scaling:.2f}")
         logger.info(f"Fine grid: {base.ny1} x {base.nx1}")
     
@@ -52,4 +56,9 @@ class GridHierarchy:
 
     def __len__(self):
         return len(self.levels)
+
+    def reset(self):
+        # Reset all grid levels
+        for level in self.levels:
+            level.reset()
 

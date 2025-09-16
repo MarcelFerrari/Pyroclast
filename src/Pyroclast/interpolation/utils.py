@@ -13,6 +13,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+from Pyroclast.utils import clip
 import numba as nb
 import numpy as np
 
@@ -63,15 +64,6 @@ def bisect_idx(x, xm, nx):
         idx[i] = min(max(binary_search(x, xm[i], nx), 0), nx - 2)
     
     return idx
-
-@nb.njit(cache=True)
-def clip(x, xmin, xmax):
-    if x < xmin:
-        return xmin
-    elif x > xmax:
-        return xmax
-    else:
-        return x
 
 @nb.njit(parallel=True, cache=True)
 def compute_idx(x, xm):
