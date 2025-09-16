@@ -368,7 +368,7 @@ def uzawa_vy_residual(nx1, ny1,
     return res_vy
 
 @nb.njit(cache=True, parallel=True)
-def compute_p_energy_norm(nx1, ny1, p_res, etap):
+def compute_p_energy_norm(nx1, ny1, etap,p_res):
     energy_norm = 0.0
     for j in nb.prange(1, ny1-1):
         for i in range(1, nx1-1):
@@ -377,9 +377,8 @@ def compute_p_energy_norm(nx1, ny1, p_res, etap):
     return np.sqrt(energy_norm)
 
 @nb.njit(cache=True, parallel=True)
-def compute_vx_energy_norm(nx1, ny1, dx, dy, vx_res, vx_rhs, etap, etab, normalize):
+def compute_vx_energy_norm(nx1, ny1, dx, dy, etap, etab, vx_res):
     energy_norm = 0.0
-    rhs_norm = 0.0
     for i in nb.prange(1, ny1-1):
         for j in range(1, nx1-2):
             etaA = etap[i,   j]
@@ -388,17 +387,12 @@ def compute_vx_energy_norm(nx1, ny1, dx, dy, vx_res, vx_rhs, etap, etab, normali
             eta2 = etab[i,   j]
             eta_inv = 1.0/(2.0*(etaA + etaB)/(dx * dx) + (eta1 + eta2)/(dy * dy))
             energy_norm += eta_inv * vx_res[i, j] * vx_res[i, j]
-            rhs_norm += eta_inv * vx_rhs[i, j] * vx_rhs[i, j]
 
-    if not normalize:
-        return np.sqrt(energy_norm)
-    else:
-        return np.sqrt(energy_norm)/np.sqrt(rhs_norm)
+    return np.sqrt(energy_norm)
 
 @nb.njit(cache=True, parallel=True)
-def compute_vy_energy_norm(nx1, ny1, dx, dy, vy_res, vy_rhs, etap, etab, normalize):
+def compute_vy_energy_norm(nx1, ny1, dx, dy, etap, etab, vy_res):
     energy_norm = 0.0
-    rhs_norm = 0.0
     for i in nb.prange(1, ny1-2):
         for j in range(1, nx1-1):
             etaA = etap[i,   j]
@@ -407,9 +401,5 @@ def compute_vy_energy_norm(nx1, ny1, dx, dy, vy_res, vy_rhs, etap, etab, normali
             eta2 = etab[i,   j]
             eta_inv = 1.0/(2.0*(etaA + etaB) / (dy * dy) + (eta1 + eta2) / (dx * dx))
             energy_norm += eta_inv * vy_res[i, j] * vy_res[i, j]
-            rhs_norm += eta_inv * vy_rhs[i, j] * vy_rhs[i, j]
-    
-    if not normalize:
-        return np.sqrt(energy_norm)
-    else:
-        return np.sqrt(energy_norm)/np.sqrt(rhs_norm)
+            
+    return np.sqrt(energy_norm)

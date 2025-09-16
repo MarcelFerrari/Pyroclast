@@ -47,6 +47,7 @@ class _UzawaSolverParams:
         self.nu1 = p.get("mg_nu1", 5)
         self.nu2 = p.get("mg_nu2", 5)
         self.BC = p.BC
+        self.res_tol = p.get("stokes_res_tol", 1e-4)
 
 class UzawaSolver:
     """Solve the Stokes system using Uzawa iterations and multigrid."""
@@ -64,6 +65,7 @@ class UzawaSolver:
         self.velocity_cycles = params.uzawa_velocity_cycles
         self.max_cycles = params.max_iterations
         self.BC = params.BC  # type depends on your BC convention
+        self.res_tol = params.res_tol
 
         # Set up multigrid solver for the velocity field
         self.hierarchy = GridHierarchy(ctx, nlevels, scaling)
@@ -138,15 +140,19 @@ class UzawaSolver:
                                     self.vy_res, self.stokes_vy_rhs)
 
         # Compute energy norm residuals
-        p_energy = compute_p_energy_norm(self.nx1, self.ny1, self.p_res, self.etap)
+        p_energy = compute_p_energy_norm(self.nx1, self.ny1, self.etap, self.p_res)
         vx_energy = compute_vx_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
-                                           self.vx_res, self.stokes_vx_rhs,
-                                           self.stokes_etap, self.stokes_etab, normalize=False)
+                                           self.stokes_etap, self.stokes_etab, self.vx_res)
         vy_energy = compute_vy_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
-                                           self.vy_res, self.stokes_vy_rhs,
-                                           self.stokes_etap, self.stokes_etab, normalize=False)
+                                           self.stokes_etap, self.stokes_etab, self.vy_res)
+        
+        # Gravity drives the flow only in vy direction
+        vy_rhs_norm = compute_vy_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
+                                           self.stokes_etap, self.stokes_etab, self.stokes_vy_rhs)
 
-        return vx_energy, vy_energy, p_energy
+        residual = p_energy**2 + vx_energy**2 + vy_energy**2
+        rhs_norm = vy_rhs_norm**2
+        return np.sqrt(residual / rhs_norm)
 
     def solve(self, stokes_p_rhs, stokes_vx_rhs, stokes_vy_rhs,
               p_guess=None, vx_guess=None, vy_guess=None):
@@ -218,17 +224,22 @@ class UzawaSolver:
 
             
             # Compute residuals of the new solution
-            vx_res, vy_res, p_res = self.compute_residuals(self.vx, self.vy, self.p)
-            total_res = np.sqrt(p_res**2 + vx_res**2 + vy_res**2)
+            res = self.compute_residuals(self.vx, self.vy, self.p)
 
             logger.debug((
                 f"Cycle: {cycle}, "
-                f"Energy residuals: p = {p_res:.2e}, "
-                f"vx = {vx_res:.2e}, vy = {vy_res:.2e}, total = {total_res:.2e}"))
+                f"Relative Residual: {res:.3e}"
+            ))
 
             # Update viscosity
             if self.rescaler.update_viscosity():
                 self.accel.reset()  # Reset Anderson history if viscosity changed
+
+                # Check convergence
+                if res < self.res_tol:
+                    logger.info(f"Uzawa solver converged in {cycle} cycles "
+                                f"with relative residual {res:.3e}.")
+                    break
 
         return self.p, self.vx, self.vy
 

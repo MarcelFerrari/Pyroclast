@@ -15,13 +15,15 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import numba as nb
 import numpy as np
-from .bc import apply_p_BC, apply_vx_BC, apply_vy_BC
+
+from .utils import apply_p_BC, apply_vx_BC, apply_vy_BC
 
 @nb.njit(cache=True, parallel=True)
 def pressure_sweep(nx1, ny1, dx, dy,
                    vx, vy, p,
                    beta,
-                   relax_p, rhs):
+                   relax_p, rhs,
+                   p_ref = None):
     
     # 1) Update only interior cells
     for i in nb.prange(1, ny1 - 1):
@@ -33,10 +35,13 @@ def pressure_sweep(nx1, ny1, dx, dy,
             # Point-wise update of pressure
             p[i, j] += res * beta[i, j] * relax_p
 
-    # Ensure zero-mean
+    # Anchor pressure at (1,1) if reference pressure is given
+    # if p_ref is not None:
+    #     dp = p_ref - p[1, 1]
+    #     p += dp
     pbar = np.mean(p[1:-1, 1:-1])
     p -= pbar
-
+    
     # Apply pressure boundary conditions
     apply_p_BC(p)
 
@@ -76,253 +81,174 @@ def y_momentum_coefficients(dx, dy, etaA, etaB, eta1, eta2):
     vx4 =  eta2 / (dx * dy)
     return vy1, vy2, vy3, vy4, vy5, vx1, vx2, vx3, vx4
 
-@nb.njit(cache=True, parallel=True)
-def _vx_rb_gs_sweep(nx1, ny1,
-                    dx, dy,
-                    etap, etab,
-                    vx, vy,
-                    relax_v, rhs, BC):
-    """
-    In-place Red-Black Gauss-Seidel update for vx.
-    """
 
-    #----------------------------
-    #  Red pass: (i + j) % 2 == 0
-    #----------------------------
+# -----------------------------
+# vx kernels (color sweeps)
+# -----------------------------
+@nb.njit(cache=True, parallel=True)
+def _vx_color_sweep_red(nx1, ny1, dx, dy, etap, etab, vx, vy, relax_v, rhs):
+    """
+    Red pass for vx using odd-even j_start (no (i+j)%2).
+    Matches your original j_start scheme:
+    j_start = 1 if i is even else 2
+    """
     for i in nb.prange(1, ny1 - 1):
-        j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
+        j_start = 1 if (i % 2) == 0 else 2
         for j in range(j_start, nx1 - 2, 2):
-            # 1) Gather local viscosities
             etaA = etap[i,   j]
             etaB = etap[i,   j+1]
             eta1 = etab[i-1, j]
             eta2 = etab[i,   j]
 
-            
-            # 2) Construct coefficients for x-momentum
-            vx1_coeff = 2.0 * etaA / (dx * dx)
-            vx2_coeff = eta1     / (dy * dy)
-            vx3_coeff = -(eta1 + eta2) / (dy * dy) \
-                        - 2.0*(etaA + etaB)/(dx * dx)
-            vx4_coeff = eta2 / (dy * dy)
-            vx5_coeff = 2.0 * etaB / (dx * dx)
-
-            # Cross terms with vy
-            vy1_coeff =  eta1 / (dx * dy)
-            vy2_coeff = -eta2 / (dx * dy)
-            vy3_coeff = -eta1 / (dx * dy)
-            vy4_coeff =  eta2 / (dx * dy)
-            
-            # 3) Sum neighbor contributions
-            sum_neighbors = (
-                vx1_coeff * vx[i,   j-1] +
-                vx2_coeff * vx[i-1, j  ] +
-                vx4_coeff * vx[i+1, j  ] +
-                vx5_coeff * vx[i,   j+1]
-                +
-                vy1_coeff * vy[i-1, j  ] +
-                vy2_coeff * vy[i,   j  ] +
-                vy3_coeff * vy[i-1, j+1] +
-                vy4_coeff * vy[i,   j+1]
+            vx1, vx2, vx3, vx4, vx5, vy1, vy2, vy3, vy4 = x_momentum_coefficients(
+                dx, dy, etaA, etaB, eta1, eta2
             )
 
-            diag = vx3_coeff
+            sum_neighbors = (
+                vx1 * vx[i,   j-1] +
+                vx2 * vx[i-1, j  ] +
+                vx4 * vx[i+1, j  ] +
+                vx5 * vx[i,   j+1] +
+                vy1 * vy[i-1, j  ] +
+                vy2 * vy[i,   j  ] +
+                vy3 * vy[i-1, j+1] +
+                vy4 * vy[i,   j+1]
+            )
 
-            # Gauss-Seidel in-place update
-            vx[i, j] = (1.0 - relax_v)*vx[i, j] \
-                        + relax_v*(rhs[i, j] - sum_neighbors)/diag
-    # Apply vx boundary conditions
-    apply_vx_BC(vx, BC)
-    
-    #----------------------------
-    #  Black pass: (i + j) % 2 == 1
-    #----------------------------
-    for i in nb.prange(1, ny1 - 1):
-        j_start = 2 if i % 2 == 0 else 1  # Black pass starts on odd (i+j)
-        for j in range(j_start, nx1 - 2, 2):                
-                # 1) Gather local viscosities
-                etaA = etap[i,   j]
-                etaB = etap[i,   j+1]
-                eta1 = etab[i-1, j]
-                eta2 = etab[i,   j]
+            vx[i, j] = (1.0 - relax_v) * vx[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / vx3
 
-                # 2) Construct coefficients for x-momentum
-                vx1_coeff = 2.0 * etaA / (dx * dx)
-                vx2_coeff = eta1     / (dy * dy)
-                vx3_coeff = -(eta1 + eta2) / (dy * dy) \
-                            - 2.0*(etaA + etaB)/(dx * dx)
-                vx4_coeff = eta2 / (dy * dy)
-                vx5_coeff = 2.0 * etaB / (dx * dx)
-
-                # Cross terms with vy
-                vy1_coeff =  eta1 / (dx * dy)
-                vy2_coeff = -eta2 / (dx * dy)
-                vy3_coeff = -eta1 / (dx * dy)
-                vy4_coeff =  eta2 / (dx * dy)
-
-                # 3) Sum neighbor contributions
-                
-                sum_neighbors = (
-                    vx1_coeff * vx[i,   j-1] +
-                    vx2_coeff * vx[i-1, j  ] +
-                    vx4_coeff * vx[i+1, j  ] +
-                    vx5_coeff * vx[i,   j+1]
-                    +
-                    vy1_coeff * vy[i-1, j  ] +
-                    vy2_coeff * vy[i,   j  ] +
-                    vy3_coeff * vy[i-1, j+1] +
-                    vy4_coeff * vy[i,   j+1]
-                )
-
-                diag = vx3_coeff
-
-                # Gauss-Seidel in-place update
-                vx[i, j] = (1.0 - relax_v)*vx[i, j] \
-                           + relax_v*(rhs[i, j] - sum_neighbors)/diag
-    
-    # Apply vx boundary conditions
-    apply_vx_BC(vx, BC)
-
-    return vx
 
 @nb.njit(cache=True, parallel=True)
-def _vy_red_black_gs_sweep(nx1, ny1,
-                           dx, dy,
-                           etap, etab,
-                           vx, vy,
-                           relax_v, rhs, BC):
+def _vx_color_sweep_black(nx1, ny1, dx, dy, etap, etab, vx, vy, relax_v, rhs):
     """
-    In-place Red-Black Gauss-Seidel update for vy.
+    Black pass for vx using odd-even j_start:
+    j_start = 2 if i is even else 1
     """
+    for i in nb.prange(1, ny1 - 1):
+        j_start = 2 if (i % 2) == 0 else 1
+        for j in range(j_start, nx1 - 2, 2):
+            etaA = etap[i,   j]
+            etaB = etap[i,   j+1]
+            eta1 = etab[i-1, j]
+            eta2 = etab[i,   j]
 
-    #----------------------------
-    #  Red pass
-    #----------------------------
+            vx1, vx2, vx3, vx4, vx5, vy1, vy2, vy3, vy4 = x_momentum_coefficients(
+                dx, dy, etaA, etaB, eta1, eta2
+            )
+
+            sum_neighbors = (
+                vx1 * vx[i,   j-1] +
+                vx2 * vx[i-1, j  ] +
+                vx4 * vx[i+1, j  ] +
+                vx5 * vx[i,   j+1] +
+                vy1 * vy[i-1, j  ] +
+                vy2 * vy[i,   j  ] +
+                vy3 * vy[i-1, j+1] +
+                vy4 * vy[i,   j+1]
+            )
+
+            vx[i, j] = (1.0 - relax_v) * vx[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / vx3
+
+
+# -----------------------------
+# vy kernels (color sweeps)
+# -----------------------------
+@nb.njit(cache=True, parallel=True)
+def _vy_color_sweep_red(nx1, ny1, dx, dy, etap, etab, vx, vy, relax_v, rhs):
+    """
+    Red pass for vy using odd-even j_start (no (i+j)%2).
+    For vy, red updates (i+j) even, so:
+    j_start = 2 if i is even else 1
+    """
     for i in nb.prange(1, ny1 - 2):
-        for j in range(1, nx1 - 1):
-            if (i + j) % 2 == 0:
-                # 1) Gather local viscosities
-                etaA = etap[i,   j]
-                etaB = etap[i+1, j]
-                eta1 = etab[i,   j-1]
-                eta2 = etab[i,   j]
+        j_start = 2 if (i % 2) == 0 else 1
+        for j in range(j_start, nx1 - 1, 2):
+            etaA = etap[i,   j]
+            etaB = etap[i+1, j]
+            eta1 = etab[i,   j-1]
+            eta2 = etab[i,   j]
 
-                # 2) Construct coefficients for y-momentum                
-                vy1_coeff = eta1 / (dx * dx)
-                vy2_coeff = 2.0 * etaA / (dy * dy)
-                vy3_coeff = -2.0 * etaA/(dy*dy) \
-                            -2.0 * etaB/(dy*dy) \
-                            - eta1/(dx*dx) \
-                            - eta2/(dx*dx)
-                vy4_coeff = 2.0 * etaB / (dy * dy)
-                vy5_coeff = eta2 / (dx * dx)
+            vy1, vy2, vy3, vy4, vy5, vx1, vx2, vx3, vx4 = y_momentum_coefficients(
+                dx, dy, etaA, etaB, eta1, eta2
+            )
 
-                # Cross terms with vx
-                vx1_coeff =  eta1 / (dx * dy)
-                vx2_coeff = -eta1 / (dx * dy)
-                vx3_coeff = -eta2 / (dx * dy)
-                vx4_coeff =  eta2 / (dx * dy)
+            sum_neighbors = (
+                # vy neighbors
+                vy1 * vy[i,   j-1] +
+                vy2 * vy[i-1, j  ] +
+                vy4 * vy[i+1, j  ] +
+                vy5 * vy[i,   j+1]
+                +
+                # cross with vx
+                vx1 * vx[i,   j-1] +
+                vx2 * vx[i+1, j-1] +
+                vx3 * vx[i,   j  ] +
+                vx4 * vx[i+1, j  ]
+            )
 
-                
-                # 3) Sum neighbor contributions
-                sum_neighbors = (
-                    # vy neighbors
-                    vy1_coeff * vy[i,   j-1] +
-                    vy2_coeff * vy[i-1, j  ] +
-                    vy4_coeff * vy[i+1, j  ] +
-                    vy5_coeff * vy[i,   j+1]
-                    +
-                    # cross terms with vx
-                    vx1_coeff * vx[i,   j-1] +
-                    vx2_coeff * vx[i+1, j-1] +
-                    vx3_coeff * vx[i,   j  ] +
-                    vx4_coeff * vx[i+1, j  ]
-                )
+            vy[i, j] = (1.0 - relax_v) * vy[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / vy3
 
-                diag = vy3_coeff
-            
-                # 4) Gauss-Seidel in-place update
-                vy[i, j] = (1.0 - relax_v)*vy[i, j] \
-                           + relax_v*(rhs[i, j] - sum_neighbors)/diag
-    # Apply vy boundary conditions
-    apply_vy_BC(vy, BC)
 
-    #----------------------------
-    #  Black pass
-    #----------------------------
+@nb.njit(cache=True, parallel=True)
+def _vy_color_sweep_black(nx1, ny1, dx, dy, etap, etab, vx, vy, relax_v, rhs):
+    """
+    Black pass for vy using odd-even j_start:
+    j_start = 1 if i is even else 2
+    """
     for i in nb.prange(1, ny1 - 2):
-        for j in range(1, nx1 - 1):
-            if (i + j) % 2 == 1:
-                # 1) Gather viscosities
-                etaA = etap[i,   j]
-                etaB = etap[i+1, j]
-                eta1 = etab[i,   j-1]
-                eta2 = etab[i,   j]
+        j_start = 1 if (i % 2) == 0 else 2
+        for j in range(j_start, nx1 - 1, 2):
+            etaA = etap[i,   j]
+            etaB = etap[i+1, j]
+            eta1 = etab[i,   j-1]
+            eta2 = etab[i,   j]
 
-                # 2) Coefficients for y-momentum                
-                vy1_coeff = eta1 / (dx * dx)
-                vy2_coeff = 2.0 * etaA / (dy * dy)
-                vy3_coeff = -2.0 * etaA/(dy*dy) \
-                            -2.0 * etaB/(dy*dy) \
-                            - eta1/(dx*dx) \
-                            - eta2/(dx*dx)
-                vy4_coeff = 2.0 * etaB / (dy * dy)
-                vy5_coeff = eta2 / (dx * dx)
+            vy1, vy2, vy3, vy4, vy5, vx1, vx2, vx3, vx4 = y_momentum_coefficients(
+                dx, dy, etaA, etaB, eta1, eta2
+            )
 
-                # Cross terms with vx
-                vx1_coeff =  eta1 / (dx * dy)
-                vx2_coeff = -eta1 / (dx * dy)
-                vx3_coeff = -eta2 / (dx * dy)
-                vx4_coeff =  eta2 / (dx * dy)
+            sum_neighbors = (
+                vy1 * vy[i,   j-1] +
+                vy2 * vy[i-1, j  ] +
+                vy4 * vy[i+1, j  ] +
+                vy5 * vy[i,   j+1]
+                +
+                vx1 * vx[i,   j-1] +
+                vx2 * vx[i+1, j-1] +
+                vx3 * vx[i,   j  ] +
+                vx4 * vx[i+1, j  ]
+            )
 
-                # 3) Sum neighbors                
-                sum_neighbors = (
-                    vy1_coeff * vy[i,   j-1] +
-                    vy2_coeff * vy[i-1, j  ] +
-                    vy4_coeff * vy[i+1, j  ] +
-                    vy5_coeff * vy[i,   j+1]
-                    +
-                    vx1_coeff * vx[i,   j-1] +
-                    vx2_coeff * vx[i+1, j-1] +
-                    vx3_coeff * vx[i,   j  ] +
-                    vx4_coeff * vx[i+1, j  ]
-                )
+            vy[i, j] = (1.0 - relax_v) * vy[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / vy3
 
-                diag = vy3_coeff
 
-                # 4) In-place update                
-                vy[i, j] = (1.0 - relax_v)*vy[i, j] \
-                           + relax_v*(rhs[i, j] - sum_neighbors)/diag
-    
-    # Apply vy boundary conditions
-    apply_vy_BC(vy, BC)
-
-    return vy
 
 @nb.njit(cache=True)
-def velocity_smoother(nx1, ny1,
+def rbgs_velocity_smoother(nx1, ny1,
                       dx, dy,
                       etap, etab,
                       vx, vy,
                       relax_v, BC,
                       vx_rhs, vy_rhs, max_iter):
     """
-    Full Uzawa smoother for velocity and pressure.
+    Full Uzawa smoother for velocity (vx, vy) with RB-GS.
+    Individual color sweeps are kernels; BCs applied after each color.
     """
     for _ in range(max_iter):
-        vx = _vx_rb_gs_sweep(nx1, ny1,
-                            dx, dy,
-                            etap, etab,
-                            vx, vy,
-                            relax_v, vx_rhs, BC)
-        
-        vy = _vy_red_black_gs_sweep(nx1, ny1,
-                                    dx, dy,
-                                    etap, etab,
-                                    vx, vy,
-                                    relax_v, vy_rhs, BC)
-        
+        # vx red / black
+        _vx_color_sweep_red (nx1, ny1, dx, dy, etap, etab, vx, vy, relax_v, vx_rhs)
+        apply_vx_BC(vx, BC)
+        _vx_color_sweep_black(nx1, ny1, dx, dy, etap, etab, vx, vy, relax_v, vx_rhs)
+        apply_vx_BC(vx, BC)
+
+        # vy red / black
+        _vy_color_sweep_red (nx1, ny1, dx, dy, etap, etab, vx, vy, relax_v, vy_rhs)
+        apply_vy_BC(vy, BC)
+        _vy_color_sweep_black(nx1, ny1, dx, dy, etap, etab, vx, vy, relax_v, vy_rhs)
+        apply_vy_BC(vy, BC)
+
     return vx, vy
+
 
 @nb.njit(cache=True, parallel=True)
 def _vx_jacobi_sweep(nx1, ny1,
@@ -445,7 +371,7 @@ def velocity_jacobi_smoother(nx1, ny1,
 
 TILE_I = 32
 TILE_J = 32
-T_INNER = 4
+T_INNER = 3
 
 @nb.njit(inline='always')
 def apply_vx_BC_ij(vx, i, j, BC):
@@ -689,7 +615,7 @@ def ras_velocity_jacobi_smoother(nx1, ny1,
                                 vx, vx_old, relax_v, BC)
 
                 _vy_tile_kernel(ii, jj, nx1, ny1, dx, dy,
-                                etap, etab, vx_old, vy_rhs,
+                                etap, etab, vx, vy_rhs,
                                 vy, vy_old, relax_v, BC)
 
                 # advance to next tile, wrap across rows
@@ -698,16 +624,16 @@ def ras_velocity_jacobi_smoother(nx1, ny1,
                     tj = 0
                     ti += 1
             
-        # # Jacobi sweep
-        # _vx_jacobi_sweep(nx1, ny1, dx, dy, etap, etab, vx_old, vy_old, relax_v, vx_rhs, vx)
-        # apply_vx_BC(vx, BC)
+        # Jacobi sweep
+        _vx_jacobi_sweep(nx1, ny1, dx, dy, etap, etab, vx_old, vy_old, relax_v, vx_rhs, vx)
+        apply_vx_BC(vx, BC)
 
-        # # vy sweep: read (vx_old, vy_old) -> write vy_new
-        # _vy_jacobi_sweep(nx1, ny1, dx, dy, etap, etab, vx_old, vy_old, relax_v, vy_rhs, vy)
-        # apply_vy_BC(vy, BC)
+        # vy sweep: read (vx_old, vy_old) -> write vy_new
+        _vy_jacobi_sweep(nx1, ny1, dx, dy, etap, etab, vx_old, vy_old, relax_v, vy_rhs, vy)
+        apply_vy_BC(vy, BC)
 
-        # vx, vx_old = vx_old, vx
-        # vy, vy_old = vy_old, vy
+        vx, vx_old = vx_old, vx
+        vy, vy_old = vy_old, vy
 
         # Optional but often helpful for consistency:
         # apply_vx_BC(vx, BC)
