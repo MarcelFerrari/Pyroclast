@@ -24,7 +24,6 @@ from Pyroclast.profiling import timer
 
 from Pyroclast.solvers.stokes_2d import UzawaSolver
 from Pyroclast.model.stokes_2D import IncompressibleStokes2D
-from Pyroclast.context import ContextNamespace
 
 
 # Model class
@@ -89,11 +88,20 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
 
         # Create Uzawa solver
         solver = UzawaSolver(ctx, nlevels=4, scaling=2.5)
+        #refinement = IterativeRefinement(solver, ctx)
 
         # Solve the system
-        s.p, s.vx, s.vy = solver.solve(
-            self.p_rhs, self.vx_rhs, self.vy_rhs,
-            p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy)
+        s.p[...], s.vx[...], s.vy[...] = \
+        solver.solve(self.p_rhs, self.vx_rhs, self.vy_rhs,
+                     p_guess=s.p, vx_guess=s.vx, vy_guess=s.vy)
+        
+        # Solve with iterative refinement (optional)
+        # s.p, s.vx, s.vy = \
+        # refinement.run(s.p, s.vx, s.vy,
+        #                self.p_rhs, self.vx_rhs, self.vy_rhs,
+        #                p0=s.p, vx0=s.vx, vy0=s.vy,
+        #                max_refine=5, tol=1e-6)
+
 
 
 @nb.njit(cache=True)

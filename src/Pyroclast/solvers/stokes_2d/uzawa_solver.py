@@ -47,7 +47,7 @@ class _UzawaSolverParams:
         self.nu1 = p.get("mg_nu1", 5)
         self.nu2 = p.get("mg_nu2", 5)
         self.BC = p.BC
-        self.res_tol = p.get("stokes_res_tol", 1e-4)
+        self.res_tol = p.get("uzawa_stokes_res_tol", 1e-4)
 
 class UzawaSolver:
     """Solve the Stokes system using Uzawa iterations and multigrid."""
@@ -116,6 +116,14 @@ class UzawaSolver:
             self.state_k    = np.zeros((3, self.ny1, self.nx1))      # [vx, vy, p] at k
             self.state_next = np.zeros_like(self.state_k)            # G(x_k)
 
+    def reset(self):
+        """Reset the solver state (solution and residuals)."""
+        self.p.fill(0.0)
+        self.p_res.fill(0.0)
+        self.hierarchy.reset()
+        self.rescaler.reset()
+        self.accel.reset()
+
     def compute_residuals(self, vx, vy, p):
         """Return residual arrays for pressure and velocity."""
         
@@ -170,6 +178,9 @@ class UzawaSolver:
         self.stokes_p_rhs = stokes_p_rhs
         self.stokes_vx_rhs = stokes_vx_rhs
         self.stokes_vy_rhs = stokes_vy_rhs
+
+        # Set up viscosity rescaler
+        self.rescaler.set(self.stokes_etab, self.stokes_etap)
 
         for cycle in range(self.max_cycles):
             # Store current state for Anderson Acceleration
@@ -235,11 +246,13 @@ class UzawaSolver:
             if self.rescaler.update_viscosity():
                 self.accel.reset()  # Reset Anderson history if viscosity changed
 
-                # Check convergence
-                if res < self.res_tol:
-                    logger.info(f"Uzawa solver converged in {cycle} cycles "
-                                f"with relative residual {res:.3e}.")
-                    break
+            # Check convergence
+
+            if res < self.res_tol and \
+               self.rescaler.done_rescaling():
+                logger.info(f"Uzawa solver converged in {cycle} cycles "
+                            f"with relative residual {res:.3e}.")
+                break
 
         return self.p, self.vx, self.vy
 

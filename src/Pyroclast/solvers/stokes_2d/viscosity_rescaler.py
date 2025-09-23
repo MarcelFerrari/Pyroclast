@@ -36,13 +36,29 @@ class ViscosityRescaler:
         self.total_rescales = p.eta_ncycles
         self.progress = 0.0
         self.progress_step = 1.0 / max(self.total_rescales - 1, 1)
-        self.etab_min = np.min(s.etab[:-1, :-1])
-        self.etap_min = np.min(s.etap[:-1, :-1])
 
-        # Apply initial scaling
+    def reset(self):
+        """Reset the rescaler state."""
+        self.cycle_count = 0
+        self.rescale_count = 0
+        self.progress = 0.0
+        self.etab_min = 0.0
+        self.etap_min = 0.0
+        self.stokes_etab = None
+        self.stokes_etap = None
+
+    def set(self, etab, etap):
+        """Set new reference viscosity fields."""
+        if not self.enable:
+            return
+        self.stokes_etab = etab
+        self.stokes_etap = etap
+        self.etab_min = np.min(self.stokes_etab[:-1, :-1])
+        self.etap_min = np.min(self.stokes_etap[:-1, :-1])
+        # Apply scaling immediately
         self._apply_scaling()
         self._propagate()
-    
+
     @property
     def etab_comp(self):
         """Computational Viscosity in basic Nodes"""
