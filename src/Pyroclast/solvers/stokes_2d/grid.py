@@ -18,9 +18,16 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import numpy as np
 from Pyroclast.profiling import timer
 from Pyroclast.context import ContextNamespace
-from Pyroclast.solvers.multigrid import restrict_2D as restrict, prolong_2D as prolong
 
-from .smoother import velocity_smoother
+try:
+    from Pyroclast.turbo.mg_routines import restrict_2D as restrict, prolong_2D as prolong
+    print("Using Turbo mg_routines.")
+except ImportError:
+    from Pyroclast.solvers.multigrid.mg_routines import restrict_2D as restrict, prolong_2D as prolong
+    print("Turbo mg_routines not found, using pure Python version.")
+
+
+from .smoother import velocity_smoother, velocity_jacobi_smoother
 from .bc import apply_vx_BC, apply_vy_BC
 from .implicit_operators import uzawa_vx_residual, uzawa_vy_residual
 
