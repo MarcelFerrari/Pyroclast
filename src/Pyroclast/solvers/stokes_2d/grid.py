@@ -105,6 +105,8 @@ class Grid:
         # Solution, RHS, residual arrays
         self.vx = np.zeros(shape)
         self.vy = np.zeros(shape)
+        self.vx_new = np.zeros(shape)
+        self.vy_new = np.zeros(shape)
         self.vx_rhs = np.zeros(shape)
         self.vy_rhs = np.zeros(shape)
         self.vx_res = np.zeros(shape)
@@ -131,16 +133,19 @@ class Grid:
             self.vy_res, self.vy_rhs,
         )
 
-    # @timer.time_function("Vcycle", "Smooth")
+    @timer.time_function("Vcycle", "Smooth")
     def smooth(self, iterations: int) -> None:
-        self.vx, self.vy = velocity_smoother(
+        self.vx, self.vy = velocity_jacobi_smoother(
             self.nx1, self.ny1,
             self.dx, self.dy,
             self.etap, self.etab,
             self.vx, self.vy,
+            self.vx_new, self.vy_new,
             self.relax_v, self.BC,
-            self.vx_rhs, self.vy_rhs, iterations
+            self.vx_rhs, self.vy_rhs,
+            iterations
         )
+
 
     def apply_bc(self) -> None:
         apply_vx_BC(self.vx, self.BC)

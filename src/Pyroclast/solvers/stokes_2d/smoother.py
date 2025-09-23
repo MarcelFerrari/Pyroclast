@@ -409,39 +409,40 @@ def velocity_jacobi_smoother(nx1, ny1,
                              dx, dy,
                              etap, etab,
                              vx, vy,              # initial guesses (also serve as buffers)
+                             vx_new, vy_new,      # alternate preallocated buffers
                              relax_v, BC,
                              vx_rhs, vy_rhs,
-                             max_iter,
-                             vx_old, vy_old):     # alternate buffers (preallocated)
+                             max_iter):
     """
     Jacobi two-buffer smoother for (vx, vy).
-    - No allocations inside; vx_old, vy_old are required preallocated buffers (same shape as vx, vy).
-    - On each iteration, we compute new vx, vy from old (vx, vy), apply BCs, then swap buffers.
-    - Returns references to arrays holding the latest solution (could be either original or alt).
+    - No allocations inside; vx_new, vy_new are required preallocated buffers (same shape as vx, vy).
+    - On each iteration, compute new vx, vy from old (vx, vy), apply BCs, then swap buffers.
+    - Ensures an even number of iterations so the latest solution ends up back in (vx, vy).
+    - Returns references to arrays holding the latest solution (vx, vy).
     """
-    # Local references for ping-pong
-    vx_old = vx
-    vy_old = vy
-    vx_new = vx_old
-    vy_new = vy_old
 
-    max_iter += max_iter % 2  # Ensure even iterations for full sweeps
+    # Ensure even iterations for full sweeps so results land in (vx, vy)
+    max_iter += max_iter % 2
 
     for _ in range(max_iter):
-        # vx sweep: read (vx_old, vy_old) -> write vx_new
-        _vx_jacobi_sweep(nx1, ny1, dx, dy, etap, etab, vx_old, vy_old, relax_v, vx_rhs, vx_new)
+        # vx sweep: read (vx_old_ref, vy_old_ref) -> write vx_new_ref
+        _vx_jacobi_sweep(nx1, ny1, dx, dy, etap, etab,
+                         vx, vy, relax_v, vx_rhs, vx_new)
         apply_vx_BC(vx_new, BC)
 
-        # vy sweep: read (vx_old, vy_old) -> write vy_new
-        _vy_jacobi_sweep(nx1, ny1, dx, dy, etap, etab, vx_old, vy_old, relax_v, vy_rhs, vy_new)
+        # vy sweep: read (vx_old_ref, vy_old_ref) -> write vy_new_ref
+        _vy_jacobi_sweep(nx1, ny1, dx, dy, etap, etab,
+                         vx, vy, relax_v, vy_rhs, vy_new)
         apply_vy_BC(vy_new, BC)
 
-        # ping-pong swap (just swap references; no data copies)
-        vx_old, vx_new = vx_new, vx_old
-        vy_old, vy_new = vy_new, vy_old
+        # ping-pong (reference swap; no copies)
+        vx, vx_new = vx_new, vx
+        vy, vy_new = vy_new, vy
 
-    # After max_iter, the "old" refs hold the latest values
-    return vx_old, vy_old
+    # With even iterations, latest values are in the original (vx, vy) buffers.
+    # Return the references holding the latest solution.
+    return vx, vy
+
 
 TILE_I = 32
 TILE_J = 32
