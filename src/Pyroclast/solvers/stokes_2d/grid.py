@@ -110,7 +110,10 @@ class Grid:
         self.vx_res = np.zeros(shape)
         self.vy_res = np.zeros(shape)
 
-    # @timer.time_function("Vcycle", "Update Residual")
+        # Weights for interpolation (to avoid reallocating)
+        self._w = np.zeros((self.ny1, self.nx1))
+
+    @timer.time_function("Vcycle", "Update Residual")
     def update_residuals(self) -> None:
         self.vx_res = uzawa_vx_residual(
             self.nx1, self.ny1,
@@ -156,42 +159,64 @@ class Grid:
         self.vy_rhs.fill(0.0)
         self.vx_res.fill(0.0)
         self.vy_res.fill(0.0)
+        self._w.fill(0.0)
 
     @timer.time_function("Vcycle", "Restriction")
-    def restrict_properties(self, fine: "BaseGrid") -> None:
+    def restrict_properties(self, fine: "Grid") -> None:
         self.rho = restrict(
-            fine.yvx, fine.yvy, fine.rho,
-            self.xvx, self.yvx,
+            fine.nx1, fine.ny1,
+            fine.xvy, fine.yvy, fine.rho,
+            self.nx1, self.ny1,
+            self.xvy, self.yvy,
+            self.rho, self._w
         )
         self.etab = restrict(
+            fine.nx1, fine.ny1,
             fine.x, fine.y, fine.etab,
+            self.nx1, self.ny1,
             self.x, self.y,
+            self.etab, self._w
         )
         self.etap = restrict(
+            fine.nx1, fine.ny1,
             fine.xp, fine.yp, fine.etap,
+            self.nx1, self.ny1,
             self.xp, self.yp,
+            self.etap, self._w
         )
 
     @timer.time_function("Vcycle", "Restriction")
-    def restrict_residuals(self, fine: "BaseGrid") -> None:
+    def restrict_residuals(self, fine: "Grid") -> None:
         self.vx_rhs = restrict(
+            fine.nx1, fine.ny1,
             fine.xvx, fine.yvx, fine.vx_res,
+            self.nx1, self.ny1,
             self.xvx, self.yvx,
+            self.vx_rhs, self._w
         )
         self.vy_rhs = restrict(
+            fine.nx1, fine.ny1,
             fine.xvy, fine.yvy, fine.vy_res,
+            self.nx1, self.ny1,
             self.xvy, self.yvy,
+            self.vy_rhs, self._w
         )
 
     @timer.time_function("Vcycle", "Prolongation")
-    def prolong_correction(self, coarse: "BaseGrid") -> None:
+    def prolong_correction(self, coarse: "Grid") -> None:
         self.vx += prolong(
-            self.xvx, self.yvx,
+            coarse.nx1, coarse.ny1,
             coarse.xvx, coarse.yvx,
             coarse.vx,
+            self.nx1, self.ny1,
+            self.xvx, self.yvx,
+            self.vx_res # Store correction in residual array
         )
         self.vy += prolong(
-            self.xvy, self.yvy,
+            coarse.nx1, coarse.ny1,
             coarse.xvy, coarse.yvy,
             coarse.vy,
+            self.nx1, self.ny1,
+            self.xvy, self.yvy,
+            self.vy_res # Store correction in residual array
         )
