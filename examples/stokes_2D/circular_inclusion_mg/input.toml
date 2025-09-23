@@ -44,3 +44,16 @@ p_ref = 1e9  # Reference pressure at (i, j) = (1, 1)
 eta_scaling = true
 eta_cycle_interval = 25
 eta_ncycles = 4
+
+# Relaxation parameters
+relax_v = 0.7
+relax_p = 0.7
+
+# Stokes solver options
+max_uzawa_iterations = 1000
+uzawa_velocity_cycles = 1
+enable_anderson = false
+anderson_m = 5
+anderson_scale_reg = false
+anderson_beta = 0.7
+anderson_reg = 1e-5
