@@ -44,8 +44,9 @@ class GridHierarchy:
         # Build coarse grids and propagate properties
         for lvl in range(1, self.nlevels):
             prev = self.levels[-1]
-            nx_coarse = int(prev.nx / scaling)
-            ny_coarse = int(prev.ny / scaling)
+            # Half the number of cells
+            nx_coarse = int((prev.nx - 1) / scaling) + 1
+            ny_coarse = int((prev.ny - 1) / scaling) + 1 
             coarse = Grid(ny_coarse, nx_coarse, lvl, ctx)
             coarse.restrict_properties(prev)
             self.levels.append(coarse)
