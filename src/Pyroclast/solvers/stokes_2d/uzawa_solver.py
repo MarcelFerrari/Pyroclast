@@ -140,7 +140,7 @@ class UzawaSolver:
                                     self.vy_res, self.stokes_vy_rhs)
 
         # Compute energy norm residuals
-        p_energy = compute_p_energy_norm(self.nx1, self.ny1, self.etap, self.p_res)
+        p_energy = compute_p_energy_norm(self.nx1, self.ny1, self.dx, self.dy, self.etap, self.p_res)
         vx_energy = compute_vx_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
                                            self.stokes_etap, self.stokes_etab, self.vx_res)
         vy_energy = compute_vy_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
@@ -152,7 +152,7 @@ class UzawaSolver:
 
         residual = p_energy**2 + vx_energy**2 + vy_energy**2
         rhs_norm = vy_rhs_norm**2
-        return np.sqrt(residual / rhs_norm)
+        return np.sqrt(residual / (rhs_norm))
 
     def solve(self, stokes_p_rhs, stokes_vx_rhs, stokes_vy_rhs,
               p_guess=None, vx_guess=None, vy_guess=None):

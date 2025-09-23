@@ -368,8 +368,9 @@ def uzawa_vy_residual(nx1, ny1,
     return res_vy
 
 @nb.njit(cache=True, parallel=True)
-def compute_p_energy_norm(nx1, ny1, etap,p_res):
+def compute_p_energy_norm(nx1, ny1, dx, dy, etap, p_res):
     energy_norm = 0.0
+    c = 2.0 / (dx * dx) + 2.0 / (dy * dy)
     for j in nb.prange(1, ny1-1):
         for i in range(1, nx1-1):
             energy_norm += etap[i, j] * p_res[i, j] * p_res[i, j]
