@@ -10,7 +10,7 @@ from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
 
 """
-Attempt 6: Implemented Blocking Jacobi. And Thread Blocking. Cascading VX
+Attempt 11: Implemented Blocking Jacobi. And Thread Blocking. Cascading VX, Using Boundary Jitter
 """
 
 @nb.njit(cache=True, parallel=True)
