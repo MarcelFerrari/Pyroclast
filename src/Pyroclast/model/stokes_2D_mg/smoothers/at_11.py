@@ -3,7 +3,7 @@ Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
 File: Pyroclast/model/stokes_2D_mg/smoothers/at_11.py 
-Description: Attempt 11: Implemented Blocking Jacobi. And Thread Blocking. Cascading VX. And boundary jitter.
+Description: Attempt 11: Implemented Blocking Jacobi. And Thread Blocking. Cascading VX, Using Boundary Jitter
 
 Author: Alexander Sotoudeh
 Copyright (c) 2024 Marcel Ferrari.
