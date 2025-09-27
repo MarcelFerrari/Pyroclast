@@ -20,8 +20,8 @@ import  os
 from typing import Type
 import math
 
-from Pyroclast.model.stokes_2D_mg.smoothers.vx import inline_loop_body_vx
-from Pyroclast.model.stokes_2D_mg.smoothers.vy import inline_loop_body_vy
+from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
+from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
 
@@ -62,15 +62,15 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                         for j in range(start_bx, end_bx):
                             # Pass vx
                             if 1 <= j <= nx1 - 2 and 1 <= i <= ny1 - 1:
-                                vx_new[i, j] = inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                                   etap=etap, etab=etab,
-                                                                   vx=vx, vy=vy, rhs=vx_rhs)
+                                vx_new[i, j] = cpu_inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                                       etap=etap, etab=etab,
+                                                                       vx=vx, vy=vy, rhs=vx_rhs)
 
                             # Pass vy
                             if 1 <= j <= nx1 - 1 and 1 <= i <= ny1 - 2:
-                                vy_new[i, j] = inline_loop_body_vy(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                                   etap=etap, etab=etab,
-                                                                   vx=vx, vy=vy, rhs=vy_rhs)
+                                vy_new[i, j] = cpu_inline_loop_body_vy(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                                       etap=etap, etab=etab,
+                                                                       vx=vx, vy=vy, rhs=vy_rhs)
 
             apply_vx_BC(vx_new, BC)
             apply_vy_BC(vy_new, BC)

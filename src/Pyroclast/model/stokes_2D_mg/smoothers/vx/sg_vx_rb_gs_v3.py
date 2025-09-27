@@ -21,7 +21,7 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
-from ._inline_vx import compute_coeffs, compute_neighbor_sum
+from ._inline_vx import cpu_compute_coeffs_vx, cpu_compute_neighbor_sum_vx
 
 
 @nb.njit(cache=True, parallel=True)
@@ -42,20 +42,24 @@ def _vx_rb_gs_sweep(nx1, ny1,
         i = 1
         j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                i, j, dx, dy, etap, etab
+            )
 
             # Gauss-Seidel in-place update
-            vx[i, j] = compute_neighbor_sum(
+            vx[i, j] = cpu_compute_neighbor_sum_vx(
                 i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
 
         i = 1 + 1
         j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                i, j, dx, dy, etap, etab
+            )
 
             # Gauss-Seidel in-place update
-            vx[i, j] = compute_neighbor_sum(
+            vx[i, j] = cpu_compute_neighbor_sum_vx(
                 i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
     else:
@@ -71,10 +75,12 @@ def _vx_rb_gs_sweep(nx1, ny1,
                     if i + j != 0:
                         continue
 
-                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                        i, j, dx, dy, etap, etab
+                    )
 
                     # Gauss-Seidel in-place update
-                    vx[i, j] = compute_neighbor_sum(
+                    vx[i, j] = cpu_compute_neighbor_sum_vx(
                         i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
                     )
 
@@ -83,20 +89,24 @@ def _vx_rb_gs_sweep(nx1, ny1,
         # assert 1 <= i < ny1 -1, "Error with bounds - red pass"
         j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                i, j, dx, dy, etap, etab
+            )
 
             # Gauss-Seidel in-place update
-            vx[i, j] = compute_neighbor_sum(
+            vx[i, j] = cpu_compute_neighbor_sum_vx(
                 i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
 
         # assert 1 <= i - 2 < ny1 -1, "Error with bounds - black pass"
         j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                i - 2, j, dx, dy, etap, etab
+            )
 
             # Gauss-Seidel in-place update
-            vx[i - 2, j] = compute_neighbor_sum(
+            vx[i - 2, j] = cpu_compute_neighbor_sum_vx(
                 i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
 
@@ -106,20 +116,24 @@ def _vx_rb_gs_sweep(nx1, ny1,
         i = nx1 - 1 - 2
         j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                i - 2, j, dx, dy, etap, etab
+            )
 
             # Gauss-Seidel in-place update
-            vx[i - 2, j] = compute_neighbor_sum(
+            vx[i - 2, j] = cpu_compute_neighbor_sum_vx(
                 i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
 
         i = nx1 - 1 - 1
         j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                i - 2, j, dx, dy, etap, etab
+            )
 
             # Gauss-Seidel in-place update
-            vx[i - 2, j] = compute_neighbor_sum(
+            vx[i - 2, j] = cpu_compute_neighbor_sum_vx(
                 i - 2, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
 
@@ -136,11 +150,12 @@ def _vx_rb_gs_sweep(nx1, ny1,
                     if i + j == 0:
                         continue
 
-                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap,
-                                                                                                   etab)
+                    vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                        i, j, dx, dy, etap, etab
+                    )
 
                     # Gauss-Seidel in-place update
-                    vx[i, j] = compute_neighbor_sum(
+                    vx[i, j] = cpu_compute_neighbor_sum_vx(
                         i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
                     )
 

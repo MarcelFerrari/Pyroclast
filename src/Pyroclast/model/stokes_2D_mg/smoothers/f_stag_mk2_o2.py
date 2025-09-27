@@ -21,8 +21,8 @@ import  os
 from typing import Type
 import math
 
-from Pyroclast.model.stokes_2D_mg.smoothers.vx import inline_loop_body_vx
-from Pyroclast.model.stokes_2D_mg.smoothers.vy import inline_loop_body_vy
+from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
+from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 
 
@@ -73,27 +73,27 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                                 if (i + j) % 2 == 0:
                                     if 1 <= j < nx1 - 2:
                                         # Red pass vx
-                                        vx[i, j] = inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                                       etap=etap, etab=etab,
-                                                                       vx=vx, vy=vy, rhs=vx_rhs)
+                                        vx[i, j] = cpu_inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                                           etap=etap, etab=etab,
+                                                                           vx=vx, vy=vy, rhs=vx_rhs)
                                     if 1 <= j-4 < nx1 - 2:
                                         # Red pass vy
-                                        vy[i, j-4] = inline_loop_body_vy(i=i, j=j-4, dx=dx, dy=dy, relax_v=relax_v,
-                                                                         etap=etap, etab=etab,
-                                                                         vx=vx, vy=vy, rhs=vy_rhs)
+                                        vy[i, j-4] = cpu_inline_loop_body_vy(i=i, j=j - 4, dx=dx, dy=dy, relax_v=relax_v,
+                                                                             etap=etap, etab=etab,
+                                                                             vx=vx, vy=vy, rhs=vy_rhs)
 
                                 # Black pass
                                 if (i + j - 2) % 2 == 1:
                                     if 1 <= j-2 < nx1 - 2:
                                         # Black pass vx
-                                        vx[i, j - 2] = inline_loop_body_vx(i=i, j=j - 2, dx=dx, dy=dy, relax_v=relax_v,
-                                                                           etap=etap, etab=etab,
-                                                                           vx=vx, vy=vy, rhs=vx_rhs)
+                                        vx[i, j - 2] = cpu_inline_loop_body_vx(i=i, j=j - 2, dx=dx, dy=dy, relax_v=relax_v,
+                                                                               etap=etap, etab=etab,
+                                                                               vx=vx, vy=vy, rhs=vx_rhs)
                                     if 1 <= j-6 < nx1 - 2:
                                         # Black pass vy
-                                        vy[i, j - 6] = inline_loop_body_vy(i=i, j=j - 6, dx=dx, dy=dy, relax_v=relax_v,
-                                                                           etap=etap, etab=etab,
-                                                                           vx=vx, vy=vy, rhs=vy_rhs)
+                                        vy[i, j - 6] = cpu_inline_loop_body_vy(i=i, j=j - 6, dx=dx, dy=dy, relax_v=relax_v,
+                                                                               etap=etap, etab=etab,
+                                                                               vx=vx, vy=vy, rhs=vy_rhs)
 
 
         apply_vx_BC(vx, BC)

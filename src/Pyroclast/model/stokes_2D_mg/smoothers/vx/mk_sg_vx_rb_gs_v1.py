@@ -23,7 +23,7 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
-from ._inline_vx import compute_coeffs, compute_neighbor_sum
+from ._inline_vx import cpu_compute_coeffs_vx, cpu_compute_neighbor_sum_vx
 
 
 def _vx_rb_gs_sweep(nx1, ny1,
@@ -43,10 +43,12 @@ def _vx_rb_gs_sweep(nx1, ny1,
         for i in nb.prange(1, ny1 - 1):
             j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
             for j in range(j_start, nx1 - 2, 2):
-                vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+                vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                    i, j, dx, dy, etap, etab
+                )
 
                 # Gauss-Seidel in-place update
-                vx[i, j] = compute_neighbor_sum(
+                vx[i, j] = cpu_compute_neighbor_sum_vx(
                     i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
                 )
 
@@ -59,10 +61,12 @@ def _vx_rb_gs_sweep(nx1, ny1,
         for i in nb.prange(1, ny1 - 1):
             j_start = 2 if i % 2 == 0 else 1  # Black pass starts on odd (i+j)
             for j in range(j_start, nx1 - 2, 2):
-                vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+                vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                    i, j, dx, dy, etap, etab
+                )
 
                 # Gauss-Seidel in-place update
-                vx[i, j] = compute_neighbor_sum(
+                vx[i, j] = cpu_compute_neighbor_sum_vx(
                     i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
                 )
 
@@ -84,21 +88,23 @@ def _vx_rb_gs_sweep(nx1, ny1,
                     for i in range(start_b, end_b):
                         # Red pass
                         if 1 <= j <= nx1 - 2 and (i + j) % 2 == 0:
-                            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy,
-                                                                                                           etap, etab)
+                            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                                i, j, dx, dy, etap, etab
+                            )
 
                             # Gauss-Seidel in-place update
-                            vx[i, j] = compute_neighbor_sum(
+                            vx[i, j] = cpu_compute_neighbor_sum_vx(
                                 i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
                             )
 
                         # black pass
                         if 1 <= j-2 <= nx1 - 2 and (i + j - 2) % 2 == 1:
-                            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j - 2, dx, dy,
-                                                                                                           etap, etab)
+                            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(
+                                i, j - 2, dx, dy, etap, etab
+                            )
 
                             # Gauss-Seidel in-place update
-                            vx[i, j - 2] = compute_neighbor_sum(
+                            vx[i, j - 2] = cpu_compute_neighbor_sum_vx(
                                 i, j - 2, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy,
                                 rhs
                             )
