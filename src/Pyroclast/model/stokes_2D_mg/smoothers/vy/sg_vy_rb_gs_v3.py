@@ -5,7 +5,7 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
-from ._inline_vy import compute_coeffs, compute_neighbor_sum
+from ._inline_vy import cpu_inline_loop_body_vy
 
 
 """
@@ -31,22 +31,18 @@ def _vy_rb_gs_sweep(nx1, ny1,
         i = 1
         j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
-
-            vy[i, j] = compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
-                                            vx=vx, vy=vy, rhs=rhs,
-                                            vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                            vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
+            vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j, relax_v=relax_v,
+                                               vx=vx, vy=vy, rhs=rhs,
+                                               dx=dx, dy=dy,
+                                               etab=etab, etap=etap)
 
         i = 1 + 1
         j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
-
-            vy[i, j] = compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
-                                            vx=vx, vy=vy, rhs=rhs,
-                                            vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                            vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
+            vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j, relax_v=relax_v,
+                                               vx=vx, vy=vy, rhs=rhs,
+                                               dx=dx, dy=dy,
+                                               etab=etab, etap=etap)
     else:
         for p in nb.prange(th):
             start = p * (nx1 - 3) / th
@@ -59,57 +55,44 @@ def _vy_rb_gs_sweep(nx1, ny1,
                     if i + j != 0:
                         continue
 
-                    vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j, dx, dy, etap,
-                                                                                                   etab)
-
-                    vy[i, j] = compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
-                                                    vx=vx, vy=vy, rhs=rhs,
-                                                    vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                                    vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
+                    vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j, relax_v=relax_v,
+                                                       vx=vx, vy=vy, rhs=rhs,
+                                                       dx=dx, dy=dy,
+                                                       etab=etab, etap=etap)
 
     for i in nb.prange(1 + 2, ny1 - 1):
         # assert 1 <= i < ny1 -1, "Error with bounds - red pass"
         j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
-
-            vy[i, j] = compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
-                                            vx=vx, vy=vy, rhs=rhs,
-                                            vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                            vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
-
+            vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j, relax_v=relax_v,
+                                               vx=vx, vy=vy, rhs=rhs,
+                                               dx=dx, dy=dy,
+                                               etab=etab, etap=etap)
         # assert 1 <= i - 2 < ny1 -1, "Error with bounds - black pass"
         j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i - 2, j, dx, dy, etap, etab)
-
-            vy[i - 2, j] = compute_neighbor_sum(i=i - 2, j=j, relax_v=relax_v,
-                                                vx=vx, vy=vy, rhs=rhs,
-                                                vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                                vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
+            vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j, relax_v=relax_v,
+                                               vx=vx, vy=vy, rhs=rhs,
+                                               dx=dx, dy=dy,
+                                               etab=etab, etap=etap)
 
     if th < (nx1 - 4) / 2:
         # Tear down pipeline with last two rows of the black pass
         i = nx1 - 1 - 2
         j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
-
-            vy[i, j] = compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
-                                            vx=vx, vy=vy, rhs=rhs,
-                                            vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                            vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
+            vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j, relax_v=relax_v,
+                                               vx=vx, vy=vy, rhs=rhs,
+                                               dx=dx, dy=dy,
+                                               etab=etab, etap=etap)
 
         i = nx1 - 1 - 1
         j_start = 2 if (i - 2) % 2 == 0 else 1  # Black pass starts on odd (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
-
-            vy[i, j] = compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
-                                            vx=vx, vy=vy, rhs=rhs,
-                                            vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                            vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
-
+            vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j, relax_v=relax_v,
+                                               vx=vx, vy=vy, rhs=rhs,
+                                               dx=dx, dy=dy,
+                                               etab=etab, etap=etap)
     else:
         for p in nb.prange(th):
             start = p * (nx1 - 3) / th
@@ -122,13 +105,10 @@ def _vy_rb_gs_sweep(nx1, ny1,
                     if i + j == 0:
                         continue
 
-                    vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i, j, dx, dy, etap,
-                                                                                                   etab)
-
-                    vy[i, j] = compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
-                                                    vx=vx, vy=vy, rhs=rhs,
-                                                    vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
-                                                    vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
+                    vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j, relax_v=relax_v,
+                                                       vx=vx, vy=vy, rhs=rhs,
+                                                       dx=dx, dy=dy,
+                                                       etab=etab, etap=etap)
 
     apply_vy_BC(vy, BC)
 
