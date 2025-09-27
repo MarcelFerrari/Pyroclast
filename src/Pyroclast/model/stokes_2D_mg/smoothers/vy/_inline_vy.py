@@ -14,14 +14,15 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 
+import numba
 import numba as nb
 import numpy as np
+import importlib.util
 
 
-@nb.njit(cache=True, inline="always")
-def compute_coeffs(i: int, j: int,
-                   dx: float, dy: float,
-                   etap: np.ndarray, etab: np.ndarray):
+def base_compute_coeffs_vy(i: int, j: int,
+                           dx: float, dy: float,
+                           etap: np.ndarray, etab: np.ndarray):
     # 1) Gather local viscosities
     etaA = etap[i, j]
     etaB = etap[i + 1, j]
@@ -47,11 +48,10 @@ def compute_coeffs(i: int, j: int,
     return vy1_coeff, vy2_coeff, vy3_coeff, vy4_coeff, vy5_coeff, vx1_coeff, vx2_coeff, vx3_coeff, vx4_coeff
 
 
-@nb.njit(cache=True, inline="always")
-def compute_neighbor_sum(i: int, j: int, relax_v: float,
-                         vy_c1: float, vy_c2: float, vy_c3: float, vy_c4: float, vy_c5: float,
-                         vx_c1: float, vx_c2: float, vx_c3: float, vx_c4: float,
-                         vx: np.ndarray, vy: np.ndarray, rhs: np.ndarray) -> float:
+def base_compute_neighbor_sum_vy(i: int, j: int, relax_v: float,
+                                 vy_c1: float, vy_c2: float, vy_c3: float, vy_c4: float, vy_c5: float,
+                                 vx_c1: float, vx_c2: float, vx_c3: float, vx_c4: float,
+                                 vx: np.ndarray, vy: np.ndarray, rhs: np.ndarray) -> float:
     # 3) Sum neighbor contributions
     sum_neighbors = (
         # vy neighbors
@@ -73,33 +73,70 @@ def compute_neighbor_sum(i: int, j: int, relax_v: float,
     return (1.0 - relax_v) * vy[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / diag
 
 
+cpu_compute_coeffs_vy = numba.njit(cache=True, inline="always")(base_compute_coeffs_vy)
+cpu_compute_neighbor_sum_vy = numba.njit(cache=True, inline="always")(base_compute_neighbor_sum_vy)
+
+# Setting defaults for gpu
+gpu_inline_loop_body_vy = gpu_compute_neighbor_sum_vy = gpu_compute_coeffs_vy = None
+
+
 @nb.njit(cache=True, inline="always")
-def inline_loop_body_vy(i: int, j: int,
-                        dx: float, dy: float, relax_v: float,
-                        etap: np.ndarray, etab: np.ndarray,
-                        vx: np.ndarray, vy: np.ndarray, rhs: np.ndarray) -> float:
+def cpu_inline_loop_body_vy(i: int, j: int,
+                            dx: float, dy: float, relax_v: float,
+                            etap: np.ndarray, etab: np.ndarray,
+                            vx: np.ndarray, vy: np.ndarray, rhs: np.ndarray) -> float:
     """
     Contains full loop body for vx pass.
     """
-    vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = compute_coeffs(i=i, j=j,
-                                                                                   dx=dx, dy=dy,
-                                                                                   etap=etap, etab=etab)
+    vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = cpu_compute_coeffs_vy(i=i, j=j,
+                                                                                          dx=dx, dy=dy,
+                                                                                          etap=etap, etab=etab)
 
-    return compute_neighbor_sum(i=i, j=j, relax_v=relax_v,
-                                vx=vx, vy=vy, rhs=rhs,
-                                vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4,
-                                vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5)
+    return cpu_compute_neighbor_sum_vy(i=i, j=j, relax_v=relax_v,
+                                       vx=vx, vy=vy, rhs=rhs,
+                                       vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4,
+                                       vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5)
 
 
 @nb.njit(cache=True, parallel=True, inline="always")
-def prep_vy_cache(nx1: int, ny1: int,
-                  dx: float, dy: float,
-                  etap: np.ndarray, etab: np.ndarray,
-                  vy_cache: np.ndarray) -> np.ndarray:
+def cpu_prep_vy_cache(nx1: int, ny1: int,
+                      dx: float, dy: float,
+                      etap: np.ndarray, etab: np.ndarray,
+                      vy_cache: np.ndarray) -> np.ndarray:
     for i in nb.prange(1, ny1 - 1):
         for j in range(1, nx1 - 2):
-            coeff_vec = np.array(compute_coeffs(i, j, dx, dy, etap, etab))
+            coeff_vec = np.array(cpu_compute_coeffs_vy(i, j, dx, dy, etap, etab))
             vy_cache[i, j] = coeff_vec
 
 
     return vy_cache
+
+
+NUMBA_CUDA_AVAIL = importlib.util.find_spec("numba_cuda") is not None
+
+
+# If Numba Cuda is available, prepare the decorators for the gpu exports as well.
+if NUMBA_CUDA_AVAIL:
+    import numba_cuda.numba.cuda as cuda
+
+    # Defining base functions by decorating them with cuda
+    gpu_compute_coeffs_vy = cuda.jit(cache=True, inline="always", device=True)(base_compute_coeffs_vy)
+    gpu_compute_neighbor_sum_vy = cuda.jit(cache=True, inline="always", device=True)(base_compute_neighbor_sum_vy)
+
+
+    @cuda.jit(cache=True, inline="always", device=True)
+    def gpu_inline_loop_body_vy(i: int, j: int,
+                                dx: float, dy: float, relax_v: float,
+                                etap: np.ndarray, etab: np.ndarray,
+                                vx: np.ndarray, vy: np.ndarray, rhs: np.ndarray) -> float:
+        """
+        Contains full loop body for vx pass.
+        """
+        vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = cpu_compute_coeffs_vy(i=i, j=j,
+                                                                                              dx=dx, dy=dy,
+                                                                                              etap=etap, etab=etab)
+
+        return cpu_compute_neighbor_sum_vy(i=i, j=j, relax_v=relax_v,
+                                           vx=vx, vy=vy, rhs=rhs,
+                                           vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4,
+                                           vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5)
