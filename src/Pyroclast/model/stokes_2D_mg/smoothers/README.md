@@ -45,7 +45,7 @@ change and experimentation. The general idea for files are:
 Improvement Ideas:
 Red-Black-Gauss-Seidel
 - `at_01` Fully Staggered Reimplementation / Four Loop Fused, Thread blocking: **WORKS** but explodes on corse grid. 
-- `at_02` Fully Staggered / Four loops fused, LTR **WORKS - But Slow as Fuck** False Sharing$
+- `at_02` Fully Staggered / Four loops fused, LTR **WORKS - But Slow as Fuck** False Sharing
 - `at_03` Fully Staggered / Four Loops fused, LTR + random offset **WORKS - But Slow as Fuck** False Sharing
 - `at_04` From `at_01` but with j in the innermost for loop
 - `at_08` From `at_04` but with boundary jitter
@@ -58,9 +58,9 @@ Jacobi:
 - `at_05` Fully staggered / Two loops fused, old only
 - `at_06` Fully staggered / Two loops fused, new vx in vy
 - `at_07` Fully staggered / Two loops fused, new vy in vx
-- `at_09` From `at_05` Fully staggered / Two loops fused, old only
-- `at_10` From `at_06` Fully staggered / Two loops fused, new vx in vy
-- `at_11` From `at_07` Fully staggered / Two loops fused, new vy in vx
+- `at_09` From `at_05` Fully staggered / Two loops fused, old only, with jitter
+- `at_10` From `at_06` Fully staggered / Two loops fused, new vx in vy, with jitter
+- `at_11` From `at_07` Fully staggered / Two loops fused, new vy in vx, with jitter
 - Fully staggered / Two loops fused, partially new.
 - Fully staggered / Two loops fused, LTR **WORKS - But Slow as Fuck** False Sharing
 - Fully staggered / Two Loops fused, LTR + Rando Offset **WORKS - But Slow as Fuck** False Sharing
@@ -81,7 +81,7 @@ Jacobi:
 | `vx.mk_sg_vx_rb_gs_v1` | T          | T                     | F                     | F                 | T           | T      | F      | F            | Implementation 1 of Red-Black Loop Fusion AND Blocking                                                    |
 | `vx.mk_vx_jacobi_v1`   | T          | T                     | F                     | F                 | F           | T      | F      | F            | Implementation 1 of Jacobi Thread Blocking                                                                |
 | `vx.mk_vx_rb_gs`       | T          | T                     | F                     | F                 | F           | T      | F      | F            | Red-Black Gauss-Seidel with Thread Blocking                                                               |
-| `vx.mk_vx_rb_gs_v2`    | T          | F                     | T                     | F                 | F           | T      | F      | F            | Red-Black Gauss-Seidel with Stride Blocking                                                               |
+| `vx.mk_vx_rb_gs_v2`    | T          | F                     | T                     | F                 | F           | T      | F      | F            | Red-Black Gauss-Seidel with Stride , with jitter                                                          |
 | `vx.sg_vx_rb_gs_v1`    | T          | T                     | T                     | F                 | T           | T      | F      | F            | Implementation 1 of Red-Black Gauss-Seidel (Internal If)                                                  |
 | `vx.sg_vx_rb_gs_v2`    | T          | T                     | F                     | F                 | T           | T      | F      | F            | Implementation 2 of Red-Black Gauss-Seidel (Start and End Unrolled)                                       |
 | `vx.sg_vx_rb_gs_v3`    | T          | T                     | F                     | F                 | T           | T      | F      | F            | Implementation 3 of Red-Black Gauss-Seidel (Start and End Unrolled with Support for small grids)          |
