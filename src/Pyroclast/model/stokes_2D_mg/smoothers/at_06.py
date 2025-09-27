@@ -5,7 +5,7 @@ from typing import Type
 import math
 
 from Pyroclast.model.stokes_2D_mg.smoothers.vx import inline_loop_body_vx
-from Pyroclast.model.stokes_2D_mg.smoothers.vy import inline_loop_body_vy
+from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
 
@@ -54,9 +54,9 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                             # Pass vy
                             iloc1 = i - step_size
                             if 1 <= j <= nx1 - 1 and 1 <= iloc1 <= ny1 - 2:
-                                vy_new[iloc1, j] = inline_loop_body_vy(i=iloc1, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                                       etap=etap, etab=etab,
-                                                                       vx=vx_new, vy=vy, rhs=vy_rhs)
+                                vy_new[iloc1, j] = cpu_inline_loop_body_vy(i=iloc1, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                                           etap=etap, etab=etab,
+                                                                           vx=vx_new, vy=vy, rhs=vy_rhs)
 
             # Copy the results vx_new to vx
             vx[:] = vx_new[:]
