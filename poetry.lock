@@ -1708,6 +1708,29 @@ llvmlite = "==0.44.*"
 numpy = ">=1.24,<2.3"
 
 [[package]]
+name = "numba-cuda"
+version = "0.20.0"
+description = "CUDA target for Numba"
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "extra == \"cuda\""
+files = [
+    {file = "numba_cuda-0.20.0-py3-none-any.whl", hash = "sha256:8a28ed3e39ddcb7cd81791099f76050f475e7e8efef04f545af31a6fd595fd82"},
+    {file = "numba_cuda-0.20.0.tar.gz", hash = "sha256:85130f5db8b5539c4f3887323e6cf838cce134b16fb1c9555d3d74a893f274a4"},
+]
+
+[package.dependencies]
+numba = ">=0.60.0"
+
+[package.extras]
+cu12 = ["cuda-bindings (>=12.9.1,<13.0.0)", "cuda-core (==0.3.*)", "cuda-python (==12.9.*)", "nvidia-cuda-cccl-cu12", "nvidia-cuda-nvcc-cu12", "nvidia-cuda-nvrtc-cu12", "nvidia-cuda-runtime-cu12", "nvidia-nvjitlink-cu12"]
+cu13 = ["cuda-bindings (==13.*)", "cuda-core (==0.3.2)", "cuda-python (==13.*)", "nvidia-cuda-cccl (==13.*)", "nvidia-cuda-nvrtc (==13.*)", "nvidia-cuda-runtime (==13.*)", "nvidia-nvjitlink (==13.*)", "nvidia-nvvm (==13.*)"]
+test = ["cffi", "filecheck", "ml_dtypes", "pre-commit", "psutil", "pytest", "pytest-xdist"]
+test-cu12 = ["numba-cuda[cu12]", "numba-cuda[test]", "nvidia-curand-cu12"]
+test-cu13 = ["numba-cuda[cu13]", "numba-cuda[test]", "nvidia-curand (==10.4.*)"]
+
+[[package]]
 name = "numpy"
 version = "2.2.6"
 description = "Fundamental package for array computing in Python"
@@ -3352,7 +3375,10 @@ docs = ["Sphinx (>=6.0)", "myst-parser (>=2.0.0)", "sphinx-rtd-theme (>=1.1.0)"]
 optional = ["python-socks", "wsaccel"]
 test = ["websockets"]
 
+[extras]
+cuda = ["numba-cuda"]
+
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "0ea8b52a33d8947707bb7f574790392284660a09ddb6cca052e2a6bd5f3111a3"
+content-hash = "45174f78d4182afbf59699c452f25bd14f274e8f360a562fc00e901a22819ecc"
