@@ -1,7 +1,7 @@
-import numba
+import importlib.util
+
 import numba as nb
 import numpy as np
-import importlib.util
 
 
 def base_compute_coeffs_vy(i: int, j: int,
@@ -57,8 +57,8 @@ def base_compute_neighbor_sum_vy(i: int, j: int, relax_v: float,
     return (1.0 - relax_v) * vy[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / diag
 
 
-cpu_compute_coeffs_vy = numba.njit(cache=True, inline="always")(base_compute_coeffs_vy)
-cpu_compute_neighbor_sum_vy = numba.njit(cache=True, inline="always")(base_compute_neighbor_sum_vy)
+cpu_compute_coeffs_vy = nb.njit(cache=True, inline="always")(base_compute_coeffs_vy)
+cpu_compute_neighbor_sum_vy = nb.njit(cache=True, inline="always")(base_compute_neighbor_sum_vy)
 
 # Setting defaults for gpu
 gpu_inline_loop_body_vy = gpu_compute_neighbor_sum_vy = gpu_compute_coeffs_vy = None
