@@ -1,4 +1,4 @@
-import importlib.util
+import importlib.metadata
 
 import numba as nb
 import numpy as np
@@ -96,12 +96,20 @@ def cpu_prep_vy_cache(nx1: int, ny1: int,
     return vy_cache
 
 
-NUMBA_CUDA_AVAIL = importlib.util.find_spec("numba_cuda") is not None
+NUMBA_CUDA_AVAIL = False
+
+
+try:
+    importlib.metadata.version("numba-cuda")
+    NUMBA_CUDA_AVAIL = True
+except importlib.metadata.PackageNotFoundError:
+    pass
+
 
 
 # If Numba Cuda is available, prepare the decorators for the gpu exports as well.
 if NUMBA_CUDA_AVAIL:
-    import numba_cuda.numba.cuda as cuda
+    import numba.cuda as cuda
 
     # Defining base functions by decorating them with cuda
     gpu_compute_coeffs_vy = cuda.jit(cache=True, inline="always", device=True)(base_compute_coeffs_vy)
