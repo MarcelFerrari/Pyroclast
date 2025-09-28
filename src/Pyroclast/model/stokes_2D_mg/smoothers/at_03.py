@@ -6,7 +6,7 @@ import  os
 from typing import Type
 import math
 
-from Pyroclast.model.stokes_2D_mg.smoothers.vx import inline_loop_body_vx
+from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
 from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
@@ -41,16 +41,16 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                         # Red Pass vx
                         jloc0 = j
                         if (i + jloc0) % 2 == 0 and 1 <= jloc0 <= nx1 - 2 and 1 <= i <= ny1 - 1:
-                            vx[i, jloc0] = inline_loop_body_vx(i=i, j=jloc0, dx=dx, dy=dy, relax_v=relax_v,
-                                                               etap=etap, etab=etab,
-                                                               vx=vx, vy=vy, rhs=vx_rhs)
+                            vx[i, jloc0] = cpu_inline_loop_body_vx(i=i, j=jloc0, dx=dx, dy=dy, relax_v=relax_v,
+                                                                   etap=etap, etab=etab,
+                                                                   vx=vx, vy=vy, rhs=vx_rhs)
 
                         # Black Pass vx
                         jloc1 = j - step_size
                         if (i + jloc1) % 2 == 1 and 1 <= jloc1 <= nx1 - 2 and 1 <= i <= ny1 - 1:
-                            vx[i, jloc1] = inline_loop_body_vx(i=i, j=jloc1, dx=dx, dy=dy, relax_v=relax_v,
-                                                               etap=etap, etab=etab,
-                                                               vx=vx, vy=vy, rhs=vx_rhs)
+                            vx[i, jloc1] = cpu_inline_loop_body_vx(i=i, j=jloc1, dx=dx, dy=dy, relax_v=relax_v,
+                                                                   etap=etap, etab=etab,
+                                                                   vx=vx, vy=vy, rhs=vx_rhs)
 
                         # Red Pass vy
                         jloc2 = j - (step_size * 2)

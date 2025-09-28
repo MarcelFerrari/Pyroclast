@@ -5,7 +5,7 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
-from .inline_vx import compute_coeffs, compute_neighbor_sum, prep_vx_cache
+from ._inline_vx import cpu_compute_coeffs_vx, cpu_compute_neighbor_sum_vx, cpu_prep_vx_cache
 
 """
 In this file, we aim to implement a red-black gauss-seidel implementation, that caches the coefficients for the 
@@ -33,7 +33,7 @@ def _vx_rb_gs_sweep(nx1: int, ny1: int,
             vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = vx_cache[i, j]
 
             # Gauss-Seidel in-place update
-            vx[i, j] = compute_neighbor_sum(
+            vx[i, j] = cpu_compute_neighbor_sum_vx(
                 i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
 
@@ -49,7 +49,7 @@ def _vx_rb_gs_sweep(nx1: int, ny1: int,
             vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = vx_cache[i, j]
 
             # Gauss-Seidel in-place update
-            vx[i, j] = compute_neighbor_sum(
+            vx[i, j] = cpu_compute_neighbor_sum_vx(
                 i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
 
@@ -79,10 +79,10 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
         def benchmark_preamble(self):
             start = dtf()
-            self.vx_cache = prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
-                                          dx=self.dx, dy=self.dy,
-                                          etab=self.eta_b, etap=self.eta_p,
-                                          vx_cache=self.vx_cache)
+            self.vx_cache = cpu_prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
+                                              dx=self.dx, dy=self.dy,
+                                              etab=self.eta_b, etap=self.eta_p,
+                                              vx_cache=self.vx_cache)
 
             _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
                             vx=self.vx, vy=self.vy,
@@ -108,10 +108,10 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             start = dtf()
             self.vx_cache = np.zeros((self.nx1, self.ny1, 9))
-            self.vx_cache = prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
-                                          dx=self.dx, dy=self.dy,
-                                          etab=self.eta_b, etap=self.eta_p,
-                                          vx_cache=self.vx_cache)
+            self.vx_cache = cpu_prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
+                                              dx=self.dx, dy=self.dy,
+                                              etab=self.eta_b, etap=self.eta_p,
+                                              vx_cache=self.vx_cache)
 
             for _ in range(self.args.max_iter):
                 vx = _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,

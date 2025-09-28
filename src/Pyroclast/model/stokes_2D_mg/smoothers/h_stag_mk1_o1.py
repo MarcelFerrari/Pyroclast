@@ -4,7 +4,7 @@ import  os
 from typing import Type
 import math
 
-from Pyroclast.model.stokes_2D_mg.smoothers.vx import inline_loop_body_vx
+from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
 from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
 
@@ -42,9 +42,9 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                         # Red pass
                         if 1 <= j < nx1 - 2 and (i + j) % 2 == 0:
                             # Red pass vx, vy
-                            vx[i, j] = inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                           etap=etap, etab=etab,
-                                                           vx=vx, vy=vy, rhs=vx_rhs)
+                            vx[i, j] = cpu_inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                               etap=etap, etab=etab,
+                                                               vx=vx, vy=vy, rhs=vx_rhs)
 
                             vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
                                                                etap=etap, etab=etab,
@@ -53,9 +53,9 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                         # Black pass
                         if 1 <= j-1 < nx1 - 2 and (i + j - 1) % 2 == 1:
                             # Black pass vx, vy
-                            vx[i, j - 1] = inline_loop_body_vx(i=i, j=j - 1, dx=dx, dy=dy, relax_v=relax_v,
-                                                               etap=etap, etab=etab,
-                                                               vx=vx, vy=vy, rhs=vx_rhs)
+                            vx[i, j - 1] = cpu_inline_loop_body_vx(i=i, j=j - 1, dx=dx, dy=dy, relax_v=relax_v,
+                                                                   etap=etap, etab=etab,
+                                                                   vx=vx, vy=vy, rhs=vx_rhs)
 
                             vy[i, j - 1] = cpu_inline_loop_body_vy(i=i, j=j - 1, dx=dx, dy=dy, relax_v=relax_v,
                                                                    etap=etap, etab=etab,

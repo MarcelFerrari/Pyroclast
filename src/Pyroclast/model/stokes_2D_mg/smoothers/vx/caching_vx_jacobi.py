@@ -5,7 +5,7 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
-from ._inline_vx import compute_neighbor_sum, prep_vx_cache
+from ._inline_vx import compute_neighbor_sum, cpu_prep_vx_cache
 
 
 """
@@ -62,10 +62,10 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
         def benchmark_preamble(self):
             start = dtf()
-            self.vx_cache = prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
-                                          dx=self.dx, dy=self.dy,
-                                          etab=self.eta_b, etap=self.eta_p,
-                                          vx_cache=self.vx_cache)
+            self.vx_cache = cpu_prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
+                                              dx=self.dx, dy=self.dy,
+                                              etab=self.eta_b, etap=self.eta_p,
+                                              vx_cache=self.vx_cache)
 
             vx_jacobi_sweep(nx1=self.nx1, ny1=self.ny1,
                             vx=self.vx, vy=self.vy, vx_new=self.vx_new,
@@ -91,10 +91,10 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             start = dtf()
             self.vx_cache = np.zeros((self.nx1, self.ny1, 9))
-            self.vx_cache = prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
-                                          dx=self.dx, dy=self.dy,
-                                          etab=self.eta_b, etap=self.eta_p,
-                                          vx_cache=self.vx_cache)
+            self.vx_cache = cpu_prep_vx_cache(nx1=self.nx1, ny1=self.ny1,
+                                              dx=self.dx, dy=self.dy,
+                                              etab=self.eta_b, etap=self.eta_p,
+                                              vx_cache=self.vx_cache)
 
             for _ in range(self.args.max_iter):
                 vx = vx_jacobi_sweep(nx1=self.nx1, ny1=self.ny1,
