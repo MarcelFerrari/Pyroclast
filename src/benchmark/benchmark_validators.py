@@ -18,6 +18,8 @@ class Stage(Enum):
     PREAMBLE = "preamble"
     BENCHMARK = "benchmark"
     EPILOG = "epilog"
+    COPY_TO_DEVICE = "copy_to_device"
+    COPY_FROM_DEVICE = "copy_from_device"
 
 
 # ======================================================================================================================
