@@ -127,11 +127,11 @@ if NUMBA_CUDA_AVAIL:
         """
         Contains full loop body for vx pass.
         """
-        vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = cpu_compute_coeffs_vx(i=i, j=j,
+        vy_c1, vy_c2, vy_c3, vy_c4, vy_c5, vx_c1, vx_c2, vx_c3, vx_c4 = gpu_compute_coeffs_vx(i=i, j=j,
                                                                                               dx=dx, dy=dy,
                                                                                               etap=etap, etab=etab)
 
-        return cpu_compute_neighbor_sum_vx(i=i, j=j, relax_v=relax_v,
+        return gpu_compute_neighbor_sum_vx(i=i, j=j, relax_v=relax_v,
                                            vx=vx, vy=vy, rhs=rhs,
                                            vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4,
                                            vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5)
