@@ -1,12 +1,13 @@
+import math
+import os
+from typing import Type
+
 import numba.cuda as cuda
 import numpy as np
-import numba as nb
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
+
 from Pyroclast.model.stokes_2D_mg.smoothers.vx import gpu_inline_loop_body_vx
 from Pyroclast.model.stokes_2D_mg.smoothers.vy import gpu_inline_loop_body_vy
-import math
-from typing import Type
-import os
 
 
 @cuda.jit
@@ -90,6 +91,7 @@ def setup_gpu(etap: np.ndarray, etab: np.ndarray,
     return vx_d, vy_d, vx_new_d, vy_new_d, etap_d, etab_d, vx_rhs_d, vy_rhs_d
 
 
+# INFO: Cannot decorate with njit or jit. Doesn't work.
 def velocity_smoother_jacobi_cuda(
         nx1: int, ny1: int, max_iter: int,
         dx: float, dy: float, relax_v: float, BC: float,
@@ -129,7 +131,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     not being available in a production environment.
     """
     import benchmark.benchmark_wrapper as bw
-    from benchmark.benchmark_validators import Stage, Timing, BenchmarkValidatorSmoother
+    from benchmark.benchmark_validators import Stage, Timing
     from benchmark.utils import dtf
 
     module_name = os.path.basename(__file__).replace(".py", "")
