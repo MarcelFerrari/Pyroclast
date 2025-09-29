@@ -1,7 +1,7 @@
 import numba as nb
 import numpy as np
 
-from Pyroclast.model.stokes_2D_mg.utils import apply_vy_BC
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vy_BC
 from ._inline_vy import cpu_inline_loop_body_vy
 
 """
@@ -38,7 +38,7 @@ def _vy_rb_gs_sweep(nx1, ny1,
                                                    dx=dx, dy=dy,
                                                    etab=etab, etap=etap)
 
-    apply_vy_BC(vx, BC)
+    cpu_apply_vy_BC(vx, BC)
 
     return vx
 

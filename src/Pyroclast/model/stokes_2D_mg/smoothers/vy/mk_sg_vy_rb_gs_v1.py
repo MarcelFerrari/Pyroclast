@@ -5,7 +5,7 @@ from typing import Type
 import numba as nb
 import numpy as np
 
-from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC
 from ._inline_vy import cpu_inline_loop_body_vy
 
 
@@ -40,7 +40,7 @@ def _vy_rb_gs_sweep(nx1, ny1,
                                                    etab=etab, etap=etap)
 
         # Apply vx boundary conditions
-        apply_vx_BC(vx, BC)
+        cpu_apply_vx_BC(vx, BC)
 
         # ----------------------------
         #  Black pass: (i + j) % 2 == 1
@@ -84,7 +84,7 @@ def _vy_rb_gs_sweep(nx1, ny1,
                                                                etab=etab, etap=etap)
 
     # Apply vx boundary conditions
-    apply_vx_BC(vx, BC)
+    cpu_apply_vx_BC(vx, BC)
 
     return vx
 

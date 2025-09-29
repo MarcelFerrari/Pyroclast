@@ -4,7 +4,7 @@ from typing import Type
 import numba as nb
 import numpy as np
 
-from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC
 
 # Jacobi update for vx
 @nb.njit(cache=True, parallel=True)
@@ -59,7 +59,7 @@ def vx_jacobi_sweep(nx1: int, ny1: int,
     # Copy solution to vx
     vx[:, :] = vx_new[:, :]
 
-    apply_vx_BC(vx, BC)
+    cpu_apply_vx_BC(vx, BC)
 
     return vx
 
