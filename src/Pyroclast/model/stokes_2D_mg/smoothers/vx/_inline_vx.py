@@ -98,7 +98,7 @@ def cpu_inline_loop_body_vx(i: int, j: int,
 
     return cpu_compute_neighbor_sum_vx(i=i, j=j, relax_v=relax_v,
                                        vx=vx, vy=vy, rhs=rhs,
-                                       vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4,
+                                       vy_c3=vy_c3, vy_c2=vy_c2, vy_c4=vy_c4, vy_c1=vy_c1,
                                        vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4, vx_c5=vx_c5)
 
 
@@ -149,5 +149,5 @@ if NUMBA_CUDA_AVAIL:
 
         return gpu_compute_neighbor_sum_vx(i=i, j=j, relax_v=relax_v,
                                            vx=vx, vy=vy, rhs=rhs,
-                                           vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4,
-                                           vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5)
+                                           vy_c3=vy_c3, vy_c2=vy_c2, vy_c4=vy_c4, vy_c1=vy_c1,
+                                           vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4, vx_c5=vx_c5)
