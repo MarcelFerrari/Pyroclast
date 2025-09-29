@@ -5,7 +5,7 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
-from ._inline_vx import cpu_compute_coeffs_vx, compute_neighbor_sum
+from ._inline_vx import cpu_compute_coeffs_vx, cpu_compute_neighbor_sum_vx
 
 # Jacobi update for vx
 @nb.njit(cache=True, parallel=True)
@@ -18,10 +18,10 @@ def vx_jacobi_sweep(nx1: int, ny1: int,
     # Loop only over the interior cells
     for i in nb.prange(1, ny1 - 1):
         for j in range(1, nx1 - 2):
-            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = compute_coeffs(i, j, dx, dy, etap, etab)
+            vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4 = cpu_compute_coeffs_vx(i, j, dx, dy, etap, etab)
 
             # Jacobi update
-            vx_new[i, j] = compute_neighbor_sum(
+            vx_new[i, j] = cpu_compute_neighbor_sum_vx(
                 i, j, relax_v, vx_c1, vx_c2, vx_c3, vx_c4, vx_c5, vy_c1, vy_c2, vy_c3, vy_c4, vx, vy, rhs
             )
     # Copy solution to vx
