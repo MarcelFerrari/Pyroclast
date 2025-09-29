@@ -102,7 +102,7 @@ def setup_gpu(etap: np.ndarray, etab: np.ndarray,
 
 
 # INFO: Cannot decorate with njit or jit. Doesn't work.
-def velocity_smoother_jacobi_cuda(
+def velocity_smoother_rb_gs_cuda(
         nx1: int, ny1: int, max_iter: int,
         dx: float, dy: float, relax_v: float, BC: float,
         vx_d: DeviceNDArray, vy_d: DeviceNDArray,
@@ -162,12 +162,12 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
         def benchmark_preamble(self):
             start = dtf()
-            # 0   1     2        3          4       5       6        7
-            vx_d, vy_d, vx_new_d, vy_new_d, etap_d, etab_d, vx_rhs_d, vy_rhs_d = setup_gpu(
+            # 0   1     2       3       4         5
+            vx_d, vy_d, etap_d, etab_d, vx_rhs_d, vy_rhs_d = setup_gpu(
                 etab=self.eta_b, etap=self.eta_p,
                 vx=self.vx, vy=self.vy, vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs
             )
-            self.device_arrays = [vx_d, vy_d, vx_new_d, vy_new_d, etap_d, etab_d, vx_rhs_d, vy_rhs_d]
+            self.device_arrays = [vx_d, vy_d, etap_d, etab_d, vx_rhs_d, vy_rhs_d]
             end = dtf()
 
             # Add the timing information
@@ -177,14 +177,13 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                        end=end))
 
             start = dtf()
-            velocity_smoother_jacobi_cuda(nx1=self.nx1, ny1=self.ny1,
-                                          dx=self.dx, dy=self.dy,
-                                          etap_d=self.device_arrays[4], etab_d=self.device_arrays[5],
-                                          vx_d=self.device_arrays[0], vy_d=self.device_arrays[1],
-                                          vx_new_d=self.device_arrays[2], vy_new_d=self.device_arrays[3],
-                                          relax_v=self.relax_v, BC=self.boundary_condition,
-                                          max_iter=1,
-                                          vx_rhs_d=self.device_arrays[6], vy_rhs_d=self.device_arrays[7])
+            velocity_smoother_rb_gs_cuda(nx1=self.nx1, ny1=self.ny1,
+                                         dx=self.dx, dy=self.dy,
+                                         etap_d=self.device_arrays[2], etab_d=self.device_arrays[3],
+                                         vx_d=self.device_arrays[0], vy_d=self.device_arrays[1],
+                                         relax_v=self.relax_v, BC=self.boundary_condition,
+                                         max_iter=1,
+                                         vx_rhs_d=self.device_arrays[4], vy_rhs_d=self.device_arrays[5])
             end = dtf()
 
             # Add the timing information
@@ -204,14 +203,13 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
-            velocity_smoother_jacobi_cuda(nx1=self.nx1, ny1=self.ny1,
-                                          dx=self.dx, dy=self.dy,
-                                          etap_d=self.device_arrays[4], etab_d=self.device_arrays[5],
-                                          vx_d=self.device_arrays[0], vy_d=self.device_arrays[1],
-                                          vx_new_d=self.device_arrays[2], vy_new_d=self.device_arrays[3],
-                                          relax_v=self.relax_v, BC=self.boundary_condition,
-                                          max_iter=1,
-                                          vx_rhs_d=self.device_arrays[6], vy_rhs_d=self.device_arrays[7])
+            velocity_smoother_rb_gs_cuda(nx1=self.nx1, ny1=self.ny1,
+                                         dx=self.dx, dy=self.dy,
+                                         etap_d=self.device_arrays[2], etab_d=self.device_arrays[3],
+                                         vx_d=self.device_arrays[0], vy_d=self.device_arrays[1],
+                                         relax_v=self.relax_v, BC=self.boundary_condition,
+                                         max_iter=1,
+                                         vx_rhs_d=self.device_arrays[4], vy_rhs_d=self.device_arrays[5])
             end = dtf()
 
             # Add the timing information
