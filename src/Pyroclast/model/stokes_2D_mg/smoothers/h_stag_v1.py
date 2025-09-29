@@ -5,7 +5,7 @@ from typing import Type
 
 import Pyroclast.model.stokes_2D_mg.smoothers.vx as vx_op
 import Pyroclast.model.stokes_2D_mg.smoothers.vy as vy_op
-from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
 """
@@ -58,8 +58,8 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                                                               vy_c1=vy_c1, vy_c2=vy_c2, vy_c3=vy_c3, vy_c4=vy_c4, vy_c5=vy_c5,
                                                               vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4)
 
-        apply_vx_BC(vx, BC)
-        apply_vy_BC(vy, BC)
+        cpu_apply_vx_BC(vx, BC)
+        cpu_apply_vy_BC(vy, BC)
 
 
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available

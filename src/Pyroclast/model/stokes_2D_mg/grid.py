@@ -19,7 +19,7 @@ import numpy as np
 from Pyroclast.profiling import timer
 from .smoother import velocity_smoother
 from .mg_routines import restrict, prolong, uzawa_vx_residual, uzawa_vy_residual
-from .utils import apply_vx_BC, apply_vy_BC
+from .utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
 class Grid:
@@ -104,8 +104,8 @@ class Grid:
                                             self.vx_rhs, self.vy_rhs, iterations)
 
     def apply_bc(self):
-        apply_vx_BC(self.vx, self.BC)
-        apply_vy_BC(self.vy, self.BC)
+        cpu_apply_vx_BC(self.vx, self.BC)
+        cpu_apply_vy_BC(self.vy, self.BC)
 
     def reset_solution(self):
         """Reset the solution and residual arrays to zero y but not the material properties."""

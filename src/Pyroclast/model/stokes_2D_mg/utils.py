@@ -36,7 +36,7 @@ def compute_hydrostatic_pressure(nx1, ny1, dy, rho, gy, p_ref, p):
 # JIT-compiled to be callable from other JIT-compiled functions.
 
 @nb.njit(cache=True)
-def apply_vx_BC(vx, BC):
+def cpu_apply_vx_BC(vx, BC):
     """
     Apply boundary conditions to the x-velocity field in-place.
     """
@@ -51,7 +51,7 @@ def apply_vx_BC(vx, BC):
 
 
 @nb.njit(cache=True)
-def apply_vy_BC(vy, BC):
+def cpu_apply_vy_BC(vy, BC):
     """
     Apply boundary conditions to the y-velocity field in-place.
     """
@@ -84,6 +84,6 @@ def apply_BC(p, vx, vy, BC):
     Apply BCs to pressure and velocity in-place, returning all arrays.
     """
     p  = apply_p_BC(p)
-    vx = apply_vx_BC(vx, BC)
-    vy = apply_vy_BC(vy, BC)
+    vx = cpu_apply_vx_BC(vx, BC)
+    vy = cpu_apply_vy_BC(vy, BC)
     return p, vx, vy
