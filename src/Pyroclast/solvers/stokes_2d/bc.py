@@ -1,4 +1,21 @@
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: Pyroclast/solvers/stokes_2d/bc.py 
+Description: File contains functions to reapply boundary conditions on the grids
+
+Author: Marcel Ferrari, Alexander Sotoudeh
+Copyright (c) 2024 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
+
 import numba as nb
+import importlib.metadata
 
 # ======== Utilities for boundary conditions ========
 # JIT-compiled to be callable from other JIT-compiled functions.
@@ -55,3 +72,56 @@ def apply_BC(p, vx, vy, BC):
     vx = cpu_apply_vx_BC(vx, BC)
     vy = cpu_apply_vy_BC(vy, BC)
     return p, vx, vy
+
+
+NUMBA_CUDA_AVAIL = False
+
+
+try:
+    importlib.metadata.version("numba-cuda")
+    NUMBA_CUDA_AVAIL = True
+except importlib.metadata.PackageNotFoundError:
+    pass
+
+
+# If Numba Cuda is available, prepare the decorators for the gpu exports as well.
+if NUMBA_CUDA_AVAIL:
+    import numba.cuda as cuda
+    from numba.cuda.cudadrv.devicearray import DeviceNDArray
+
+    @cuda.jit
+    def gpu_apply_vx_bc_kernel(vx: DeviceNDArray, BC: float, nx1: int, ny1: int):
+        """
+        Cuda Kernel to apply boundary condition on the vx array
+        """
+        j = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+        i = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+        if i >= ny1 or j >= nx1:
+            return
+        if i == 0:
+            vx[0, j] = -BC * vx[1, j]
+        elif i == ny1 - 1:
+            vx[ny1 - 1, j] = -BC * vx[ny1 - 2, j]
+        elif j == 0:
+            vx[i, 0] = 0.0
+        elif j >= nx1 - 2:
+            vx[i, j] = 0.0
+
+
+    @cuda.jit
+    def gpu_apply_vy_bc_kernel(vy: DeviceNDArray, BC: float, nx1: int, ny1: int):
+        """
+        Cuda Kernel to apply boundary condition on the vy array
+        """
+        j = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+        i = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+        if i >= ny1 or j >= nx1:
+            return
+        if j == 0:
+            vy[i, 0] = -BC * vy[i, 1]
+        elif j == nx1 - 1:
+            vy[i, nx1 - 1] = -BC * vy[i, nx1 - 2]
+        elif i == 0:
+            vy[0, j] = 0.0
+        elif i >= ny1 - 2:
+            vy[i, j] = 0.0
