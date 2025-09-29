@@ -535,9 +535,10 @@ test-no-images = ["pytest", "pytest-cov", "pytest-rerunfailures", "pytest-xdist"
 name = "cuda-bindings"
 version = "13.0.1"
 description = "Python bindings for CUDA"
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
+markers = "extra == \"cuda\""
 files = [
     {file = "cuda_bindings-13.0.1-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ce84f17afe0a0381583b82d1665dc27bc1f28c51454449847facaed6f52a6c00"},
     {file = "cuda_bindings-13.0.1-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:81a063e7e8b1da115797748bcd7f1f5282fb93f8c2717d870b90cf68e9a58edb"},
@@ -568,9 +569,10 @@ test = ["cython (>=3.0,<3.1.0)", "llvmlite", "numpy (>=1.21.1)", "pytest (>=6.2.
 name = "cuda-core"
 version = "0.3.2"
 description = "cuda.core: (experimental) pythonic CUDA module"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "extra == \"cuda\""
 files = [
     {file = "cuda_core-0.3.2-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:7a2a1f7e96e68c0bbc710592e78ca09c951afc10238c739482e265da1e6ea102"},
     {file = "cuda_core-0.3.2-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:1058402b41320516d5022a1cdfc7063909bf620e91126f851d859302b77d02d1"},
@@ -604,9 +606,10 @@ test-cu12 = ["cuda-core[test]", "cupy-cuda12x", "nvidia-cuda-runtime-cu12"]
 name = "cuda-pathfinder"
 version = "1.2.3"
 description = "Pathfinder for CUDA components"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "extra == \"cuda\""
 files = [
     {file = "cuda_pathfinder-1.2.3-py3-none-any.whl", hash = "sha256:e6cf54d550441e878002d9ec9d280863ef0d6bb2bd8f52ca01582a5f381eace4"},
 ]
@@ -2568,7 +2571,7 @@ files = [
     {file = "pywin32-310-cp39-cp39-win32.whl", hash = "sha256:851c8d927af0d879221e616ae1f66145253537bbdd321a77e8ef701b443a9a1a"},
     {file = "pywin32-310-cp39-cp39-win_amd64.whl", hash = "sha256:96867217335559ac619f00ad70e513c0fcf84b8a3af9fc2bba3b59b97da70475"},
 ]
-markers = {main = "sys_platform == \"win32\"", dev = "sys_platform == \"win32\" and platform_python_implementation != \"PyPy\""}
+markers = {main = "extra == \"cuda\" and sys_platform == \"win32\"", dev = "sys_platform == \"win32\" and platform_python_implementation != \"PyPy\""}
 
 [[package]]
 name = "pywinpty"
@@ -3462,9 +3465,9 @@ optional = ["python-socks", "wsaccel"]
 test = ["websockets"]
 
 [extras]
-cuda = ["numba-cuda"]
+cuda = ["cuda-bindings", "cuda-core", "numba-cuda"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "fe28664ce1afbce59b028c1c3f8d55eb5b60b26ef5efc0c9b26239ed0affa7ed"
+content-hash = "f5b07e83cbe4c26e0bfb13d572be403d4047b742d32a0b548622ae91760db1e4"
