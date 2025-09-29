@@ -64,10 +64,6 @@ cpu_compute_coeffs_vx = nb.njit(cache=True, inline="always")(base_compute_coeffs
 cpu_compute_neighbor_sum_vx = nb.njit(cache=True, inline="always")(base_compute_neighbor_sum_vx)
 
 
-# Setting defaults for gpu
-gpu_inline_loop_body_vx = gpu_compute_neighbor_sum_vx = gpu_compute_coeffs_vx = None
-
-
 @nb.njit(cache=True, inline="always")
 def cpu_inline_loop_body_vx(i: int, j: int,
                             dx: float, dy: float, relax_v: float,
@@ -135,3 +131,13 @@ if NUMBA_CUDA_AVAIL:
                                            vx=vx, vy=vy, rhs=rhs,
                                            vy_c3=vy_c3, vy_c2=vy_c2, vy_c4=vy_c4, vy_c1=vy_c1,
                                            vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4, vx_c5=vx_c5)
+
+else:
+    def gpu_compute_coeffs_vx(*args, **kwargs):
+        raise ImportError("numba-cuda needed for gpu support. Try installing Pyroclast[cuda]")
+
+    def gpu_compute_neighbor_sum_vx(*args, **kwargs):
+        raise ImportError("numba-cuda needed for gpu support. Try installing Pyroclast[cuda]")
+
+    def gpu_inline_loop_body_vx(*args, **kwargs):
+        raise ImportError("numba-cuda needed for gpu support. Try installing Pyroclast[cuda]")

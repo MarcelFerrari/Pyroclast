@@ -109,3 +109,10 @@ if NUMBA_CUDA_AVAIL:
             vy[0, j] = 0.0
         elif i >= ny1 - 2:
             vy[i, j] = 0.0
+
+else:
+    def gpu_apply_vx_bc_kernel(*args, **kwargs):
+        raise ImportError("numba-cuda needed for gpu support. Try installing Pyroclast[cuda]")
+
+    def gpu_apply_vy_bc_kernel(*args, **kwargs):
+        raise ImportError("numba-cuda needed for gpu support. Try installing Pyroclast[cuda]")
