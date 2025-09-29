@@ -12,7 +12,7 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
-from _inline_vx import (cpu_inline_loop_body_vx,
+from ._inline_vx import (cpu_inline_loop_body_vx,
                         cpu_prep_vx_cache,
                         cpu_compute_coeffs_vx,
                         cpu_compute_neighbor_sum_vx,
