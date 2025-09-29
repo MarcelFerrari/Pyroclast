@@ -84,7 +84,8 @@ def velocity_smoother_jacobi_cuda(
             etap_d, etab_d, vx_rhs_d, vy_rhs_d,
             dx, dy, relax_v, nx1, ny1)
 
-        cuda.synchronize()
+        # INFO: This call should be technically unnecessary
+        # cuda.synchronize()
         gpu_apply_vx_bc_kernel[grid_dim, threadsperblock](vx_new_d, BC, nx1, ny1)
         gpu_apply_vy_bc_kernel[grid_dim, threadsperblock](vy_new_d, BC, nx1, ny1)
         cuda.synchronize()
