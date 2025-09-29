@@ -24,6 +24,7 @@ from numba.cuda.cudadrv.devicearray import DeviceNDArray
 
 from Pyroclast.model.stokes_2D_mg.smoothers.vx import gpu_inline_loop_body_vx
 from Pyroclast.model.stokes_2D_mg.smoothers.vy import gpu_inline_loop_body_vy
+from Pyroclast.model.stokes_2D_mg.utils import gpu_apply_vx_bc_kernel, gpu_apply_vy_bc_kernel
 
 
 @cuda.jit
@@ -44,44 +45,6 @@ def jacobi_step_kernel(vx: DeviceNDArray, vy: DeviceNDArray, vx_new: DeviceNDArr
         if 1 <= i <= ny1 - 2 and 1 <= j <= nx1 - 2:
             vy_new[i, j] = gpu_inline_loop_body_vy(
                 i, j, dx, dy, relax_v, etap, etab, vx, vy, vy_rhs)
-
-
-@cuda.jit
-def apply_vx_bc_kernel(vx: DeviceNDArray, BC: float, nx1: int, ny1: int):
-    """
-    Cuda Kernel to apply boundary condition on the vx array
-    """
-    j = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    i = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
-    if i >= ny1 or j >= nx1:
-        return
-    if i == 0:
-        vx[0, j] = -BC * vx[1, j]
-    elif i == ny1 - 1:
-        vx[ny1 - 1, j] = -BC * vx[ny1 - 2, j]
-    elif j == 0:
-        vx[i, 0] = 0.0
-    elif j >= nx1 - 2:
-        vx[i, j] = 0.0
-
-
-@cuda.jit
-def apply_vy_bc_kernel(vy: DeviceNDArray, BC: float, nx1: int, ny1: int):
-    """
-    Cuda Kernel to apply boundary condition on the vy array
-    """
-    j = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    i = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
-    if i >= ny1 or j >= nx1:
-        return
-    if j == 0:
-        vy[i, 0] = -BC * vy[i, 1]
-    elif j == nx1 - 1:
-        vy[i, nx1 - 1] = -BC * vy[i, nx1 - 2]
-    elif i == 0:
-        vy[0, j] = 0.0
-    elif i >= ny1 - 2:
-        vy[i, j] = 0.0
 
 
 def setup_gpu(etap: np.ndarray, etab: np.ndarray,
@@ -130,8 +93,8 @@ def velocity_smoother_jacobi_cuda(
             dx, dy, relax_v, nx1, ny1)
 
         cuda.synchronize()
-        apply_vx_bc_kernel[grid_dim, threadsperblock](vx_new_d, BC, nx1, ny1)
-        apply_vy_bc_kernel[grid_dim, threadsperblock](vy_new_d, BC, nx1, ny1)
+        gpu_apply_vy_bc_kernel[grid_dim, threadsperblock](vx_new_d, BC, nx1, ny1)
+        gpu_apply_vy_bc_kernel[grid_dim, threadsperblock](vy_new_d, BC, nx1, ny1)
         cuda.synchronize()
 
         vx_d, vx_new_d = vx_new_d, vx_d
