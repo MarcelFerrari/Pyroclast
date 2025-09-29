@@ -61,7 +61,7 @@ Jacobi:
 - `at_09` From `at_05` Fully staggered / Two loops fused, old only, with jitter
 - `at_10` From `at_06` Fully staggered / Two loops fused, new vx in vy, with jitter
 - `at_11` From `at_07` Fully staggered / Two loops fused, new vy in vx, with jitter
-- Fully staggered / Two loops fused, partially new.
+- Fully staggered / Two loops fused, partially new. DONE
 - Fully staggered / Two loops fused, LTR **WORKS - But Slow as Fuck** False Sharing
 - Fully staggered / Two Loops fused, LTR + Rando Offset **WORKS - But Slow as Fuck** False Sharing
 
