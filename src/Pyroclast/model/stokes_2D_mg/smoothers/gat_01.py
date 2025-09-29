@@ -171,6 +171,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                        start=start,
                                        end=end))
 
+            start = dtf()
             velocity_smoother_jacobi_cuda(nx1=self.nx1, ny1=self.ny1,
                                           dx=self.dx, dy=self.dy,
                                           etap_d=self.device_arrays[4], etab_d=self.device_arrays[5],
