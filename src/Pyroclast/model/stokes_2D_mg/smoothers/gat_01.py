@@ -11,6 +11,15 @@ from Pyroclast.model.stokes_2D_mg.smoothers.vy import gpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import gpu_apply_vx_bc_kernel, gpu_apply_vy_bc_kernel
 
 
+"""
+GPU Implementation of the Smoother
+-> Basic Jacobi.
+-> No blocking or shifting of boundaries
+-> interpolate from cuda grid straight to array - no translation or internal loops
+-> Initial copy at the beginning and end of algorithm.
+"""
+
+
 @cuda.jit
 def jacobi_step_kernel(vx: DeviceNDArray, vy: DeviceNDArray, vx_new: DeviceNDArray, vy_new: DeviceNDArray,
                        etap: DeviceNDArray, etab: DeviceNDArray, vx_rhs: DeviceNDArray, vy_rhs: DeviceNDArray,
@@ -21,14 +30,13 @@ def jacobi_step_kernel(vx: DeviceNDArray, vy: DeviceNDArray, vx_new: DeviceNDArr
     j = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     i = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
 
-    if i < ny1 and j < nx1:
-        if 1 <= i <= ny1 - 2 and 1 <= j <= nx1 - 2:
-            vx_new[i, j] = gpu_inline_loop_body_vx(
-                i, j, dx, dy, relax_v, etap, etab, vx, vy, vx_rhs)
+    if 1 <= j <= nx1 - 2 and 1 <= i <= ny1 - 1:
+        vx_new[i, j] = gpu_inline_loop_body_vx(
+            i, j, dx, dy, relax_v, etap, etab, vx, vy, vx_rhs)
 
-        if 1 <= i <= ny1 - 2 and 1 <= j <= nx1 - 2:
-            vy_new[i, j] = gpu_inline_loop_body_vy(
-                i, j, dx, dy, relax_v, etap, etab, vx, vy, vy_rhs)
+    if 1 <= j <= nx1 - 1 and 1 <= i <= ny1 - 2:
+        vy_new[i, j] = gpu_inline_loop_body_vy(
+            i, j, dx, dy, relax_v, etap, etab, vx, vy, vy_rhs)
 
 
 def setup_gpu(etap: np.ndarray, etab: np.ndarray,
@@ -77,7 +85,7 @@ def velocity_smoother_jacobi_cuda(
             dx, dy, relax_v, nx1, ny1)
 
         cuda.synchronize()
-        gpu_apply_vy_bc_kernel[grid_dim, threadsperblock](vx_new_d, BC, nx1, ny1)
+        gpu_apply_vx_bc_kernel[grid_dim, threadsperblock](vx_new_d, BC, nx1, ny1)
         gpu_apply_vy_bc_kernel[grid_dim, threadsperblock](vy_new_d, BC, nx1, ny1)
         cuda.synchronize()
 
