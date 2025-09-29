@@ -19,7 +19,7 @@ from typing import Type
 
 import numba as nb
 
-from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC
 
 
 # Gauss-Seidel update for vx
@@ -71,7 +71,7 @@ def vx_gs_sweep(nx1, ny1,
             # Gauss-Seidel in-place update
             vx[i, j] = (1.0 - relax_v) * vx[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / diag
 
-    apply_vx_BC(vx, BC)
+    cpu_apply_vx_BC(vx, BC)
 
     return vx
 

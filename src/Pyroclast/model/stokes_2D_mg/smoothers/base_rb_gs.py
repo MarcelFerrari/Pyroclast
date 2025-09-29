@@ -20,7 +20,7 @@ from typing import Type
 import numba as nb
 import numpy as np
 
-from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
 @nb.njit(cache=True, parallel=True)
@@ -79,7 +79,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
             vx[i, j] = (1.0 - relax_v) * vx[i, j] \
                        + relax_v * (rhs[i, j] - sum_neighbors) / diag
     # Apply vx boundary conditions
-    apply_vx_BC(vx, BC)
+    cpu_apply_vx_BC(vx, BC)
 
     # ----------------------------
     #  Black pass: (i + j) % 2 == 1
@@ -129,7 +129,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
                        + relax_v * (rhs[i, j] - sum_neighbors) / diag
 
     # Apply vx boundary conditions
-    apply_vx_BC(vx, BC)
+    cpu_apply_vx_BC(vx, BC)
 
     return vx
 
@@ -193,7 +193,7 @@ def _vy_red_black_gs_sweep(nx1, ny1,
                 vy[i, j] = (1.0 - relax_v) * vy[i, j] \
                            + relax_v * (rhs[i, j] - sum_neighbors) / diag
     # Apply vy boundary conditions
-    apply_vy_BC(vy, BC)
+    cpu_apply_vy_BC(vy, BC)
 
     # ----------------------------
     #  Black pass
@@ -243,7 +243,7 @@ def _vy_red_black_gs_sweep(nx1, ny1,
                            + relax_v * (rhs[i, j] - sum_neighbors) / diag
 
     # Apply vy boundary conditions
-    apply_vy_BC(vy, BC)
+    cpu_apply_vy_BC(vy, BC)
 
     return vy
 

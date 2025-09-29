@@ -22,7 +22,7 @@ import math
 
 from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
 from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
-from Pyroclast.model.stokes_2D_mg.utils import apply_vx_BC, apply_vy_BC
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
 
 
@@ -77,8 +77,8 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                                                                    vx=vx, vy=vy, rhs=vy_rhs)
 
 
-            apply_vx_BC(vx, BC)
-            apply_vy_BC(vy, BC)
+            cpu_apply_vx_BC(vx, BC)
+            cpu_apply_vy_BC(vy, BC)
 
     #
     else:

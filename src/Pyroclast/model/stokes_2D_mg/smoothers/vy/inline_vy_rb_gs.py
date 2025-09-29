@@ -17,7 +17,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import numba as nb
 import numpy as np
 
-from Pyroclast.model.stokes_2D_mg.utils import apply_vy_BC
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vy_BC
 from ._inline_vy import cpu_inline_loop_body_vy
 
 
@@ -53,7 +53,7 @@ def _vy_red_black_gs_sweep(nx1: int, ny1: int,
                                                etab=etab, etap=etap)
 
     # Apply vy boundary conditions
-    apply_vy_BC(vy, BC)
+    cpu_apply_vy_BC(vy, BC)
 
     return vy
 
