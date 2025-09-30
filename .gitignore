@@ -252,3 +252,5 @@ setup-env.sh
 *.db3
 *.ckpt
 *.checkpoint
+
+local_scripts/
