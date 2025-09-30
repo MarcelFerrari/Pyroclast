@@ -169,6 +169,9 @@ class UzawaSolver:
         # Set up initial guess if given
         if p_guess is not None:
             self.p[...] = p_guess
+            # Enforce zero-mean pressure on initial guess
+            pbar = np.mean(self.p[1:-1, 1:-1])
+            self.p -= pbar 
         if vx_guess is not None:
             self.vx[...] = vx_guess
         if vy_guess is not None:
