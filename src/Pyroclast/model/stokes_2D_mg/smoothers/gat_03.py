@@ -80,7 +80,7 @@ def setup_gpu(etap: np.ndarray, etab: np.ndarray,
 
 # INFO: Cannot decorate with njit or jit. Doesn't work.
 def velocity_smoother_rb_gs_cuda(
-        nx1: int, ny1: int, max_iter: int,
+        nx1: int, ny1: int, max_iter: int, step_size: int,
         dx: float, dy: float, relax_v: float, BC: float,
         vx_d: DeviceNDArray, vy_d: DeviceNDArray,
         etap_d: DeviceNDArray, etab_d: DeviceNDArray, vx_rhs_d: DeviceNDArray, vy_rhs_d: DeviceNDArray,
@@ -91,7 +91,7 @@ def velocity_smoother_rb_gs_cuda(
     """
     bx, by = threadsperblock
     blockspergrid_x = math.ceil(nx1 / bx)
-    blockspergrid_y = math.ceil(ny1 / by)
+    blockspergrid_y = math.ceil((ny1 + step_size * 3)/ by)
     grid_dim = (blockspergrid_x, blockspergrid_y)
 
     for it in range(max_iter):
