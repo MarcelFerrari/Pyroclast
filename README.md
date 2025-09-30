@@ -55,3 +55,6 @@ Here's an example of a benchmarking config:
 }
 ```
 
+Largest Size on my Laptop GPU:
+gat_02 8000x10000
+gat_01 8000x7500
