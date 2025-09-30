@@ -78,7 +78,7 @@ def setup_gpu(etap: np.ndarray, etab: np.ndarray,
     return vx_d, vy_d, vx_new_d, vy_new_d, etap_d, etab_d, vx_rhs_d, vy_rhs_d
 
 
-# INFO: Cannot decorate with njit or jit. Doesn't work.
+# INFO: Cannot decorate with njit or jit. Doesn't work. Also @cuda.jit doesn't work. Expects to be a kernel
 def velocity_smoother_jacobi_cuda(
         nx1: int, ny1: int, max_iter: int,
         dx: float, dy: float, relax_v: float, BC: float,
