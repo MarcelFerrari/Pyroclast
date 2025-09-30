@@ -55,10 +55,7 @@ def restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw):
             uHw[iH, jH+1] += (1-rx)*ry
             uHw[iH+1, jH+1] += rx*ry
     
-    # Normalize weights
-    for i in range(nyH):
-        for j in range(nxH):
-                uH[i, j] /= uHw[i, j]
+    uH[:, :] /= uHw[:, :]
 
     return uH
 
