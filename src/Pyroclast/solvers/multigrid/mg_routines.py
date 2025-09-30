@@ -21,6 +21,9 @@ def restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw):
     xH0 = xH[0]
     yH0 = yH[0]
 
+    uH[:, :] = 0.0
+    uHw[:, :] = 0.0
+
     # MEGA IMPORTANT:
     # The loop on the fine grid should be from 0 to nyh - 1 and from 0 to nxh - 1
     # This is because otherwise we interpolate the values at the edges of the fine grid
