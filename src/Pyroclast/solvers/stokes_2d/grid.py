@@ -17,7 +17,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import numpy as np
 from Pyroclast.profiling import timer
-from Pyroclast.context import ContextNamespace
 
 try:
     from Pyroclast.turbo.mg_routines import restrict_2D as restrict, prolong_2D as prolong
