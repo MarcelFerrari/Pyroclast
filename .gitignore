@@ -254,5 +254,5 @@ pyrightconfig.json
 *.checkpoint
 .idea/
 .results/
-local_scripts/
 *benchmark_config.json
+local_scripts/
