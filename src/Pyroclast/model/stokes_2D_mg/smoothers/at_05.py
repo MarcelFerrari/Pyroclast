@@ -7,7 +7,7 @@ import math
 from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
 from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
-from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
+from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs as base_rb_gs
 
 """
 Attempt 5: Implemented Blocking Jacobi. And Thread Blocking
@@ -20,7 +20,7 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                              vx: np.ndarray, vy: np.ndarray,
                              relax_v: float, BC: float,
                              vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
-                             vx_new, vy_new,
+                             vx_new: np.ndarray, vy_new: np.ndarray,
                              th: int, cache_a: int) -> tuple[np.ndarray, np.ndarray]:
     # Fast Implementation for big problems
     if th * cache_a > nx1 - 2:
@@ -60,11 +60,88 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
         return vx, vy
 
     else:
-        velocity_smoother_rb_gs(nx1=nx1, ny1=ny1,
-                                dx=dx, dy=dy,
-                                etap=etap, etab=etab,
-                                vx=vx, vy=vy,
-                                relax_v=relax_v, BC=BC,
-                                vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
+        base_rb_gs(nx1=nx1, ny1=ny1,
+                   dx=dx, dy=dy,
+                   etap=etap, etab=etab,
+                   vx=vx, vy=vy,
+                   relax_v=relax_v, BC=BC,
+                   vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
 
         return vx, vy
+
+
+
+
+# INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
+def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"], Type["BenchmarkVY"]]:
+    """
+    Returns Benchmark Classes needed for benchmarking. Done via factory to avoid issues with the `benchmark` package
+    not being available in a production environment.
+    """
+    import benchmark.benchmark_wrapper as bw
+    from benchmark.benchmark_validators import Stage, Timing, BenchmarkValidatorSmoother
+    from benchmark.utils import dtf
+
+    module_name = os.path.basename(__file__).replace(".py", "")
+
+    class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
+        needs_cache_block_size_1: bool = True
+
+        def __init__(self, arguments: bw.BenchmarkValidatorSmoother):
+            super().__init__(arguments=arguments)
+
+            if self.vx_new is None:
+                self.vx_new = np.zeros((self.nx1, self.ny1))
+
+            if self.vy_new is None:
+                self.vy_new = np.zeros((self.nx1, self.ny1))
+
+        def benchmark_preamble(self):
+            th = nb.get_num_threads()
+            start = dtf()
+            velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
+                                     dx=self.dx, dy=self.dy,
+                                     etap=self.eta_p, etab=self.eta_b,
+                                     vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
+                                     relax_v=self.relax_v, BC=self.boundary_condition,
+                                     max_iter=1,
+                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                     th=th, cache_a=self.cache_block_size_1)
+            end = dtf()
+
+            # Add the timing information
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
+                                       stage=Stage.PREAMBLE,
+                                       start=start,
+                                       end=end))
+
+        def benchmark_epilogue(self):
+            """
+            No post-processing
+            """
+            pass
+
+        def run_benchmark(self):
+            """
+            Perform the actual run of the benchmark.
+            """
+            th = nb.get_num_threads()
+            start = dtf()
+            velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
+                                     dx=self.dx, dy=self.dy,
+                                     etap=self.eta_p, etab=self.eta_b,
+                                     vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
+                                     relax_v=self.relax_v, BC=self.boundary_condition,
+                                     max_iter=1,
+                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                     th=th, cache_a=self.cache_block_size_1)
+            end = dtf()
+
+            # Add the timing information
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
+                                       stage=Stage.BENCHMARK,
+                                       start=start,
+                                       end=end))
+
+    # INFO: Methods can be benchmarked in other places. Here is only the full implementation.
+    return BaseImplementationBenchmarkSmoother, None, None
