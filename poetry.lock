@@ -533,28 +533,28 @@ test-no-images = ["pytest", "pytest-cov", "pytest-rerunfailures", "pytest-xdist"
 
 [[package]]
 name = "cuda-bindings"
-version = "13.0.1"
+version = "12.9.2"
 description = "Python bindings for CUDA"
 optional = true
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"cuda\""
 files = [
-    {file = "cuda_bindings-13.0.1-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ce84f17afe0a0381583b82d1665dc27bc1f28c51454449847facaed6f52a6c00"},
-    {file = "cuda_bindings-13.0.1-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:81a063e7e8b1da115797748bcd7f1f5282fb93f8c2717d870b90cf68e9a58edb"},
-    {file = "cuda_bindings-13.0.1-cp310-cp310-win_amd64.whl", hash = "sha256:8c7c7b4a2159512de02a50cfab218f197aeba9514977901a1e8b2ed26f828500"},
-    {file = "cuda_bindings-13.0.1-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:5b56b5267ad123a12bc2fb5005c226c8e998f29ceb7aee24ac3ad13d8b0db59a"},
-    {file = "cuda_bindings-13.0.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:92f0ca5bed7a0fcc4245a4d471a04d5dcd08b14f06d3c1404381f15975d778dd"},
-    {file = "cuda_bindings-13.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:7620b8dfc234d55c3c819ac23117db628bd6eec2a99fb128ca238146b5c95fb5"},
-    {file = "cuda_bindings-13.0.1-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:a06268a4226c867a7234f12ca183e186e7962a4971b53983c8de182dd62878a3"},
-    {file = "cuda_bindings-13.0.1-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:12dd61b782b1558ac3e3790a02e3d9dc4827c6702a3315a9b79b5e1f6bed30f2"},
-    {file = "cuda_bindings-13.0.1-cp312-cp312-win_amd64.whl", hash = "sha256:06b4533e43c65bf2422db25eb86cd0813a818a2e3cb4b793f4afbdb2f801d894"},
-    {file = "cuda_bindings-13.0.1-cp313-cp313-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:a38090fa452f71c30b93b9007c26f1874c28abc5662b37c5caefbd41506a64f7"},
-    {file = "cuda_bindings-13.0.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:4bdea32e9ede085c72dbc670d2c6ecd68451aa06d0f1cfe597374483dcdd1657"},
-    {file = "cuda_bindings-13.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:448bf908d17b29e3c5dfa55f848e37f3d4170e5c8644536323bf54a0785e6b98"},
-    {file = "cuda_bindings-13.0.1-cp39-cp39-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:8e6b8466e578f64d7e42552772c1ca2a8226b8ec52630bafd96d80e8748fa1bc"},
-    {file = "cuda_bindings-13.0.1-cp39-cp39-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:06a374097d8e0baf6d3e4b000c9f92c0ac9bcaf9325a68c1826b7f774e5a85b0"},
-    {file = "cuda_bindings-13.0.1-cp39-cp39-win_amd64.whl", hash = "sha256:56864511f7f3f498d5fdc0b1d60b89cd1ed7bb29288ca2eceac7182531011969"},
+    {file = "cuda_bindings-12.9.2-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:63aa1288f221ce041b1177fd47ab2ef09dfd59065e6116044473f7fdaf47d4be"},
+    {file = "cuda_bindings-12.9.2-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d4e967a9e6e0b3e0eb8e7dfeec9e79e1ed05e6f3385dc3d91298ab2ba8536016"},
+    {file = "cuda_bindings-12.9.2-cp310-cp310-win_amd64.whl", hash = "sha256:4acba6f49ca4e07e9164b18c28e38c78cad18fd3cb4fb9cad4b32e742323d5ac"},
+    {file = "cuda_bindings-12.9.2-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b65cbe73aa657daf8cc0137da2223e1858e4057056aad727aae5f839f35a724c"},
+    {file = "cuda_bindings-12.9.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:657f628fc895f963c8ecea2e41354610e5f9f952dd93d345af18d7ca2d92237e"},
+    {file = "cuda_bindings-12.9.2-cp311-cp311-win_amd64.whl", hash = "sha256:ae2bde07336f198b4f07738b733067909d9158b5ff123d12a531a3fc4b5dcae3"},
+    {file = "cuda_bindings-12.9.2-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:cdc3d928162542c737f3f2f830b64916dcd1edd8a08b0357e23ab6e3a34cfa63"},
+    {file = "cuda_bindings-12.9.2-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d9eaed7ac98e4e1ba616176b291f3f309f20af6a6a79a34da7739aa9dbe060a7"},
+    {file = "cuda_bindings-12.9.2-cp312-cp312-win_amd64.whl", hash = "sha256:ca87323459957b2c0ea7d85064f98e93e9bcf265d4013438133d7895099772b4"},
+    {file = "cuda_bindings-12.9.2-cp313-cp313-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:513ab7bff8fa1fbb949512cc18fcbe3ca190411da653dd7072c1537663176f18"},
+    {file = "cuda_bindings-12.9.2-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:81ebcf681094c5fe6cf248beea029d84858f42748f29dc8b81869a008d52288f"},
+    {file = "cuda_bindings-12.9.2-cp313-cp313-win_amd64.whl", hash = "sha256:48451eca385ae9729f3a9a3458741c43672a0587d044d968654a60f448ef376a"},
+    {file = "cuda_bindings-12.9.2-cp39-cp39-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ab52ac8da54ce3ac9f73316872c31c015138432a504027cae4e45e5354048cb8"},
+    {file = "cuda_bindings-12.9.2-cp39-cp39-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:f656b831d9221611927a3ce646ee44f391ff0da429a4eef990f8c2aeecdb7a8d"},
+    {file = "cuda_bindings-12.9.2-cp39-cp39-win_amd64.whl", hash = "sha256:02c8be5d70bcdae8fec8922f95b5908f7c1ad760b9ac0b487fb5c65e41f7e308"},
 ]
 
 [package.dependencies]
@@ -562,7 +562,7 @@ cuda-pathfinder = ">=1.1,<2.0"
 pywin32 = {version = "*", markers = "sys_platform == \"win32\""}
 
 [package.extras]
-all = ["nvidia-cuda-nvcc (>=13.0,<14.0)", "nvidia-cuda-nvrtc (>=13.0,<14.0)", "nvidia-cufile ; sys_platform == \"linux\"", "nvidia-nvjitlink (>=13.0,<14.0)", "nvidia-nvvm (>=13.0,<14.0)"]
+all = ["nvidia-cuda-nvcc-cu12", "nvidia-cuda-nvrtc-cu12", "nvidia-cufile-cu12 ; sys_platform == \"linux\"", "nvidia-nvjitlink-cu12 (>=12.3)"]
 test = ["cython (>=3.0,<3.1.0)", "llvmlite", "numpy (>=1.21.1)", "pytest (>=6.2.4)", "pytest-benchmark (>=3.4.1)", "setuptools (>=77.0.0)"]
 
 [[package]]
@@ -604,14 +604,14 @@ test-cu12 = ["cuda-core[test]", "cupy-cuda12x", "nvidia-cuda-runtime-cu12"]
 
 [[package]]
 name = "cuda-pathfinder"
-version = "1.2.3"
+version = "1.3.0"
 description = "Pathfinder for CUDA components"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"cuda\""
 files = [
-    {file = "cuda_pathfinder-1.2.3-py3-none-any.whl", hash = "sha256:e6cf54d550441e878002d9ec9d280863ef0d6bb2bd8f52ca01582a5f381eace4"},
+    {file = "cuda_pathfinder-1.3.0-py3-none-any.whl", hash = "sha256:2e904a408ab4ebfba5b3ee67ecd15383487ffe109fc6e1f2e2ea61577e4519be"},
 ]
 
 [package.extras]
@@ -619,6 +619,24 @@ test = ["pytest (>=6.2.4)"]
 test-nvidia-wheels-cu12 = ["cuda-toolkit[cccl,cublas,cudart,cufft,curand,cusolver,cusparse,npp,nvcc,nvfatbin,nvjitlink,nvjpeg,nvrtc] (==12.*)", "cuda-toolkit[cufile] (==12.*) ; sys_platform != \"win32\"", "nvidia-cudss-cu12", "nvidia-cufftmp-cu12 ; sys_platform != \"win32\"", "nvidia-libmathdx-cu12", "nvidia-nccl-cu12 ; sys_platform != \"win32\"", "nvidia-nvshmem-cu12 ; sys_platform != \"win32\""]
 test-nvidia-wheels-cu13 = ["cuda-toolkit[cccl,cublas,cudart,cufft,curand,cusolver,cusparse,npp,nvcc,nvfatbin,nvjitlink,nvjpeg,nvrtc,nvvm] (==13.*)", "cuda-toolkit[cufile] (==13.*) ; sys_platform != \"win32\"", "nvidia-nccl-cu13 ; sys_platform != \"win32\"", "nvidia-nvshmem-cu13 ; sys_platform != \"win32\""]
 test-nvidia-wheels-host = ["nvpl-fft ; platform_system == \"Linux\" and platform_machine == \"aarch64\""]
+
+[[package]]
+name = "cuda-python"
+version = "12.9.2"
+description = "CUDA Python: Performance meets Productivity"
+optional = true
+python-versions = "*"
+groups = ["main"]
+markers = "extra == \"cuda\""
+files = [
+    {file = "cuda_python-12.9.2-py3-none-any.whl", hash = "sha256:b504d773d6f1589486143e0e4984680f78f46ba6726ce2a957ac32897305264a"},
+]
+
+[package.dependencies]
+cuda-bindings = ">=12.9.2,<12.10.0"
+
+[package.extras]
+all = ["cuda-bindings[all] (>=12.9.2,<12.10.0)"]
 
 [[package]]
 name = "cycler"
@@ -1810,7 +1828,15 @@ files = [
 ]
 
 [package.dependencies]
+cuda-bindings = {version = ">=12.9.1,<13.0.0", optional = true, markers = "extra == \"cu12\""}
+cuda-core = {version = "==0.3.*", optional = true, markers = "extra == \"cu12\""}
+cuda-python = {version = "==12.9.*", optional = true, markers = "extra == \"cu12\""}
 numba = ">=0.60.0"
+nvidia-cuda-cccl-cu12 = {version = "*", optional = true, markers = "extra == \"cu12\""}
+nvidia-cuda-nvcc-cu12 = {version = "*", optional = true, markers = "extra == \"cu12\""}
+nvidia-cuda-nvrtc-cu12 = {version = "*", optional = true, markers = "extra == \"cu12\""}
+nvidia-cuda-runtime-cu12 = {version = "*", optional = true, markers = "extra == \"cu12\""}
+nvidia-nvjitlink-cu12 = {version = "*", optional = true, markers = "extra == \"cu12\""}
 
 [package.extras]
 cu12 = ["cuda-bindings (>=12.9.1,<13.0.0)", "cuda-core (==0.3.*)", "cuda-python (==12.9.*)", "nvidia-cuda-cccl-cu12", "nvidia-cuda-nvcc-cu12", "nvidia-cuda-nvrtc-cu12", "nvidia-cuda-runtime-cu12", "nvidia-nvjitlink-cu12"]
@@ -1882,6 +1908,76 @@ files = [
     {file = "numpy-2.2.6-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ce47521a4754c8f4593837384bd3424880629f718d87c5d44f8ed763edd63543"},
     {file = "numpy-2.2.6-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:d042d24c90c41b54fd506da306759e06e568864df8ec17ccc17e9e884634fd00"},
     {file = "numpy-2.2.6.tar.gz", hash = "sha256:e29554e2bef54a90aa5cc07da6ce955accb83f21ab5de01a62c8478897b264fd"},
+]
+
+[[package]]
+name = "nvidia-cuda-cccl-cu12"
+version = "12.9.27"
+description = "CUDA CCCL"
+optional = true
+python-versions = ">=3"
+groups = ["main"]
+markers = "extra == \"cuda\""
+files = [
+    {file = "nvidia_cuda_cccl_cu12-12.9.27-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:d7898b38aa68beaa234d48f0868273702342a196d6e2e9d0ef058dca2390ebea"},
+    {file = "nvidia_cuda_cccl_cu12-12.9.27-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:37869e17ce2e1ecec6eddf1927cca0f8c34e64fd848d40453df559091e2d7117"},
+    {file = "nvidia_cuda_cccl_cu12-12.9.27-py3-none-win_amd64.whl", hash = "sha256:72106f95a9bb3be18472806b4f663ebf0f9248a86d14b4ae3305725b855d9d92"},
+]
+
+[[package]]
+name = "nvidia-cuda-nvcc-cu12"
+version = "12.9.86"
+description = "CUDA nvcc"
+optional = true
+python-versions = ">=3"
+groups = ["main"]
+markers = "extra == \"cuda\""
+files = [
+    {file = "nvidia_cuda_nvcc_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl", hash = "sha256:5d6a0d32fdc7ea39917c20065614ae93add6f577d840233237ff08e9a38f58f0"},
+    {file = "nvidia_cuda_nvcc_cu12-12.9.86-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:44e1eca4d08926193a558d2434b1bf83d57b4d5743e0c431c0c83d51da1df62b"},
+    {file = "nvidia_cuda_nvcc_cu12-12.9.86-py3-none-win_amd64.whl", hash = "sha256:8ed7f0b17dea662755395be029376db3b94fed5cbb17c2d35cc866c5b1b84099"},
+]
+
+[[package]]
+name = "nvidia-cuda-nvrtc-cu12"
+version = "12.9.86"
+description = "NVRTC native runtime libraries"
+optional = true
+python-versions = ">=3"
+groups = ["main"]
+markers = "extra == \"cuda\""
+files = [
+    {file = "nvidia_cuda_nvrtc_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl", hash = "sha256:210cf05005a447e29214e9ce50851e83fc5f4358df8b453155d5e1918094dcb4"},
+    {file = "nvidia_cuda_nvrtc_cu12-12.9.86-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:096d4de6bda726415dfaf3198d4f5c522b8e70139c97feef5cd2ca6d4cd9cead"},
+    {file = "nvidia_cuda_nvrtc_cu12-12.9.86-py3-none-win_amd64.whl", hash = "sha256:72972ebdcf504d69462d3bcd67e7b81edd25d0fb85a2c46d3ea3517666636349"},
+]
+
+[[package]]
+name = "nvidia-cuda-runtime-cu12"
+version = "12.9.79"
+description = "CUDA Runtime native Libraries"
+optional = true
+python-versions = ">=3"
+groups = ["main"]
+markers = "extra == \"cuda\""
+files = [
+    {file = "nvidia_cuda_runtime_cu12-12.9.79-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:83469a846206f2a733db0c42e223589ab62fd2fabac4432d2f8802de4bded0a4"},
+    {file = "nvidia_cuda_runtime_cu12-12.9.79-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:25bba2dfb01d48a9b59ca474a1ac43c6ebf7011f1b0b8cc44f54eb6ac48a96c3"},
+    {file = "nvidia_cuda_runtime_cu12-12.9.79-py3-none-win_amd64.whl", hash = "sha256:8e018af8fa02363876860388bd10ccb89eb9ab8fb0aa749aaf58430a9f7c4891"},
+]
+
+[[package]]
+name = "nvidia-nvjitlink-cu12"
+version = "12.9.86"
+description = "Nvidia JIT LTO Library"
+optional = true
+python-versions = ">=3"
+groups = ["main"]
+markers = "extra == \"cuda\""
+files = [
+    {file = "nvidia_nvjitlink_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl", hash = "sha256:e3f1171dbdc83c5932a45f0f4c99180a70de9bd2718c1ab77d14104f6d7147f9"},
+    {file = "nvidia_nvjitlink_cu12-12.9.86-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:994a05ef08ef4b0b299829cde613a424382aff7efb08a7172c1fa616cc3af2ca"},
+    {file = "nvidia_nvjitlink_cu12-12.9.86-py3-none-win_amd64.whl", hash = "sha256:cc6fcec260ca843c10e34c936921a1c426b351753587fdd638e8cff7b16bb9db"},
 ]
 
 [[package]]
@@ -3465,9 +3561,9 @@ optional = ["python-socks", "wsaccel"]
 test = ["websockets"]
 
 [extras]
-cuda = ["cuda-bindings", "cuda-core", "numba-cuda"]
+cuda = ["numba-cuda"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "f5b07e83cbe4c26e0bfb13d572be403d4047b742d32a0b548622ae91760db1e4"
+content-hash = "6b13cff617dc5ea9dedfa9cbf29e99d5addcf3956ef4b12da44c61eb1ad9903e"
