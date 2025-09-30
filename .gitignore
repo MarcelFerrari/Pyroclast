@@ -255,3 +255,4 @@ pyrightconfig.json
 .idea/
 .results/
 *benchmark_config.json
+local_scripts/
