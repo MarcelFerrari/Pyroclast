@@ -39,7 +39,7 @@ GPU Implementation of the Smoother
 """
 
 
-@cuda.jit(device=True, cache=True, fastmath=use_fast_math_gpu)
+@cuda.jit(cache=True, fastmath=use_fast_math_gpu)
 def jacobi_step_kernel(vx: DeviceNDArray, vy: DeviceNDArray, vx_new: DeviceNDArray, vy_new: DeviceNDArray,
                        etap: DeviceNDArray, etab: DeviceNDArray, vx_rhs: DeviceNDArray, vy_rhs: DeviceNDArray,
                        dx: float, dy: float, relax_v: float, nx1: int, ny1: int):

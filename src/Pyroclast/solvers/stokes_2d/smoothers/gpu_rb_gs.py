@@ -38,7 +38,7 @@ GPU Implementation of the Smoother
 -> Initial copy at the beginning and end of algorithm.
 """
 
-@cuda.jit(cache=True, device=True, fastmath=use_fast_math_gpu)
+@cuda.jit(cache=True, fastmath=use_fast_math_gpu)
 def rb_gs_red_vx(vx: DeviceNDArray, vy: DeviceNDArray,
                  etap: DeviceNDArray, etab: DeviceNDArray, vx_rhs: DeviceNDArray,
                  dx: float, dy: float, relax_v: float, nx1: int, ny1: int):
