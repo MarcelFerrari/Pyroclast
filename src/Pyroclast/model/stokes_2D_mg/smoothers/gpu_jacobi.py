@@ -25,6 +25,10 @@ from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import gpu_inline_loop_body_vx, gpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import gpu_apply_vx_bc_kernel, gpu_apply_vy_bc_kernel
 
+
+use_fast_math_gpu = os.environ.get("PYROCLAST_FASTMATH_GPU", default=False)
+
+
 """
 GPU Implementation of the Smoother
 -> Basic Jacobi.
@@ -34,7 +38,7 @@ GPU Implementation of the Smoother
 """
 
 
-@cuda.jit
+@cuda.jit(device=True, cache=True, fastmath=use_fast_math_gpu)
 def jacobi_step_kernel(vx: DeviceNDArray, vy: DeviceNDArray, vx_new: DeviceNDArray, vy_new: DeviceNDArray,
                        etap: DeviceNDArray, etab: DeviceNDArray, vx_rhs: DeviceNDArray, vy_rhs: DeviceNDArray,
                        dx: float, dy: float, relax_v: float, nx1: int, ny1: int):
