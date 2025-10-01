@@ -23,7 +23,7 @@ import numpy as np
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 
 from Pyroclast.solvers.stokes_2d.smoothers.inline_routines import gpu_inline_loop_body_vx, gpu_inline_loop_body_vy
-from Pyroclast.model.stokes_2D_mg.utils import gpu_apply_vx_bc_kernel, gpu_apply_vy_bc_kernel
+from Pyroclast.solvers.stokes_2d.bc import gpu_apply_vx_bc_kernel, gpu_apply_vy_bc_kernel
 
 
 use_fast_math_gpu = os.environ.get("PYROCLAST_FASTMATH_GPU", default=False)

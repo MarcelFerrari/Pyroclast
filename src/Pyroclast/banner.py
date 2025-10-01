@@ -25,7 +25,3 @@ banner = termcolor.colored(r"""
 def get_banner():
     """Return the ASCII banner string."""
     return banner
-    
-
-if __name__ == '__main__':
-    print_banner()
