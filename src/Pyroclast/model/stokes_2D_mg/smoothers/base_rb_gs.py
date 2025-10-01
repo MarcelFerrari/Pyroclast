@@ -20,6 +20,7 @@ from typing import Type
 import numba as nb
 import numpy as np
 
+from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
@@ -39,45 +40,11 @@ def _vx_rb_gs_sweep(nx1, ny1,
     for i in nb.prange(1, ny1 - 1):
         j_start = 1 if i % 2 == 0 else 2  # Red pass starts on even (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            # 1) Gather local viscosities
-            etaA = etap[i, j]
-            etaB = etap[i, j + 1]
-            eta1 = etab[i - 1, j]
-            eta2 = etab[i, j]
-
-            # TODO lift
-            # 2) Construct coefficients for x-momentum
-            vx1_coeff = 2.0 * etaA / (dx * dx)
-            vx2_coeff = eta1 / (dy * dy)
-            vx3_coeff = -(eta1 + eta2) / (dy * dy) \
-                        - 2.0 * (etaA + etaB) / (dx * dx)
-            vx4_coeff = eta2 / (dy * dy)
-            vx5_coeff = 2.0 * etaB / (dx * dx)
-
-            # Cross terms with vy
-            vy1_coeff = eta1 / (dx * dy)
-            vy2_coeff = -eta2 / (dx * dy)
-            vy3_coeff = -eta1 / (dx * dy)
-            vy4_coeff = eta2 / (dx * dy)
-
-            # 3) Sum neighbor contributions
-            sum_neighbors = (
-                    vx1_coeff * vx[i, j - 1] +
-                    vx2_coeff * vx[i - 1, j] +
-                    vx4_coeff * vx[i + 1, j] +
-                    vx5_coeff * vx[i, j + 1]
-                    +
-                    vy1_coeff * vy[i - 1, j] +
-                    vy2_coeff * vy[i, j] +
-                    vy3_coeff * vy[i - 1, j + 1] +
-                    vy4_coeff * vy[i, j + 1]
-            )
-
-            diag = vx3_coeff
-
             # Gauss-Seidel in-place update
-            vx[i, j] = (1.0 - relax_v) * vx[i, j] \
-                       + relax_v * (rhs[i, j] - sum_neighbors) / diag
+            vx[i, j] = cpu_inline_loop_body_vx(i=i, j=j,
+                                               dx=dx, dy=dy, relax_v=relax_v,
+                                               etab=etab, etap=etap,
+                                               vx=vx, vy=vy, rhs=rhs)
     # Apply vx boundary conditions
     cpu_apply_vx_BC(vx, BC)
 
@@ -87,46 +54,10 @@ def _vx_rb_gs_sweep(nx1, ny1,
     for i in nb.prange(1, ny1 - 1):
         j_start = 2 if i % 2 == 0 else 1  # Black pass starts on odd (i+j)
         for j in range(j_start, nx1 - 2, 2):
-            # 1) Gather local viscosities
-            etaA = etap[i, j]
-            etaB = etap[i, j + 1]
-            eta1 = etab[i - 1, j]
-            eta2 = etab[i, j]
-
-            # TODO lift
-            # 2) Construct coefficients for x-momentum
-            vx1_coeff = 2.0 * etaA / (dx * dx)
-            vx2_coeff = eta1 / (dy * dy)
-            vx3_coeff = -(eta1 + eta2) / (dy * dy) \
-                        - 2.0 * (etaA + etaB) / (dx * dx)
-            vx4_coeff = eta2 / (dy * dy)
-            vx5_coeff = 2.0 * etaB / (dx * dx)
-
-            # Cross terms with vy
-            vy1_coeff = eta1 / (dx * dy)
-            vy2_coeff = -eta2 / (dx * dy)
-            vy3_coeff = -eta1 / (dx * dy)
-            vy4_coeff = eta2 / (dx * dy)
-
-            # 3) Sum neighbor contributions
-
-            sum_neighbors = (
-                    vx1_coeff * vx[i, j - 1] +
-                    vx2_coeff * vx[i - 1, j] +
-                    vx4_coeff * vx[i + 1, j] +
-                    vx5_coeff * vx[i, j + 1]
-                    +
-                    vy1_coeff * vy[i - 1, j] +
-                    vy2_coeff * vy[i, j] +
-                    vy3_coeff * vy[i - 1, j + 1] +
-                    vy4_coeff * vy[i, j + 1]
-            )
-
-            diag = vx3_coeff
-
-            # Gauss-Seidel in-place update
-            vx[i, j] = (1.0 - relax_v) * vx[i, j] \
-                       + relax_v * (rhs[i, j] - sum_neighbors) / diag
+            vx[i, j] = cpu_inline_loop_body_vx(i=i, j=j,
+                                               dx=dx, dy=dy, relax_v=relax_v,
+                                               etab=etab, etap=etap,
+                                               vx=vx, vy=vy, rhs=rhs)
 
     # Apply vx boundary conditions
     cpu_apply_vx_BC(vx, BC)
@@ -150,48 +81,12 @@ def _vy_red_black_gs_sweep(nx1, ny1,
     for i in nb.prange(1, ny1 - 2):
         for j in range(1, nx1 - 1):
             if (i + j) % 2 == 0:
-                # 1) Gather local viscosities
-                etaA = etap[i, j]
-                etaB = etap[i + 1, j]
-                eta1 = etab[i, j - 1]
-                eta2 = etab[i, j]
-
-                # 2) Construct coefficients for y-momentum
-                vy1_coeff = eta1 / (dx * dx)
-                vy2_coeff = 2.0 * etaA / (dy * dy)
-                vy3_coeff = -2.0 * etaA / (dy * dy) \
-                            - 2.0 * etaB / (dy * dy) \
-                            - eta1 / (dx * dx) \
-                            - eta2 / (dx * dx)
-                vy4_coeff = 2.0 * etaB / (dy * dy)
-                vy5_coeff = eta2 / (dx * dx)
-
-                # Cross terms with vx
-                vx1_coeff = eta1 / (dx * dy)
-                vx2_coeff = -eta1 / (dx * dy)
-                vx3_coeff = -eta2 / (dx * dy)
-                vx4_coeff = eta2 / (dx * dy)
-
-                # 3) Sum neighbor contributions
-                sum_neighbors = (
-                    # vy neighbors
-                        vy1_coeff * vy[i, j - 1] +
-                        vy2_coeff * vy[i - 1, j] +
-                        vy4_coeff * vy[i + 1, j] +
-                        vy5_coeff * vy[i, j + 1]
-                        +
-                        # cross terms with vx
-                        vx1_coeff * vx[i, j - 1] +
-                        vx2_coeff * vx[i + 1, j - 1] +
-                        vx3_coeff * vx[i, j] +
-                        vx4_coeff * vx[i + 1, j]
-                )
-
-                diag = vy3_coeff
 
                 # 4) Gauss-Seidel in-place update
-                vy[i, j] = (1.0 - relax_v) * vy[i, j] \
-                           + relax_v * (rhs[i, j] - sum_neighbors) / diag
+                vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j,
+                                                   dx=dx, dy=dy, relax_v=relax_v,
+                                                   etab=etab, etap=etap,
+                                                   vx=vx, vy=vy, rhs=rhs)
     # Apply vy boundary conditions
     cpu_apply_vy_BC(vy, BC)
 
@@ -201,46 +96,11 @@ def _vy_red_black_gs_sweep(nx1, ny1,
     for i in nb.prange(1, ny1 - 2):
         for j in range(1, nx1 - 1):
             if (i + j) % 2 == 1:
-                # 1) Gather viscosities
-                etaA = etap[i, j]
-                etaB = etap[i + 1, j]
-                eta1 = etab[i, j - 1]
-                eta2 = etab[i, j]
-
-                # 2) Coefficients for y-momentum
-                vy1_coeff = eta1 / (dx * dx)
-                vy2_coeff = 2.0 * etaA / (dy * dy)
-                vy3_coeff = -2.0 * etaA / (dy * dy) \
-                            - 2.0 * etaB / (dy * dy) \
-                            - eta1 / (dx * dx) \
-                            - eta2 / (dx * dx)
-                vy4_coeff = 2.0 * etaB / (dy * dy)
-                vy5_coeff = eta2 / (dx * dx)
-
-                # Cross terms with vx
-                vx1_coeff = eta1 / (dx * dy)
-                vx2_coeff = -eta1 / (dx * dy)
-                vx3_coeff = -eta2 / (dx * dy)
-                vx4_coeff = eta2 / (dx * dy)
-
-                # 3) Sum neighbors
-                sum_neighbors = (
-                        vy1_coeff * vy[i, j - 1] +
-                        vy2_coeff * vy[i - 1, j] +
-                        vy4_coeff * vy[i + 1, j] +
-                        vy5_coeff * vy[i, j + 1]
-                        +
-                        vx1_coeff * vx[i, j - 1] +
-                        vx2_coeff * vx[i + 1, j - 1] +
-                        vx3_coeff * vx[i, j] +
-                        vx4_coeff * vx[i + 1, j]
-                )
-
-                diag = vy3_coeff
-
-                # 4) In-place update
-                vy[i, j] = (1.0 - relax_v) * vy[i, j] \
-                           + relax_v * (rhs[i, j] - sum_neighbors) / diag
+                # 4) Gauss-Seidel in-place update
+                vy[i, j] = cpu_inline_loop_body_vy(i=i, j=j,
+                                                   dx=dx, dy=dy, relax_v=relax_v,
+                                                   etab=etab, etap=etap,
+                                                   vx=vx, vy=vy, rhs=rhs)
 
     # Apply vy boundary conditions
     cpu_apply_vy_BC(vy, BC)

@@ -24,6 +24,8 @@ from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
 from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
+
+
 @nb.njit(cache=True, parallel=True)
 def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             dx: float, dy: float,

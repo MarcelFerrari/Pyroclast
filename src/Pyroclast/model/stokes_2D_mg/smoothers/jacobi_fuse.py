@@ -13,17 +13,14 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+import os
+from typing import Type
 
 import numba as nb
 import numpy as np
-import  os
-from typing import Type
-import math
 
-from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
-from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
+from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
-from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs as base_rb_gs
 
 
 @nb.njit(cache=True, parallel=True)
@@ -33,54 +30,32 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                              vx: np.ndarray, vy: np.ndarray,
                              relax_v: float, BC: float,
                              vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
-                             vx_new: np.ndarray, vy_new: np.ndarray,
-                             th: int, cache_a: int) -> tuple[np.ndarray, np.ndarray]:
+                             vx_new: np.ndarray, vy_new: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     # Fast Implementation for big problems
-    if th * cache_a > nx1 - 2:
-        for _ in range(max_iter // 2 * 2):
-            # Work Split
-            for p in nb.prange(th):
-                start_x = p * (nx1 - 2) // th + 1
-                end_x = (nx1 - 1) if p + 1 == th else (p + 1) * (nx1 - 2) // th + 1
+    for _ in range(max_iter // 2 * 2):
+        # Iterate through j, add + 3 for offset for second pass, and vy pass
+        for i in nb.prange(1, ny1 - 1):
+            for j in range(1, nx1 - 1):
+                # Pass vx
+                if 1 <= j <= nx1 - 2 and 1 <= i <= ny1 - 1:
+                    vx_new[i, j] = cpu_inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                           etap=etap, etab=etab,
+                                                           vx=vx, vy=vy, rhs=vx_rhs)
 
-                blocks = math.ceil((end_x - start_x) / cache_a)
+                # Pass vy
+                if 1 <= j <= nx1 - 1 and 1 <= i <= ny1 - 2:
+                    vy_new[i, j] = cpu_inline_loop_body_vy(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                           etap=etap, etab=etab,
+                                                           vx=vx, vy=vy, rhs=vy_rhs)
 
-                # Iterate through the cache blocks
-                for b in range(blocks):
-                    start_bx = start_x + b * cache_a
-                    end_bx = end_x if b + 1 == blocks else start_x + (b + 1) * cache_a
+        cpu_apply_vx_BC(vx_new, BC)
+        cpu_apply_vy_BC(vy_new, BC)
+        vx, vx_new = vx_new, vx
+        vy, vy_new = vy_new, vy
 
-                    # Iterate through j, add + 3 for offset for second pass, and vy pass
-                    for i in range(1, ny1 - 1):
-                        for j in range(start_bx, end_bx):
-                            # Pass vx
-                            if 1 <= j <= nx1 - 2 and 1 <= i <= ny1 - 1:
-                                vx_new[i, j] = cpu_inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                                       etap=etap, etab=etab,
-                                                                       vx=vx, vy=vy, rhs=vx_rhs)
+    return vx, vy
 
-                            # Pass vy
-                            if 1 <= j <= nx1 - 1 and 1 <= i <= ny1 - 2:
-                                vy_new[i, j] = cpu_inline_loop_body_vy(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                                       etap=etap, etab=etab,
-                                                                       vx=vx, vy=vy, rhs=vy_rhs)
 
-            cpu_apply_vx_BC(vx_new, BC)
-            cpu_apply_vy_BC(vy_new, BC)
-            vx, vx_new = vx_new, vx
-            vy, vy_new = vy_new, vy
-
-        return vx, vy
-
-    else:
-        base_rb_gs(nx1=nx1, ny1=ny1,
-                   dx=dx, dy=dy,
-                   etap=etap, etab=etab,
-                   vx=vx, vy=vy,
-                   relax_v=relax_v, BC=BC,
-                   vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
-
-        return vx, vy
 
 
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
@@ -90,7 +65,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     not being available in a production environment.
     """
     import benchmark.benchmark_wrapper as bw
-    from benchmark.benchmark_validators import Stage, Timing, BenchmarkValidatorSmoother
+    from benchmark.benchmark_validators import Stage, Timing
     from benchmark.utils import dtf
 
     module_name = os.path.basename(__file__).replace(".py", "")

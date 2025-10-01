@@ -2,8 +2,8 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: Pyroclast/model/stokes_2D_mg/smoothers/base_jacobi.py
-Description: Added most basic jacobi implementation
+File: Pyroclast/model/stokes_2D_mg/smoothers/jacobi_fuse_cache.py 
+Description: Fused loop Jacobi. No Thread Blocking
 
 Author: Alexander Sotoudeh
 Copyright (c) 2024 Marcel Ferrari.
@@ -13,6 +13,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+import math
 import os
 from typing import Type
 
@@ -20,34 +21,8 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
+from Pyroclast.model.stokes_2D_mg.smoothers.jacobi_fuse import velocity_smoother_jacobi as velocity_smoother_jacobi_base
 from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
-
-
-@nb.njit(cache=True, parallel=True, inline=True)
-def velocity_smoother_jacobi_vx(nx1: int, ny1: int,
-                                dx: float, dy: float, relax_v: float,
-                                etap: np.ndarray, etab: np.ndarray,
-                                vx: np.ndarray, vy: np.ndarray,
-                                vx_rhs: np.ndarray, vx_new: np.ndarray):
-
-    for i in nb.prange(1, ny1 - 1):
-        for j in range(1, nx1 - 2):
-            vx_new[i, j] = cpu_inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                   etap=etap, etab=etab,
-                                                   vx=vx, vy=vy, rhs=vx_rhs)
-
-
-@nb.njit(cache=True, parallel=True, inline=True)
-def velocity_smoother_jacobi_vy(nx1: int, ny1: int,
-                                dx: float, dy: float, relax_v: float,
-                                etap: np.ndarray, etab: np.ndarray,
-                                vx: np.ndarray, vy: np.ndarray,
-                                vy_rhs: np.ndarray, vy_new: np.ndarray):
-    for i in nb.prange(1, ny1 - 2):
-        for j in range(1, nx1 - 1):
-            vy_new[i, j] = cpu_inline_loop_body_vy(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
-                                                   etap=etap, etab=etab,
-                                                   vx=vx, vy=vy, rhs=vy_rhs)
 
 
 @nb.njit(cache=True, parallel=True)
@@ -57,28 +32,54 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                              vx: np.ndarray, vy: np.ndarray,
                              relax_v: float, BC: float,
                              vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
-                             vx_new: np.ndarray, vy_new: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-
+                             vx_new: np.ndarray, vy_new: np.ndarray,
+                             th: int, cache_a: int) -> tuple[np.ndarray, np.ndarray]:
     # Fast Implementation for big problems
-    for _ in range(max_iter // 2 * 2):
-        velocity_smoother_jacobi_vx(nx1=nx1, ny1=ny1,
-                                    dx=dx, dy=dy, relax_v=relax_v,
-                                    etap=etap, etab=etab,
-                                    vx=vx, vy=vy, vx_new=vx_new, vx_rhs=vx_rhs)
+    if th * cache_a > nx1 - 2:
+        for _ in range(max_iter // 2 * 2):
+            # Work Split
+            for p in nb.prange(th):
+                start_x = p * (nx1 - 2) // th + 1
+                end_x = (nx1 - 1) if p + 1 == th else (p + 1) * (nx1 - 2) // th + 1
 
-        velocity_smoother_jacobi_vy(nx1=nx1, ny1=ny1,
-                                    dx=dx, dy=dy, relax_v=relax_v,
-                                    etap=etap, etab=etab,
-                                    vx=vx, vy=vy, vy_new=vy_new, vy_rhs=vy_rhs)
+                blocks = math.ceil((end_x - start_x) / cache_a)
 
-        cpu_apply_vx_BC(vx_new, BC)
-        cpu_apply_vy_BC(vy_new, BC)
-        vx, vx_new = vx_new, vx
-        vy, vy_new = vy_new, vy
+                # Iterate through the cache blocks
+                for b in range(blocks):
+                    start_bx = start_x + b * cache_a
+                    end_bx = end_x if b + 1 == blocks else start_x + (b + 1) * cache_a
 
-    return vx, vy
+                    # Iterate through j, add + 3 for offset for second pass, and vy pass
+                    for i in range(1, ny1 - 1):
+                        for j in range(start_bx, end_bx):
+                            # Pass vx
+                            if 1 <= j <= nx1 - 2 and 1 <= i <= ny1 - 1:
+                                vx_new[i, j] = cpu_inline_loop_body_vx(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                                       etap=etap, etab=etab,
+                                                                       vx=vx, vy=vy, rhs=vx_rhs)
 
+                            # Pass vy
+                            if 1 <= j <= nx1 - 1 and 1 <= i <= ny1 - 2:
+                                vy_new[i, j] = cpu_inline_loop_body_vy(i=i, j=j, dx=dx, dy=dy, relax_v=relax_v,
+                                                                       etap=etap, etab=etab,
+                                                                       vx=vx, vy=vy, rhs=vy_rhs)
 
+            cpu_apply_vx_BC(vx_new, BC)
+            cpu_apply_vy_BC(vy_new, BC)
+            vx, vx_new = vx_new, vx
+            vy, vy_new = vy_new, vy
+
+        return vx, vy
+
+    else:
+        velocity_smoother_jacobi_base(nx1=nx1, ny1=ny1,
+                                      dx=dx, dy=dy,
+                                      etap=etap, etab=etab,
+                                      vx=vx, vy=vy, vx_new=vx_new, vy_new=vy_new,
+                                      relax_v=relax_v, BC=BC,
+                                      vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
+
+        return vx, vy
 
 
 
@@ -108,6 +109,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                 self.vy_new = np.zeros((self.nx1, self.ny1))
 
         def benchmark_preamble(self):
+            th = nb.get_num_threads()
             start = dtf()
             velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
                                      dx=self.dx, dy=self.dy,
@@ -115,7 +117,8 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                      vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
                                      relax_v=self.relax_v, BC=self.boundary_condition,
                                      max_iter=1,
-                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                     th=th, cache_a=self.cache_block_size_1)
             end = dtf()
 
             # Add the timing information
@@ -134,6 +137,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             Perform the actual run of the benchmark.
             """
+            th = nb.get_num_threads()
             start = dtf()
             velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
                                      dx=self.dx, dy=self.dy,
@@ -141,7 +145,8 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                      vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
                                      relax_v=self.relax_v, BC=self.boundary_condition,
                                      max_iter=1,
-                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                     th=th, cache_a=self.cache_block_size_1)
             end = dtf()
 
             # Add the timing information

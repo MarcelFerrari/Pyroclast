@@ -14,16 +14,16 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 
-import numba as nb
-import numpy as np
 import  os
 from typing import Type
 import math
 
-from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
-from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
-from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
+import numba as nb
+import numpy as np
+
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
+from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
 @nb.njit(cache=True, parallel=True)

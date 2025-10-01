@@ -13,17 +13,15 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+import os
+from typing import Type
 
 import numba as nb
 import numpy as np
-import  os
-from typing import Type
-import math
 
-from Pyroclast.model.stokes_2D_mg.smoothers.vx import cpu_inline_loop_body_vx
-from Pyroclast.model.stokes_2D_mg.smoothers.vy import cpu_inline_loop_body_vy
-from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
+from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
+from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
 @nb.njit(cache=True, parallel=True)
@@ -78,7 +76,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     not being available in a production environment.
     """
     import benchmark.benchmark_wrapper as bw
-    from benchmark.benchmark_validators import Stage, Timing, BenchmarkValidatorSmoother
+    from benchmark.benchmark_validators import Stage, Timing
     from benchmark.utils import dtf
 
     module_name = os.path.basename(__file__).replace(".py", "")

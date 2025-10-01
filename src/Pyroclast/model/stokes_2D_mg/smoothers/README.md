@@ -4,12 +4,10 @@ As this project is co-developed as part of Marcel Ferrari's Master's Thesis and 
 ownership and modularity of a given submodule.
 
 The smoother package will contain all implementations of the smoother routine that are part of the Bachelor's Thesis:
-```python
-def _vx_rb_gs_sweep(*args, **kwargs):
-    ...
 
-def _vy_red_black_gs_sweep(*args, **kwargs):
-    ...
+The structure of the repo is subject to finalization. The implementations serving sanity checks, the broken 
+implementations and the slow implementations have been removed. Only the fastest, correct and sensible implementations 
+remain with a naive implementation for reference.
 
 def velocity_smoother(nx1, ny1,
                       dx, dy,
@@ -105,3 +103,6 @@ Jacobi:
 | `i_stag_mk_rb_gs`      | T          | T                     | F                     | F                 | T           | F      | F      | T            | Call to vx.mk_sg_vx_rb_gs_v1 and vy.mk_sg_vy_rb_gs_v1, Thread Blocking, pass offset 2, staggered-red-back |
 | `i_stag_rb_gs_v1`      | T          | F                     | F                     | F                 | T           | F      | F      | T            | Call to vx.sg_vx_rb_gs_v1 and vy.sg_vy_rb_gs_v1, pass offset 2, staggered-red-back                        |
 | `i_stag_rb_gs_v3`      | T          | T                     | F                     | F                 | T           | F      | F      | T            | Call to vx.sg_vx_rb_gs_v3 and vy.sg_vy_rb_gs_v3, pass offset 2, staggered-red-back                        |
+
+
+# TODO more info about the specific implementations
