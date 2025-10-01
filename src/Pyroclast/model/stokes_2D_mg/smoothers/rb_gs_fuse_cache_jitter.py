@@ -26,7 +26,10 @@ from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 from Pyroclast.model.stokes_2D_mg.smoothers.base_rb_gs import velocity_smoother_rb_gs
 
 
-@nb.njit(cache=True, parallel=True)
+use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
+
+
+@nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
 def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             dx: float, dy: float,
                             etap: np.ndarray, etab: np.ndarray,

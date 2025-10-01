@@ -17,6 +17,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import  os
 from typing import Type
 import math
+import os
 
 import numba as nb
 import numpy as np
@@ -26,7 +27,10 @@ from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import cpu_inline_lo
 from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
-@nb.njit(cache=True, parallel=True)
+use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
+
+
+@nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
 def velocity_smoother_jacobi(nx1: int, ny1: int,
                              dx: float, dy: float,
                              etap: np.ndarray, etab: np.ndarray,
@@ -88,3 +92,78 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                                 vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
 
         return vx, vy
+
+
+# INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
+def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"], Type["BenchmarkVY"]]:
+    """
+    Returns Benchmark Classes needed for benchmarking. Done via factory to avoid issues with the `benchmark` package
+    not being available in a production environment.
+    """
+    import benchmark.benchmark_wrapper as bw
+    from benchmark.benchmark_validators import Stage, Timing
+    from benchmark.utils import dtf
+
+    module_name = os.path.basename(__file__).replace(".py", "")
+
+    class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
+        needs_cache_block_size_1: bool = True
+
+        def __init__(self, arguments: bw.BenchmarkValidatorSmoother):
+            super().__init__(arguments=arguments)
+
+            if self.vx_new is None:
+                self.vx_new = np.zeros((self.nx1, self.ny1))
+
+            if self.vy_new is None:
+                self.vy_new = np.zeros((self.nx1, self.ny1))
+
+        def benchmark_preamble(self):
+            th = nb.get_num_threads()
+            start = dtf()
+            velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
+                                     dx=self.dx, dy=self.dy,
+                                     etap=self.eta_p, etab=self.eta_b,
+                                     vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
+                                     relax_v=self.relax_v, BC=self.boundary_condition,
+                                     max_iter=1,
+                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                     th=th, cache_a=self.cache_block_size_1)
+            end = dtf()
+
+            # Add the timing information
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
+                                       stage=Stage.PREAMBLE,
+                                       start=start,
+                                       end=end))
+
+        def benchmark_epilogue(self):
+            """
+            No post-processing
+            """
+            pass
+
+        def run_benchmark(self):
+            """
+            Perform the actual run of the benchmark.
+            """
+            th = nb.get_num_threads()
+            start = dtf()
+            velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
+                                     dx=self.dx, dy=self.dy,
+                                     etap=self.eta_p, etab=self.eta_b,
+                                     vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
+                                     relax_v=self.relax_v, BC=self.boundary_condition,
+                                     max_iter=1,
+                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                     th=th, cache_a=self.cache_block_size_1)
+            end = dtf()
+
+            # Add the timing information
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
+                                       stage=Stage.BENCHMARK,
+                                       start=start,
+                                       end=end))
+
+    # INFO: Methods can be benchmarked in other places. Here is only the full implementation.
+    return BaseImplementationBenchmarkSmoother, None, None

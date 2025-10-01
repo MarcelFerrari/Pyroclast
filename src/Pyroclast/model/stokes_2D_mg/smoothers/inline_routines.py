@@ -15,9 +15,13 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 
 import importlib.metadata
+import os
 
 import numba as nb
 import numpy as np
+
+use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
+use_fast_math_gpu = os.environ.get("PYROCLAST_FASTMATH_GPU", default=False)
 
 
 def base_compute_coeffs_vx(i: int, j: int,
@@ -203,13 +207,21 @@ def base_compute_neighbor_sum_vy(i: int, j: int, relax_v: float,
 
 
 # Decorating functions and preparing them for export
-cpu_compute_coeffs_vx = nb.njit(cache=True, inline="always")(base_compute_coeffs_vx)
-cpu_compute_coeffs_vy = nb.njit(cache=True, inline="always")(base_compute_coeffs_vy)
-cpu_compute_neighbor_sum_vx = nb.njit(cache=True, inline="always")(base_compute_neighbor_sum_vx)
-cpu_compute_neighbor_sum_vy = nb.njit(cache=True, inline="always")(base_compute_neighbor_sum_vy)
+cpu_compute_coeffs_vx = nb.njit(cache=True,
+                                inline="always",
+                                fastmath=use_fast_math_cpu)(base_compute_coeffs_vx)
+cpu_compute_coeffs_vy = nb.njit(cache=True,
+                                inline="always",
+                                fastmath=use_fast_math_cpu)(base_compute_coeffs_vy)
+cpu_compute_neighbor_sum_vx = nb.njit(cache=True,
+                                      inline="always",
+                                      fastmath=use_fast_math_cpu)(base_compute_neighbor_sum_vx)
+cpu_compute_neighbor_sum_vy = nb.njit(cache=True,
+                                      inline="always",
+                                      fastmath=use_fast_math_cpu)(base_compute_neighbor_sum_vy)
 
 
-@nb.njit(cache=True, inline="always")
+@nb.njit(cache=True, inline="always", fastmath=use_fast_math_cpu)
 def cpu_inline_loop_body_vx(i: int, j: int,
                             dx: float, dy: float, relax_v: float,
                             etap: np.ndarray, etab: np.ndarray,
@@ -227,7 +239,7 @@ def cpu_inline_loop_body_vx(i: int, j: int,
                                        vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4, vx_c5=vx_c5)
 
 
-@nb.njit(cache=True, inline="always")
+@nb.njit(cache=True, inline="always", fastmath=use_fast_math_cpu)
 def cpu_inline_loop_body_vy(i: int, j: int,
                             dx: float, dy: float, relax_v: float,
                             etap: np.ndarray, etab: np.ndarray,
@@ -260,13 +272,25 @@ if NUMBA_CUDA_AVAIL:
     import numba.cuda as cuda
 
     # Defining base functions by decorating them with cuda
-    gpu_compute_coeffs_vx = cuda.jit(cache=True, inline="always", device=True)(base_compute_coeffs_vx)
-    gpu_compute_coeffs_vy = cuda.jit(cache=True, inline="always", device=True)(base_compute_coeffs_vy)
-    gpu_compute_neighbor_sum_vx = cuda.jit(cache=True, inline="always", device=True)(base_compute_neighbor_sum_vx)
-    gpu_compute_neighbor_sum_vy = cuda.jit(cache=True, inline="always", device=True)(base_compute_neighbor_sum_vy)
+    gpu_compute_coeffs_vx = cuda.jit(cache=True,
+                                     inline="always",
+                                     device=True,
+                                     fastmath=use_fast_math_gpu)(base_compute_coeffs_vx)
+    gpu_compute_coeffs_vy = cuda.jit(cache=True,
+                                     inline="always",
+                                     device=True,
+                                     fastmath=use_fast_math_gpu)(base_compute_coeffs_vy)
+    gpu_compute_neighbor_sum_vx = cuda.jit(cache=True,
+                                           inline="always",
+                                           device=True,
+                                           fastmath=use_fast_math_gpu)(base_compute_neighbor_sum_vx)
+    gpu_compute_neighbor_sum_vy = cuda.jit(cache=True,
+                                           inline="always",
+                                           device=True,
+                                           fastmath=use_fast_math_gpu)(base_compute_neighbor_sum_vy)
 
 
-    @cuda.jit(cache=True, inline="always", device=True)
+    @cuda.jit(cache=True, inline="always", device=True, fastmath=use_fast_math_gpu)
     def gpu_inline_loop_body_vx(i: int, j: int,
                                 dx: float, dy: float, relax_v: float,
                                 etap: np.ndarray, etab: np.ndarray,
@@ -283,7 +307,7 @@ if NUMBA_CUDA_AVAIL:
                                            vy_c3=vy_c3, vy_c2=vy_c2, vy_c4=vy_c4, vy_c1=vy_c1,
                                            vx_c1=vx_c1, vx_c2=vx_c2, vx_c3=vx_c3, vx_c4=vx_c4, vx_c5=vx_c5)
 
-    @cuda.jit(cache=True, inline="always", device=True)
+    @cuda.jit(cache=True, inline="always", device=True, fastmath=use_fast_math_gpu)
     def gpu_inline_loop_body_vy(i: int, j: int,
                                 dx: float, dy: float, relax_v: float,
                                 etap: np.ndarray, etab: np.ndarray,

@@ -13,6 +13,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+
 import math
 import os
 from typing import Type
@@ -25,7 +26,10 @@ from Pyroclast.model.stokes_2D_mg.smoothers.jacobi_fuse import velocity_smoother
 from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
-@nb.njit(cache=True, parallel=True)
+use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
+
+
+@nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
 def velocity_smoother_jacobi(nx1: int, ny1: int,
                              dx: float, dy: float,
                              etap: np.ndarray, etab: np.ndarray,
@@ -80,8 +84,6 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                                       vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
 
         return vx, vy
-
-
 
 
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available

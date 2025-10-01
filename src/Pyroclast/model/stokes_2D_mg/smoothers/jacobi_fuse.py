@@ -23,7 +23,10 @@ from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import cpu_inline_lo
 from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
-@nb.njit(cache=True, parallel=True)
+use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
+
+
+@nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
 def velocity_smoother_jacobi(nx1: int, ny1: int,
                              dx: float, dy: float,
                              etap: np.ndarray, etab: np.ndarray,
