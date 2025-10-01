@@ -79,10 +79,6 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
     return vx, vy
 
 
-
-
-
-
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
 def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"], Type["BenchmarkVY"]]:
     """
