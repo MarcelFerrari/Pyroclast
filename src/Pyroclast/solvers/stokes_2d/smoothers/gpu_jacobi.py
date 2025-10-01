@@ -27,6 +27,7 @@ from Pyroclast.solvers.stokes_2d.bc import gpu_apply_vx_bc_kernel, gpu_apply_vy_
 
 
 use_fast_math_gpu = os.environ.get("PYROCLAST_FASTMATH_GPU", default=False)
+IS_GPU = True
 
 
 """
