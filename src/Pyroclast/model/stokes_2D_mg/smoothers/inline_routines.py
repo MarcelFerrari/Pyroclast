@@ -116,6 +116,18 @@ def base_compute_coeffs_vy(i: int, j: int,
                            dx: float, dy: float,
                            etap: np.ndarray, etab: np.ndarray) \
         -> tuple[float, float, float, float, float, float, float, float, float]:
+    """
+    Fetch the coefficients based on the viscosity for the iteration of a given vy cell.
+
+    :param i: Index in y direction.
+    :param j: Index in x direction.
+    :param dx: Step size in x direction.
+    :param dy: Step size in y direction.
+    :param etap: Viscosity on pressure nodes.
+    :param etab: Viscosity on basic nodes.
+
+    :returns coefficients for vy [1-5] according to literature, coefficients for vx [1-4] according to literature
+    """
     # 1) Gather local viscosities
     etaA = etap[i, j]
     etaB = etap[i + 1, j]
@@ -145,6 +157,30 @@ def base_compute_neighbor_sum_vy(i: int, j: int, relax_v: float,
                                  vy_c1: float, vy_c2: float, vy_c3: float, vy_c4: float, vy_c5: float,
                                  vx_c1: float, vx_c2: float, vx_c3: float, vx_c4: float,
                                  vx: np.ndarray, vy: np.ndarray, rhs: np.ndarray) -> float:
+    """
+    Based on the coefficients, update the current cell of the vx grid.
+    :param i: Index in y direction.
+    :param j: Index in x direction.
+
+    :param relax_v: Weight factor of new value and old value at given grid location.
+    :param vy_c1: coeff vy 1
+    :param vy_c2: coeff vy 2
+    :param vy_c3: coeff vy 3
+    :param vy_c4: coeff vy 4
+    :param vy_c5: coeff vy 5
+
+    :param vx_c1: coeff vx 1
+    :param vx_c2: coeff vx 2
+    :param vx_c3: coeff vx 3
+    :param vx_c4: coeff vx 4
+
+    :param vx: The current vx array
+    :param vy: The current vy array
+
+    :param rhs: The target right hand side of the equation
+
+    :returns the updated value for vy (update of the array is subject to the choice of algorithm)
+    """
     # 3) Sum neighbor contributions
     sum_neighbors = (
         # vy neighbors
@@ -166,6 +202,7 @@ def base_compute_neighbor_sum_vy(i: int, j: int, relax_v: float,
     return (1.0 - relax_v) * vy[i, j] + relax_v * (rhs[i, j] - sum_neighbors) / diag
 
 
+# Decorating functions and preparing them for export
 cpu_compute_coeffs_vx = nb.njit(cache=True, inline="always")(base_compute_coeffs_vx)
 cpu_compute_coeffs_vy = nb.njit(cache=True, inline="always")(base_compute_coeffs_vy)
 cpu_compute_neighbor_sum_vx = nb.njit(cache=True, inline="always")(base_compute_neighbor_sum_vx)
