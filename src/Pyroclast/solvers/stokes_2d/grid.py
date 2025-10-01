@@ -27,7 +27,7 @@ except ImportError:
 
 
 from .smoother import velocity_smoother, velocity_jacobi_smoother
-from .bc import apply_vx_BC, apply_vy_BC
+from .bc import cpu_apply_vy_BC, cpu_apply_vx_BC
 from .implicit_operators import uzawa_vx_residual, uzawa_vy_residual
 
 class Grid:
@@ -154,8 +154,8 @@ class Grid:
 
 
     def apply_bc(self) -> None:
-        apply_vx_BC(self.vx, self.BC)
-        apply_vy_BC(self.vy, self.BC)
+        cpu_apply_vx_BC(self.vx, self.BC)
+        cpu_apply_vy_BC(self.vy, self.BC)
 
     def reset_solution(self) -> None:
         """Reset the solution fields to zero (but not material properties)."""
