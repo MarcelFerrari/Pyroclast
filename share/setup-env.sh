@@ -18,6 +18,7 @@
 # Get the current directory where the script is located
 SCRIPT_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 BIN_PATH=$(realpath "$SCRIPT_PATH/../bin/")
+export PYTHONPATH="$SCRIPT_PATH/../src/:$PYTHONPATH"
 
 # Check if the file is executable, if not, make it executable
 if [ ! -x "$BIN_PATH/pyroclast" ]; then
