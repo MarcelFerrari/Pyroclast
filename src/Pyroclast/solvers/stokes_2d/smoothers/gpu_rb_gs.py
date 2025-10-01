@@ -22,7 +22,7 @@ import numba.cuda as cuda
 import numpy as np
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 
-from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import gpu_inline_loop_body_vx, gpu_inline_loop_body_vy
+from Pyroclast.solvers.stokes_2d.smoothers.inline_routines import gpu_inline_loop_body_vx, gpu_inline_loop_body_vy
 from Pyroclast.model.stokes_2D_mg.utils import gpu_apply_vx_bc_kernel, gpu_apply_vy_bc_kernel
 
 
