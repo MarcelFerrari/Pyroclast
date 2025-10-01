@@ -18,6 +18,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import argparse
 import importlib
+import importlib.metadata
 import itertools
 import os
 import warnings
@@ -147,7 +148,7 @@ bench_opt.add_argument(f"-B", "--no-burn-in",
 # ======================================================================================================================
 
 
-def burn_in():
+def burn_in_cpu():
     """
     Run base_rb_gs vx routine for a given amount of time to preheat the cpu.
     """
@@ -177,7 +178,7 @@ def burn_in():
         cache_block_size_2=None,
     )
 
-    print(f"Starting Burn-In")
+    print(f"Starting CPU Burn-In")
 
     # Do burn in
     start = dtf()
@@ -188,11 +189,69 @@ def burn_in():
     print(f"Burn in for {timeout} seconds done.")
 
 
+NUMBA_CUDA_AVAIL = False
+
+
+try:
+    importlib.metadata.version("numba-cuda")
+    NUMBA_CUDA_AVAIL = True
+except importlib.metadata.PackageNotFoundError:
+    pass
+
+
+# If Numba Cuda is available, prepare the decorators for the gpu exports as well.
+if NUMBA_CUDA_AVAIL:
+    def burn_in_gpu():
+        """
+        Run base_rb_gs vx routine for a given amount of time to preheat the cpu.
+        """
+        module = importlib.import_module(f"Pyroclast.solvers.stokes_2D_mg.smoothers.gpu_jacobi")
+        factory = getattr(module, "benchmark_factory")
+
+        # Annotated factory
+        factory: Callable[[], tuple[Optional[Type[BenchmarkSmoother]],
+                                    Optional[Type[BenchmarkVX]],
+                                    Optional[Type[BenchmarkVY]]]]
+
+        # Execute factory
+        bm_s, bm_vx, bm_vy = factory()
+
+        # Attempt to get the config
+        try:
+            cfg = config.get_config()
+        except FileNotFoundError:
+            cfg = None
+
+        timeout = cfg.burn_in_timeout if cfg is not None else 60
+
+        args = BenchmarkValidatorSmoother(
+            nx=4096, ny=4096,
+            max_iter=1024,
+            profile=False, samples=15,
+            cache_block_size_1=None,
+            cache_block_size_2=None,
+            iter_unroll=None
+        )
+
+        print(f"Starting GPU Burn-In")
+
+        # Do burn in
+        start = dtf()
+        while (dtf() - start).total_seconds() < timeout:
+            print(f"{timeout - (dtf() - start).total_seconds()} seconds remaining")
+            bm_s(args).benchmark()
+
+        print(f"Burn in for {timeout} seconds done.")
+else:
+    raise ImportError("numba-cuda needed for gpu support. Try installing Pyroclast[cuda]")
+
+
 def benchmark_smoother(nx: int, ny: int,
                        max_iter: int,
                        profiling: bool, samples: int,
                        cache_block_size_1: int, cache_block_size_2: int,
                        module_name: str,
+                       is_gpu: bool,
                        cpu_count: int,
                        iter_unroll: int,
                        benchmark: Type[BenchmarkSmoother]) -> BenchmarkResults:
@@ -223,6 +282,7 @@ def benchmark_smoother(nx: int, ny: int,
         input_model=args,
         timings=local_benchmark.timings,
         cpu_count=cpu_count,
+        is_gpu=is_gpu
     )
 
 
@@ -231,6 +291,7 @@ def benchmark_vx(nx: int, ny: int,
                  profiling: bool, samples: int,
                  cache_block_size_1: int, cache_block_size_2: int,
                  module_name: str,
+                 is_gpu: bool,
                  cpu_count: int,
                  iter_unroll: int,
                  benchmark: Type[BenchmarkVX]) -> BenchmarkResults:
@@ -261,6 +322,7 @@ def benchmark_vx(nx: int, ny: int,
         input_model=args,
         timings=local_benchmark.timings,
         cpu_count=cpu_count,
+        is_gpu=is_gpu
     )
 
 
@@ -269,6 +331,7 @@ def benchmark_vy(nx: int, ny: int,
                  profiling: bool, samples: int,
                  cache_block_size_1: int, cache_block_size_2: int,
                  module_name: str,
+                 is_gpu: bool,
                  cpu_count: int,
                  iter_unroll: int,
                  benchmark: Type[BenchmarkVY]) -> BenchmarkResults:
@@ -299,6 +362,7 @@ def benchmark_vy(nx: int, ny: int,
         input_model=args,
         timings=local_benchmark.timings,
         cpu_count=cpu_count,
+        is_gpu=is_gpu
     )
 
 
@@ -332,6 +396,8 @@ def benchmark_single_module(module_name: str,
                                 Optional[Type[BenchmarkVX]],
                                 Optional[Type[BenchmarkVY]]]]
 
+    is_gpu = getattr(module, "IS_GPU", False)
+
     # Execute factory
     bm_s, bm_vx, bm_vy = factory()
 
@@ -353,6 +419,7 @@ def benchmark_single_module(module_name: str,
                                               profiling=profiling, samples=samples,
                                               cache_block_size_1=ca, cache_block_size_2=cb,
                                               module_name=module_name,
+                                              is_gpu=is_gpu,
                                               cpu_count=cc,
                                               benchmark=bm_s,
                                               iter_unroll=iu))
@@ -375,6 +442,7 @@ def benchmark_single_module(module_name: str,
                                         profiling=profiling, samples=samples,
                                         cache_block_size_1=ca, cache_block_size_2=cb,
                                         module_name=module_name,
+                                        is_gpu=is_gpu,
                                         cpu_count=cc,
                                         benchmark=bm_vx,
                                         iter_unroll=iu))
@@ -397,6 +465,7 @@ def benchmark_single_module(module_name: str,
                                         profiling=profiling, samples=samples,
                                         cache_block_size_1=ca, cache_block_size_2=cb,
                                         module_name=module_name,
+                                        is_gpu=is_gpu,
                                         cpu_count=cc,
                                         benchmark=bm_vy,
                                         iter_unroll=iu))
@@ -468,7 +537,7 @@ def benchmark_lister() -> tuple[list[str], list[str], list[str]]:
     :returns: vx benchmarks, vy benchmarks, smoother benchmarks
     """
     smoothers_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..",
-                                                 "src", "Pyroclast", "model", "stokes_2D_mg", "smoothers"))
+                                                 "src", "Pyroclast", "solver", "stokes_2d", "smoothers"))
 
     vx_benchmarks = []
     vy_benchmarks = []
@@ -493,7 +562,7 @@ def benchmark_lister() -> tuple[list[str], list[str], list[str]]:
                         .replace(".py", "")
                         .replace("/", "."))
 
-            module = importlib.import_module("Pyroclast.solvers.stokes_2D_mg.smoothers." + mod_path)
+            module = importlib.import_module("Pyroclast.solvers.stokes_2d.smoothers." + mod_path)
 
             if not hasattr(module, "benchmark_factory"):
                 continue
@@ -515,6 +584,30 @@ def benchmark_lister() -> tuple[list[str], list[str], list[str]]:
     smoother_benchmarks.sort()
 
     return vx_benchmarks, vy_benchmarks, smoother_benchmarks
+
+
+def partition_benchmark(modules: list[str]) -> tuple[list[str], list[str]]:
+    """
+    Partition the benchmarks into cpu benchmarks and gpu benchmarks.
+    """
+    cpu_modules = []
+    gpu_modules = []
+
+    for module_path in modules:
+        module = importlib.import_module("Pyroclast.solvers.stokes_2d.smoothers." + module_path)
+
+        if not hasattr(module, "benchmark_factory"):
+            continue
+
+        if getattr(module, "IS_GPU", False):
+            gpu_modules.append(module_path)
+        else:
+            cpu_modules.append(module_path)
+
+    cpu_modules.sort()
+    gpu_modules.sort()
+
+    return cpu_modules, gpu_modules
 
 
 # ======================================================================================================================
@@ -553,6 +646,7 @@ def perform_benchmark_run(arg_dict: dict):
     all_res = []
     dirty = False
 
+    # Get the git information
     branch, c_hash, c_msg = get_git_info()
 
     # Validate iter unroll
@@ -603,20 +697,42 @@ def perform_benchmark_run(arg_dict: dict):
             dirty = True
 
     nb.config.THREADING_LAYER = "omp"
+
+    cpu_modules, gpu_modules = partition_benchmark(arg_dict["modules"])
+
     # Start of overall benchmark
     start = dtf()
 
-    if not arg_dict["no_burn_in"]:
-        burn_in()
+    # Run CPU Benchmarks
+    if len(cpu_modules) > 0:
+        if not arg_dict["no_burn_in"]:
+            burn_in_cpu()
 
-    # Run benchmark on modules and dimension list
-    for module in sorted(arg_dict["modules"]):
-        all_res.extend(benchmark_single_module(
-            module_name=module,
-            dim_list=dim_list, max_iter=arg_dict["iterations"],
-            profiling=arg_dict["profiling"], samples=arg_dict["samples"],
-            cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"], iter_unroll=arg_dict["unroll"],
-            test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
+        # Run benchmark on modules and dimension list
+        for module in sorted(cpu_modules):
+            all_res.extend(benchmark_single_module(
+                module_name=module,
+                dim_list=dim_list, max_iter=arg_dict["iterations"],
+                profiling=arg_dict["profiling"], samples=arg_dict["samples"],
+                cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"], iter_unroll=arg_dict["unroll"],
+                test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
+
+    # Run GPU benchmarks
+    if len(gpu_modules) > 0:
+        if not NUMBA_CUDA_AVAIL:
+            raise ImportError("numba-cuda needed for gpu support. Try installing Pyroclast[cuda]")
+
+        if not arg_dict["no_burn_in"]:
+            burn_in_gpu()
+
+        # Run benchmark on modules and dimension list
+        for module in sorted(gpu_modules):
+            all_res.extend(benchmark_single_module(
+                module_name=module,
+                dim_list=dim_list, max_iter=arg_dict["iterations"],
+                profiling=arg_dict["profiling"], samples=arg_dict["samples"],
+                cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"], iter_unroll=arg_dict["unroll"],
+                test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
 
     # End of overall benchmark
     end = dtf()
