@@ -193,6 +193,7 @@ class BenchmarkResults(BaseModel):
     module: str = Field(..., description="Which is being benchmarked")
     cpu_count: int = Field(..., gt=0, description="Number of CPU cores to use"),
     benchmark_type: BenchmarkType = Field(..., description="Which benchmark of the module is executed")
+    is_gpu: bool = Field(..., description="Whether the module defines a benchmark that runs on GPU or on CPU")
 
     @model_validator(mode="after")
     def verify_timing_stages(self) -> Self:
