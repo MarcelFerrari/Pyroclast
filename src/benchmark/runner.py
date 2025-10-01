@@ -205,7 +205,7 @@ if NUMBA_CUDA_AVAIL:
         """
         Run base_rb_gs vx routine for a given amount of time to preheat the cpu.
         """
-        module = importlib.import_module(f"Pyroclast.solvers.stokes_2D_mg.smoothers.gpu_jacobi")
+        module = importlib.import_module(f"Pyroclast.solvers.stokes_2d.smoothers.gpu_jacobi")
         factory = getattr(module, "benchmark_factory")
 
         # Annotated factory
