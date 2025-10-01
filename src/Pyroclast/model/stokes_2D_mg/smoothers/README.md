@@ -106,3 +106,7 @@ Jacobi:
 
 
 # TODO more info about the specific implementations
+
+Environment Variables:
+- `PYROCLAST_FASTMATH_CPU` - enables fastmath for the cpu functions
+- `PYROCLAST_FASTMATH_GPU` - enables fastmath for the gpu functions

@@ -24,7 +24,10 @@ from Pyroclast.model.stokes_2D_mg.smoothers.inline_routines import cpu_inline_lo
 from Pyroclast.model.stokes_2D_mg.utils import cpu_apply_vx_BC, cpu_apply_vy_BC
 
 
-@nb.njit(cache=True, parallel=True)
+use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
+
+
+@nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
 def _vx_rb_gs_sweep(nx1, ny1,
                     dx, dy,
                     etap, etab,
@@ -65,7 +68,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
     return vx
 
 
-@nb.njit(cache=True, parallel=True)
+@nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
 def _vy_red_black_gs_sweep(nx1, ny1,
                            dx, dy,
                            etap, etab,
@@ -108,7 +111,7 @@ def _vy_red_black_gs_sweep(nx1, ny1,
     return vy
 
 
-@nb.njit(cache=True)
+@nb.njit(cache=True, fastmath=use_fast_math_cpu)
 def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             dx: float, dy: float,
                             etap: np.ndarray, etab: np.ndarray,
