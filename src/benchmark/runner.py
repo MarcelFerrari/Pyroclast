@@ -381,7 +381,7 @@ def benchmark_single_module(module_name: str,
     Run the benchmark for a single module. Requires this module to have defined a benchmark factory.
     """
     results = []
-    module = importlib.import_module(f"Pyroclast.model.stokes_2D_mg.smoothers.{module_name}")
+    module = importlib.import_module(f"Pyroclast.model.stokes_2d.smoothers.{module_name}")
 
     # Get the factory method
     try:
