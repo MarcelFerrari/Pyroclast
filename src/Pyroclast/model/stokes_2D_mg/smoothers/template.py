@@ -16,6 +16,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 
 from typing import Type, Optional
+# from benchmark.benchmark_wrapper import BenchmarkVY, BenchmarkVX, BenchmarkSmoother
 
 
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
