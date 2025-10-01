@@ -2,7 +2,7 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: Pyroclast/model/stokes_2D_mg/smoothers/at_04.py 
+File: Pyroclast/model/stokes_2D_mg/smoothers/rb_gs_fuse_cache.py
 Description: Attempt 4: Reimplement the fully staggered loop with correct staggering. And Thread Blocking 
 
 Author: Alexander Sotoudeh

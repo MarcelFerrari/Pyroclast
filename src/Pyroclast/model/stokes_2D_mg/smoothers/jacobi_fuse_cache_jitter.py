@@ -2,7 +2,7 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: Pyroclast/model/stokes_2D_mg/smoothers/at_09.py 
+File: Pyroclast/model/stokes_2D_mg/smoothers/jacobi_fuse_cache_jitter.py 
 Description: Attempt 9: Implemented Blocking Jacobi. And Thread Blocking with boundary jitter
 
 Author: Alexander Sotoudeh

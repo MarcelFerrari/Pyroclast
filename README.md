@@ -7,7 +7,7 @@ reproducible dependency resolution even across platforms and ISAs.
 Assuming you're coming from `pip` / `venv`, and you are used to your virtual environments being stored inside your 
 project directory, we suggest changing the poetry config.
 
-This command will set the install directory of the venv inside the project. Poetry will create a `.venv` folder in the
+This command will set the installation directory of the venv inside the project. Poetry will create a `.venv` folder in the
 project root dir for you.
 ```bash
 poetry config virtualenvs.in-project true
@@ -58,3 +58,8 @@ Here's an example of a benchmarking config:
 Largest Size on my Laptop GPU:
 gat_02 8000x10000
 gat_01 8000x7500
+
+### Environment Variables
+- `PYROCLAST_BENCHMARK_CONFIG` - Override for the benchmarking config. Only affects `benchmarking/runner.py` and `benchmarking/printer.py`
+- `PYROCLAST_FASTMATH_CPU` - enables fastmath for the cpu functions
+- `PYROCLAST_FASTMATH_GPU` - enables fastmath for the gpu functions

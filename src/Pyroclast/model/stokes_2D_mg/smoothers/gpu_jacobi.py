@@ -2,7 +2,7 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: Pyroclast/model/stokes_2D_mg/smoothers/gat_01.py 
+File: Pyroclast/model/stokes_2D_mg/smoothers/gpu_jacobi.py
 Description: GPU Attempt 1: Jacobi Smoother with gpu kernel
 
 Author: Alexander Sotoudeh

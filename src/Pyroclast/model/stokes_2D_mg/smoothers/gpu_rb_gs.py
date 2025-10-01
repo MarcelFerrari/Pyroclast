@@ -2,7 +2,7 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: Pyroclast/model/stokes_2D_mg/smoothers/gat_02.py 
+File:Pyroclast/model/stokes_2D_mg/smoothers/gpu_rb_gs.py
 Description: GPU Attempt 2: Basic Red-Black Gauss-Seidel pass on GPU
 
 Author: Alexander Sotoudeh

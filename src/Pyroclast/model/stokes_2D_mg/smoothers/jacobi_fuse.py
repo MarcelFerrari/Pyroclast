@@ -2,7 +2,7 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: Pyroclast/model/stokes_2D_mg/smoothers/at_05.py 
+File: Pyroclast/model/stokes_2D_mg/smoothers/jacobi_fuse.py 
 Description: Attempt 5: Implemented Blocking Jacobi. And Thread Blocking
 
 Author: Alexander Sotoudeh

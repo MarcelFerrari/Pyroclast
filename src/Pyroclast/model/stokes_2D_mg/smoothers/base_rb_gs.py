@@ -2,7 +2,7 @@
 Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
-File: Pyroclast/model/stokes_2D_mg/smoother/base_rb_gs.py
+File: Pyroclast/model/stokes_2D_mg/smoothers/base_rb_gs.py
 Description: File contains copied version of Marcel's Red Black-Gauss-Seidel smoother
 
 Author: Marcel Ferrari, Alexander Sotoudeh
