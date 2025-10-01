@@ -12,21 +12,21 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
-import toml
+import datetime
 import importlib
 import os
-import re
 import pickle
-import time
-import numpy as np
-import numba as nb
+import re
 
-from Pyroclast.logging import get_logger
-from Pyroclast.context import Context, ContextNamespace
-from Pyroclast.profiling import timer
+import numba as nb
+import toml
+
+import Pyroclast.string_util as fmt
 from Pyroclast.banner import get_banner
-import Pyroclast.format as fmt
+from Pyroclast.context import Context, ContextNamespace
 from Pyroclast.defaults import default_config
+from Pyroclast.logging import get_logger
+from Pyroclast.profiling import timer
 from Pyroclast.rng import set_seed
 
 try:
@@ -165,7 +165,7 @@ class Pyroclast():
         
         # Main time integration loop
         logger.info("Starting time integration loop...")
-        start = time.time()
+        start = datetime.datetime.now(datetime.timezone.utc)
         while s.iteration < p.max_iterations:
             # 1) Interpolate marker values to grid nodes
             with timer.time_section("Main Loop", "Interpolation"):
@@ -207,7 +207,7 @@ class Pyroclast():
             s.iteration += 1
         
         # End of time integration loop
-        end = time.time() 
+        end = datetime.datetime.now(datetime.timezone.utc)
 
         logger.info("Time loop complete!")
         
@@ -218,6 +218,6 @@ class Pyroclast():
         self.model.finalize(self.ctx)
         
         timer.report()
-        logger.info(f"Total workload runtime {end-start:.4f} seconds.")
+        logger.info(f"Total workload runtime {(end-start).total_seconds():.4f} seconds.")
 
 
