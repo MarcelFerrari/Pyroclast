@@ -152,7 +152,7 @@ def burn_in_cpu():
     """
     Run base_rb_gs vx routine for a given amount of time to preheat the cpu.
     """
-    module = importlib.import_module(f"Pyroclast.solvers.stokes_2D_mg.smoothers.base_rb_gs")
+    module = importlib.import_module(f"Pyroclast.solvers.stokes_2d.smoothers.base_rb_gs")
     factory = getattr(module, "benchmark_factory")
     # Annotated factory
     factory: Callable[[], tuple[Optional[Type[BenchmarkSmoother]],
