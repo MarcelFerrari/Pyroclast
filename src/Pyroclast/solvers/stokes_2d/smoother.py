@@ -15,7 +15,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import numba as nb
 import numpy as np
-from .bc import apply_p_BC, apply_vx_BC, apply_vy_BC
+from .bc import apply_p_BC, cpu_apply_vx_BC, cpu_apply_vy_BC
 
 @nb.njit(cache=True, parallel=True)
 def pressure_sweep(nx1, ny1, dx, dy,
@@ -132,7 +132,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
             vx[i, j] = (1.0 - relax_v)*vx[i, j] \
                         + relax_v*(rhs[i, j] - sum_neighbors)/diag
     # Apply vx boundary conditions
-    apply_vx_BC(vx, BC)
+    cpu_apply_vx_BC(vx, BC)
     
     #----------------------------
     #  Black pass: (i + j) % 2 == 1
@@ -181,7 +181,7 @@ def _vx_rb_gs_sweep(nx1, ny1,
                            + relax_v*(rhs[i, j] - sum_neighbors)/diag
     
     # Apply vx boundary conditions
-    apply_vx_BC(vx, BC)
+    cpu_apply_vx_BC(vx, BC)
 
     return vx
 
@@ -245,7 +245,7 @@ def _vy_red_black_gs_sweep(nx1, ny1,
                 vy[i, j] = (1.0 - relax_v)*vy[i, j] \
                            + relax_v*(rhs[i, j] - sum_neighbors)/diag
     # Apply vy boundary conditions
-    apply_vy_BC(vy, BC)
+    cpu_apply_vy_BC(vy, BC)
 
     #----------------------------
     #  Black pass
@@ -295,7 +295,7 @@ def _vy_red_black_gs_sweep(nx1, ny1,
                            + relax_v*(rhs[i, j] - sum_neighbors)/diag
     
     # Apply vy boundary conditions
-    apply_vy_BC(vy, BC)
+    cpu_apply_vy_BC(vy, BC)
 
     return vy
 
@@ -428,12 +428,12 @@ def velocity_jacobi_smoother(nx1, ny1,
         # vx sweep: read (vx_old_ref, vy_old_ref) -> write vx_new_ref
         _vx_jacobi_sweep(nx1, ny1, dx, dy, etap, etab,
                          vx, vy, relax_v, vx_rhs, vx_new)
-        apply_vx_BC(vx_new, BC)
+        cpu_apply_vx_BC(vx_new, BC)
 
         # vy sweep: read (vx_old_ref, vy_old_ref) -> write vy_new_ref
         _vy_jacobi_sweep(nx1, ny1, dx, dy, etap, etab,
                          vx, vy, relax_v, vy_rhs, vy_new)
-        apply_vy_BC(vy_new, BC)
+        cpu_apply_vy_BC(vy_new, BC)
 
         # ping-pong (reference swap; no copies)
         vx, vx_new = vx_new, vx
