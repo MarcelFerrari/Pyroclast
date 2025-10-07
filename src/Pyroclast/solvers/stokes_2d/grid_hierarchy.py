@@ -61,6 +61,7 @@ class GridHierarchy:
         self.levels = [base]
         logger.info(f"Grid Hierarchy: {self.nlevels} levels, scaling {scaling:.2f}")
         logger.info(f"Fine grid: {base.ny1} x {base.nx1}")
+        logger.info(f"Fine Grid is on: {'gpu' if ig else 'cpu'}")
     
         # Build coarse grids and propagate properties
         for lvl in range(1, self.nlevels):
@@ -77,7 +78,8 @@ class GridHierarchy:
             coarse.restrict_properties(prev)
 
             self.levels.append(coarse)
-            logger.info(f"Coarse grid {lvl}: {coarse.ny1} x {coarse.nx1}")
+            logger.info(f"Coarse Grid {lvl}: {coarse.ny1} x {coarse.nx1}")
+            logger.info(f"Coarse Grid {lvl} is on: {'gpu' if ig else 'cpu'}")
 
     def __getitem__(self, idx):
         return self.levels[idx]
