@@ -205,6 +205,24 @@ class Grid:
                                cp.cuda.runtime.memcpyDeviceToHost)
         # self.__gpu_acc.get(tgt)
 
+    def outer_from_device(self, target: np.ndarray, attr: str):
+        """
+        Copy initial values to the gpu arrays
+        """
+        import cupy as cp
+
+        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs", "vx", "vy", "vx_new", "vy_new", "vx_res", "vx_res"):
+            raise ValueError("Unsupported source array")
+
+        source: cp.ndarray = getattr(self, attr)
+        assert source.shape == target.shape, \
+            "Shape mismatch, outer_from_device only accepts target arrays of the same shape"
+
+        cp.cuda.runtime.memcpy(target.ctypes.data,
+                               source.data.ptr,
+                               source.nbytes,
+                               cp.cuda.runtime.memcpyDeviceToHost)
+
     @timer.time_function("Vcycle", "Update Residual")
     def update_residuals(self) -> None:
         self.vx_res = uzawa_vx_residual(
