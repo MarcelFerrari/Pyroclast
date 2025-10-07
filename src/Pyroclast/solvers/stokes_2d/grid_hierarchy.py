@@ -12,10 +12,11 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
+import math
+from typing import Optional
 
-import numpy as np
+from Pyroclast.context import ContextNamespace, Context
 from Pyroclast.logging import get_logger
-
 from .grid import Grid
 
 logger = get_logger(__name__)
