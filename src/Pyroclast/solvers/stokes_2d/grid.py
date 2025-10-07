@@ -132,6 +132,49 @@ class Grid:
         self.__gpu_acc = None
         self.__gpu_weights = None
 
+    def allocate_temp_arrays(self):
+        """
+        Allocate temporary arrays for transition between gpu and cpu
+        """
+        import cupy as cp
+
+        self.__gpu_acc = cp.ndarray(shape=(self.ny1, self.nx1), dtype=np.float64)
+        self.__gpu_weights = cp.ndarray(shape=(self.ny1, self.nx1), dtype=np.float64)
+
+    def copy_to_device(self, attr: str):
+        """
+        Copy a given cpu array to the gpu temp array
+        """
+        import cupy as cp
+
+        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs"):
+            raise ValueError("Unsupported source array")
+
+        if self.__gpu_acc is None:
+            raise ValueError("Implementation incorrect. temp arrays needed for transitional grid")
+
+        source = getattr(self, attr)
+
+        self.__gpu_acc: cp.ndarray
+        self.__gpu_acc.set(source)
+
+        return self.__gpu_acc
+
+    def copy_from_device(self, attr: str):
+        """
+        Move data from the temporary gpu array to the cpu array
+        """
+        import cupy as cp
+
+        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs"):
+            raise ValueError("Unsupported source array")
+
+        if self.__gpu_acc is None:
+            raise ValueError("Implementation incorrect. temp arrays needed for transitional grid")
+
+        self.__gpu_acc: cp.ndarray
+        tgt: np.ndarray = getattr(self, attr)
+        self.__gpu_acc.get(tgt)
 
     @timer.time_function("Vcycle", "Update Residual")
     def update_residuals(self) -> None:
