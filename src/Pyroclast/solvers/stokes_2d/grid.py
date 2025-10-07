@@ -156,7 +156,11 @@ class Grid:
         source = getattr(self, attr)
 
         self.__gpu_acc: cp.ndarray
-        self.__gpu_acc.set(source)
+        cp.cuda.runtime.memcpy(self.__gpu_acc.data.ptr,
+                               source.ctypes.data,
+                               source.nbytes,
+                               cp.cuda.runtime.memcpyHostToDevice)
+        # self.__gpu_acc.set(source)
 
         return self.__gpu_acc
 
@@ -164,11 +168,17 @@ class Grid:
         """
         Copy initial values to the gpu arrays
         """
+        import cupy as cp
+
         if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs"):
             raise ValueError("Unsupported source array")
 
         target = getattr(self, attr)
-        target.set(source)
+        cp.cuda.runtime.memcpy(target,
+                               source.ctypes.data,
+                               source.nbytes,
+                               cp.cuda.runtime.memcpyHostToDevice)
+        # target.set(source)
 
     def copy_from_device(self, attr: str):
         """
@@ -184,7 +194,13 @@ class Grid:
 
         self.__gpu_acc: cp.ndarray
         tgt: np.ndarray = getattr(self, attr)
-        self.__gpu_acc.get(tgt)
+
+        # Ok, we're going to use some scary functions.
+        cp.cuda.runtime.memcpy(tgt.ctypes.data,
+                               self.__gpu_acc.data.ptr,
+                               self.__gpu_acc.nbytes,
+                               cp.cuda.runtime.memcpyDeviceToHost)
+        # self.__gpu_acc.get(tgt)
 
     @timer.time_function("Vcycle", "Update Residual")
     def update_residuals(self) -> None:
