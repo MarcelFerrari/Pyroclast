@@ -71,6 +71,9 @@ class Grid:
     vx: np.ndarray; vy: np.ndarray
     vx_rhs: np.ndarray; vy_rhs: np.ndarray
     vx_res: np.ndarray; vy_res: np.ndarray
+
+    is_gpu: bool
+
     # -------------------------------------------------------------------------
 
     def __init__(self, nx: int, ny:int, level: int, ctx: "Context") -> None:
