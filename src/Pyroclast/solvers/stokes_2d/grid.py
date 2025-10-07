@@ -78,7 +78,11 @@ class Grid:
 
     # -------------------------------------------------------------------------
 
-    def __init__(self, nx: int, ny:int, level: int, ctx: "Context") -> None:
+    def __init__(self, nx: int, ny:int, level: int, ctx: "Context", is_gpu: bool) -> None:
+        self.is_gpu = is_gpu
+
+        xp = importlib.import_module("cupy") if self.is_gpu else importlib.import_module("numpy")
+
         # Read context
         s, p, o = ctx
 
@@ -98,8 +102,8 @@ class Grid:
         self.dy = p.ysize / (ny - 1)
 
         # Coordinates for staggered grid
-        self.x = np.linspace(0, p.xsize + self.dx, self.nx1)
-        self.y = np.linspace(0, p.ysize + self.dy, self.ny1)
+        self.x = xp.linspace(0, p.xsize + self.dx, self.nx1)
+        self.y = xp.linspace(0, p.ysize + self.dy, self.ny1)
         self.xvx = self.x
         self.yvx = self.y - self.dy / 2
         self.xvy = self.x - self.dx / 2
@@ -109,22 +113,25 @@ class Grid:
 
         # Physical properties
         shape = (self.ny1, self.nx1)
-        self.rho = np.zeros(shape)
-        self.etab = np.zeros(shape)
-        self.etap = np.zeros(shape)
+        self.rho = xp.zeros(shape)
+        self.etab = xp.zeros(shape)
+        self.etap = xp.zeros(shape)
 
         # Solution, RHS, residual arrays
-        self.vx = np.zeros(shape)
-        self.vy = np.zeros(shape)
-        self.vx_new = np.zeros(shape)
-        self.vy_new = np.zeros(shape)
-        self.vx_rhs = np.zeros(shape)
-        self.vy_rhs = np.zeros(shape)
-        self.vx_res = np.zeros(shape)
-        self.vy_res = np.zeros(shape)
+        self.vx = xp.zeros(shape)
+        self.vy = xp.zeros(shape)
+        self.vx_new = xp.zeros(shape)
+        self.vy_new = xp.zeros(shape)
+        self.vx_rhs = xp.zeros(shape)
+        self.vy_rhs = xp.zeros(shape)
+        self.vx_res = xp.zeros(shape)
+        self.vy_res = xp.zeros(shape)
 
         # Weights for interpolation (to avoid reallocating)
-        self._w = np.zeros((self.ny1, self.nx1))
+        self._w = xp.zeros((self.ny1, self.nx1))
+        self.__gpu_acc = None
+        self.__gpu_weights = None
+
 
     @timer.time_function("Vcycle", "Update Residual")
     def update_residuals(self) -> None:
