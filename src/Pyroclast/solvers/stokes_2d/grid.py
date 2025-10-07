@@ -14,8 +14,10 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
+import importlib
 
 import numpy as np
+
 from Pyroclast.profiling import timer
 
 try:
@@ -26,7 +28,7 @@ except ImportError:
     print("Turbo mg_routines not found, using pure Python version.")
 
 
-from .smoother import velocity_smoother, velocity_jacobi_smoother
+from .smoother import velocity_jacobi_smoother
 from .bc import cpu_apply_vy_BC, cpu_apply_vx_BC
 from .implicit_operators import uzawa_vx_residual, uzawa_vy_residual
 
