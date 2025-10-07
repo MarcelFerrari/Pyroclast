@@ -174,12 +174,12 @@ class UzawaSolver:
             self.p -= pbar 
         if vx_guess is not None:
             if self.fine.is_gpu:
-                self.fine.init_to_device(vx_guess, "vx")
+                self.fine.outer_to_device(vx_guess, "vx")
             else:
                 self.vx[...] = vx_guess
         if vy_guess is not None:
             if self.fine.is_gpu:
-                self.fine.init_to_device(vy_guess, "vy")
+                self.fine.outer_to_device(vy_guess, "vy")
             else:
                 self.vy[...] = vy_guess
 
