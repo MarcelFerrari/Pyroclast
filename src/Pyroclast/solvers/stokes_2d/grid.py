@@ -166,7 +166,7 @@ class Grid:
 
     def outer_to_device(self, source: np.ndarray, attr: str):
         """
-        Copy initial values to the gpu arrays
+        Copy external values to a device array.
         """
         import cupy as cp
 
@@ -174,6 +174,9 @@ class Grid:
             raise ValueError("Unsupported source array")
 
         target: cp.ndarray = getattr(self, attr)
+        assert target.shape == source.shape, \
+            "Shape mismatch, outer_to_device only accepts source arrays of the same shape"
+
         cp.cuda.runtime.memcpy(target.data.ptr,
                                source.ctypes.data,
                                source.nbytes,
