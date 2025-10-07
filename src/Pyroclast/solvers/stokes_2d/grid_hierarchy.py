@@ -25,7 +25,11 @@ class GridHierarchy:
     """
     Builds and stores grid levels from fine to coarse.
     """
-    def __init__(self, ctx, nlevels, scaling):
+    def __init__(self, ctx: Context, nlevels, scaling):
+        state: ContextNamespace
+        params: ContextNamespace
+        _opts: ContextNamespace
+
         state, params, _opts = ctx
 
         # Init grid
