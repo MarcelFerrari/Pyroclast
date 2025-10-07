@@ -170,11 +170,11 @@ class Grid:
         """
         import cupy as cp
 
-        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs"):
+        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs", "vx", "vy", "vx_new", "vy_new", "vx_res", "vx_res"):
             raise ValueError("Unsupported source array")
 
-        target = getattr(self, attr)
-        cp.cuda.runtime.memcpy(target,
+        target: cp.ndarray = getattr(self, attr)
+        cp.cuda.runtime.memcpy(target.data.ptr,
                                source.ctypes.data,
                                source.nbytes,
                                cp.cuda.runtime.memcpyHostToDevice)
