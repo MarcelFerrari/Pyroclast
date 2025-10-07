@@ -45,14 +45,14 @@ def restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw):
 
             # Interpolate quantities
             uH[iH, jH] += (1-rx)*(1-ry)*uh[i, j]
-            uH[iH+1, jH] += rx*(1-ry)*uh[i, j]
-            uH[iH, jH+1] += (1-rx)*ry*uh[i, j]
+            uH[iH+1, jH] += (1-rx)*ry*uh[i, j]
+            uH[iH, jH+1] += rx*(1-ry)*uh[i, j]
             uH[iH+1, jH+1] += rx*ry*uh[i, j]
 
             # Store weights
             uHw[iH, jH] += (1-rx)*(1-ry)
-            uHw[iH+1, jH] += rx*(1-ry)
-            uHw[iH, jH+1] += (1-rx)*ry
+            uHw[iH+1, jH] += (1-rx)*ry
+            uHw[iH, jH+1] += rx*(1-ry)
             uHw[iH+1, jH+1] += rx*ry
     
     uH[:, :] /= uHw[:, :]
