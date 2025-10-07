@@ -48,9 +48,9 @@ class GridHierarchy:
         
         # Copy over material properties
         if base.is_gpu:
-            base.init_to_device(state.rho, "rho")
-            base.init_to_device(state.etab, "etab")
-            base.init_to_device(state.etap, "etap")
+            base.outer_to_device(state.rho, "rho")
+            base.outer_to_device(state.etab, "etab")
+            base.outer_to_device(state.etap, "etap")
         else:
             base.rho[:,:] = state.rho
             base.etab[:,:] = state.etab
