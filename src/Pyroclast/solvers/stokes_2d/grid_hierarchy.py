@@ -33,7 +33,7 @@ class GridHierarchy:
         state, params, _opts = ctx
 
         # TODO move to pydantic
-        gpu_enable = params.get("is_gpu_array", False)
+        gpu_enable = params.get("gpu_enable", False)
         is_gpu_array: Optional[list[bool]] = params.get("is_gpu_array", None)
         gpu_threshold: int = params.get("gpu_threshold", 1024)
 
