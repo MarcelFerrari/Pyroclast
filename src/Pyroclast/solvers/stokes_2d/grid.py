@@ -160,6 +160,16 @@ class Grid:
 
         return self.__gpu_acc
 
+    def init_to_device(self, source: np.ndarray, attr: str):
+        """
+        Copy initial values to the gpu arrays
+        """
+        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs"):
+            raise ValueError("Unsupported source array")
+
+        target = getattr(self, attr)
+        target.set(source)
+
     def copy_from_device(self, attr: str):
         """
         Move data from the temporary gpu array to the cpu array
