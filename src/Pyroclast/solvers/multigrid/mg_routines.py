@@ -1,9 +1,23 @@
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
 
-from Pyroclast.profiling import timer
-from Pyroclast.utils import clip
+File: Pyroclast/solvers/multigrid/mg_routines.py  
+Description: File contains routines to deal with grid levels - restrict and prolong.
+
+Author: Marcel Ferrari, Alexander Sotoudeh
+Copyright (c) 2024 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
 
 import numba as nb
-import numpy as np
+
+from Pyroclast.utils import clip
+
 
 @nb.njit(cache=True)
 def restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw):
@@ -34,30 +48,31 @@ def restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw):
             # Extract coordinates of source point
             yhi = yh[i]
             xhj = xh[j]
-            
+
             # Find 4 nearest neighbors in coarse grid
-            iH = clip(int((yhi - yH0)/dyH), 0, nyH-2)
-            jH = clip(int((xhj - xH0)/dxH), 0, nxH-2)
+            iH = clip(int((yhi - yH0) / dyH), 0, nyH - 2)
+            jH = clip(int((xhj - xH0) / dxH), 0, nxH - 2)
 
             # Compute interpolation weights
-            ry = (yhi - yH[iH])/dyH
-            rx = (xhj - xH[jH])/dxH
+            ry = (yhi - yH[iH]) / dyH
+            rx = (xhj - xH[jH]) / dxH
 
             # Interpolate quantities
-            uH[iH, jH] += (1-rx)*(1-ry)*uh[i, j]
-            uH[iH+1, jH] += rx*(1-ry)*uh[i, j]
-            uH[iH, jH+1] += (1-rx)*ry*uh[i, j]
-            uH[iH+1, jH+1] += rx*ry*uh[i, j]
+            uH[iH, jH] += (1 - rx) * (1 - ry) * uh[i, j]
+            uH[iH + 1, jH] += (1 - rx) * ry * uh[i, j]
+            uH[iH, jH + 1] += rx * (1 - ry) * uh[i, j]
+            uH[iH + 1, jH + 1] += rx * ry * uh[i, j]
 
             # Store weights
-            uHw[iH, jH] += (1-rx)*(1-ry)
-            uHw[iH+1, jH] += rx*(1-ry)
-            uHw[iH, jH+1] += (1-rx)*ry
-            uHw[iH+1, jH+1] += rx*ry
-    
+            uHw[iH, jH] += (1 - rx) * (1 - ry)
+            uHw[iH + 1, jH] += (1 - rx) * ry
+            uHw[iH, jH + 1] += rx * (1 - ry)
+            uHw[iH + 1, jH + 1] += rx * ry
+
     uH[:, :] /= uHw[:, :]
 
     return uH
+
 
 @nb.njit(cache=True, parallel=True)
 def prolong_2D(nxH, nyH, xH, yH, uH,
@@ -71,12 +86,11 @@ def prolong_2D(nxH, nyH, xH, yH, uH,
     yH: coarse grid y-coordinates
     uH: tuple of coarse grid quantities
     """
-    
+
     dxH = xH[1] - xH[0]
     dyH = yH[1] - yH[0]
     xH0 = xH[0]
     yH0 = yH[0]
-
 
     for i in nb.prange(nyh):
         for j in nb.prange(nxh):
@@ -85,17 +99,17 @@ def prolong_2D(nxH, nyH, xH, yH, uH,
             xhj = xh[j]
 
             # Find 4 nearest neighbors in fine grid
-            iH = clip(int((yhi - yH0)/dyH), 0, nyH-2)
-            jH = clip(int((xhj - xH0)/dxH), 0, nxH-2)
+            iH = clip(int((yhi - yH0) / dyH), 0, nyH - 2)
+            jH = clip(int((xhj - xH0) / dxH), 0, nxH - 2)
 
             # Compute interpolation weights
-            ry = (yhi - yH[iH])/dyH
-            rx = (xhj - xH[jH])/dxH
+            ry = (yhi - yH[iH]) / dyH
+            rx = (xhj - xH[jH]) / dxH
 
             # Interpolate quantities
-            uh[i, j] = (1-rx)*(1-ry)*uH[iH, jH] + \
-                       rx*(1-ry)*uH[iH, jH+1] + \
-                       (1-rx)*ry*uH[iH+1, jH] + \
-                       rx*ry*uH[iH+1, jH+1]
-    
+            uh[i, j] = (1 - rx) * (1 - ry) * uH[iH, jH] + \
+                       rx * (1 - ry) * uH[iH, jH + 1] + \
+                       (1 - rx) * ry * uH[iH + 1, jH] + \
+                       rx * ry * uH[iH + 1, jH + 1]
+
     return uh
