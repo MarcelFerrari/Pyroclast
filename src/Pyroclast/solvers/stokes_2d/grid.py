@@ -207,7 +207,6 @@ class Grid:
             iterations
         )
 
-
     def apply_bc(self) -> None:
         cpu_apply_vx_BC(self.vx, self.BC)
         cpu_apply_vy_BC(self.vy, self.BC)
