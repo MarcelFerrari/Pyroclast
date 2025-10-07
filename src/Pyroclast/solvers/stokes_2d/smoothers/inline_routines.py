@@ -20,6 +20,7 @@ import os
 import numba as nb
 import numpy as np
 
+# TODO config
 use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
 use_fast_math_gpu = os.environ.get("PYROCLAST_FASTMATH_GPU", default=False)
 
