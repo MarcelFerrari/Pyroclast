@@ -20,7 +20,7 @@ from typing import Type
 import numba as nb
 import numpy as np
 
-from Pyroclast.solvers.stokes_2d.smoothers.base_rb_gs import velocity_smoother_rb_gs as base_rb_gs
+from Pyroclast.solvers.stokes_2d.smoothers.rb_gs_fuse import velocity_smoother_rb_gs as base_rb_gs
 from Pyroclast.solvers.stokes_2d.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
 from Pyroclast.solvers.stokes_2d.bc import cpu_apply_vx_BC, cpu_apply_vy_BC
 
