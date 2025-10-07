@@ -7,7 +7,7 @@ Description: This file implements the grid class for the multigrid method
               for the Stokes flow and continuity equations in 2D.
              
 
-Author: Marcel Ferrari
+Author: Marcel Ferrari, Alexander Sotoudeh
 Copyright (c) 2025 Marcel Ferrari.
 
 This Source Code Form is subject to the terms of the Mozilla Public

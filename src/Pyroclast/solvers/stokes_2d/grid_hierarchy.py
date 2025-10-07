@@ -5,7 +5,7 @@ https://github.com/MarcelFerrari/Pyroclast
 File: grid_hierarchy.py
 Description: This file implements the grid hierarchy for the multigrid method.
 
-Author: Marcel Ferrari
+Author: Marcel Ferrari, Alexander Sotoudeh
 Copyright (c) 2025 Marcel Ferrari.
 
 This Source Code Form is subject to the terms of the Mozilla Public
@@ -59,12 +59,18 @@ class GridHierarchy:
     
         # Build coarse grids and propagate properties
         for lvl in range(1, self.nlevels):
-            prev = self.levels[-1]
             # Half the number of cells
+            prev = self.levels[-1]
             nx_coarse = int((prev.nx - 1) / scaling) + 1
-            ny_coarse = int((prev.ny - 1) / scaling) + 1 
-            coarse = Grid(ny_coarse, nx_coarse, lvl, ctx)
+            ny_coarse = int((prev.ny - 1) / scaling) + 1
+            ig = self.determine_is_gpu(gpu_enable, is_gpu_array, lvl, nx_coarse, ny_coarse, gpu_threshold)
+
+            # Initialize the Grid
+            coarse = Grid(ny_coarse, nx_coarse, lvl, ctx, ig)
+            if prev.is_gpu and not coarse.is_gpu:
+                coarse.allocate_temp_arrays()
             coarse.restrict_properties(prev)
+
             self.levels.append(coarse)
             logger.info(f"Coarse grid {lvl}: {coarse.ny1} x {coarse.nx1}")
 
@@ -79,3 +85,17 @@ class GridHierarchy:
         for level in self.levels:
             level.reset()
 
+    @staticmethod
+    def determine_is_gpu(gpu_enable: bool,
+                         is_gpu_array: Optional[list[bool]],
+                         level: int, x: int, y: int, threshold: int) -> bool:
+        """
+        Given the params, determine if a grid level should be allocated on gpu
+        """
+        if not gpu_enable:
+            return False
+
+        if is_gpu_array is not None:
+            return is_gpu_array[level]
+
+        return math.sqrt(x * y) > threshold
