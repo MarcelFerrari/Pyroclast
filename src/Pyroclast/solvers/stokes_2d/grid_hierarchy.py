@@ -47,9 +47,14 @@ class GridHierarchy:
         base = Grid(x, y, 0, ctx, ig)
         
         # Copy over material properties
-        base.rho[:,:] = state.rho
-        base.etab[:,:] = state.etab
-        base.etap[:,:] = state.etap
+        if base.is_gpu:
+            base.init_to_device(state.rho, "rho")
+            base.init_to_device(state.etab, "etab")
+            base.init_to_device(state.etap, "etap")
+        else:
+            base.rho[:,:] = state.rho
+            base.etab[:,:] = state.etab
+            base.etap[:,:] = state.etap
 
         # Initialize coarse levels
         self.nlevels = nlevels
