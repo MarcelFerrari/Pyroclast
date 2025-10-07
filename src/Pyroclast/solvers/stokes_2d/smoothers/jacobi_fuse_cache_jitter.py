@@ -24,8 +24,8 @@ import numba as nb
 import numpy as np
 
 from Pyroclast.solvers.stokes_2d.bc import cpu_apply_vx_BC, cpu_apply_vy_BC
-from Pyroclast.solvers.stokes_2d.smoothers.base_rb_gs import velocity_smoother_rb_gs
 from Pyroclast.solvers.stokes_2d.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
+from Pyroclast.solvers.stokes_2d.smoothers.jacobi_fuse import velocity_smoother_jacobi as velocity_smoother_jacobi_base
 
 use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
 
@@ -37,7 +37,7 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                              vx: np.ndarray, vy: np.ndarray,
                              relax_v: float, BC: float,
                              vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
-                             vx_new, vy_new,
+                             vx_new: np.ndarray, vy_new: np.ndarray,
                              th: int, cache_a: int, max_jitter: int = None) -> tuple[np.ndarray, np.ndarray]:
     if max_jitter is None:
         max_jitter = cache_a // 4
@@ -84,12 +84,12 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
         return vx, vy
 
     else:
-        velocity_smoother_rb_gs(nx1=nx1, ny1=ny1,
-                                dx=dx, dy=dy,
-                                etap=etap, etab=etab,
-                                vx=vx, vy=vy,
-                                relax_v=relax_v, BC=BC,
-                                vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
+        velocity_smoother_jacobi_base(nx1=nx1, ny1=ny1,
+                                      dx=dx, dy=dy,
+                                      etap=etap, etab=etab,
+                                      vx=vx, vy=vy, vx_new=vx_new, vy_new=vy_new,
+                                      relax_v=relax_v, BC=BC,
+                                      vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
 
         return vx, vy
 
