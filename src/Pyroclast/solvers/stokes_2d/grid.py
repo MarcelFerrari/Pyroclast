@@ -220,22 +220,44 @@ class Grid:
             self.vy_res, self.vy_rhs,
         )
 
+    # TODO need to deal with different implementations.
     @timer.time_function("Vcycle", "Smooth")
     def smooth(self, iterations: int) -> None:
-        self.vx, self.vy = velocity_jacobi_smoother(
-            self.nx1, self.ny1,
-            self.dx, self.dy,
-            self.etap, self.etab,
-            self.vx, self.vy,
-            self.vx_new, self.vy_new,
-            self.relax_v, self.BC,
-            self.vx_rhs, self.vy_rhs,
-            iterations
-        )
+        if not self.is_gpu:
+            # CPU Version
+            self.vx, self.vy = velocity_jacobi_smoother(
+                self.nx1, self.ny1,
+                self.dx, self.dy,
+                self.etap, self.etab,
+                self.vx, self.vy,
+                self.vx_new, self.vy_new,
+                self.relax_v, self.BC,
+                self.vx_rhs, self.vy_rhs,
+                iterations
+            )
+        else:
+            # GPU version
+            from Pyroclast.solvers.stokes_2d.smoothers.gpu_jacobi import velocity_smoother_jacobi_cuda
+            self.vx, self.vy = velocity_smoother_jacobi_cuda(
+                nx1=self.nx1, ny1=self.ny1,
+                dx=self.dx, dy=self.dy,
+                etab_d=self.etap, etap_d=self.etab,
+                vx_d=self.vx, vy_d=self.vy,
+                vx_new_d=self.vx_new, vy_new_d=self.vy_new,
+                relax_v=self.relax_v, BC=self.BC,
+                vx_rhs_d=self.vx_rhs, vy_rhs_d=self.vy_rhs,
+                max_iter=iterations
+            )
 
     def apply_bc(self) -> None:
-        cpu_apply_vx_BC(self.vx, self.BC)
-        cpu_apply_vy_BC(self.vy, self.BC)
+        # INFO: We can use gpu_apply_vx_bc_kernel and do a global import because, if cupy isn't available,
+        #  a stub is returned that raises an error.
+        if not self.is_gpu:
+            cpu_apply_vx_BC(self.vx, self.BC)
+            cpu_apply_vy_BC(self.vy, self.BC)
+        else:
+            gpu_apply_vx_bc_kernel(self.vx, self.BC)
+            gpu_apply_vy_bc_kernel(self.vy, self.BC)
 
     def reset_solution(self) -> None:
         """Reset the solution fields to zero (but not material properties)."""
@@ -254,60 +276,218 @@ class Grid:
 
     @timer.time_function("Vcycle", "Restriction")
     def restrict_properties(self, fine: "Grid") -> None:
-        self.rho = restrict(
-            fine.nx1, fine.ny1,
-            fine.xvy, fine.yvy, fine.rho,
-            self.nx1, self.ny1,
-            self.xvy, self.yvy,
-            self.rho, self._w
-        )
-        self.etab = restrict(
-            fine.nx1, fine.ny1,
-            fine.x, fine.y, fine.etab,
-            self.nx1, self.ny1,
-            self.x, self.y,
-            self.etab, self._w
-        )
-        self.etap = restrict(
-            fine.nx1, fine.ny1,
-            fine.xp, fine.yp, fine.etap,
-            self.nx1, self.ny1,
-            self.xp, self.yp,
-            self.etap, self._w
-        )
+        # Handle operations depending on source and target
+        if not self.is_gpu and not fine.is_gpu:
+            # CPU to CPU
+            self.rho = restrict(
+                fine.nx1, fine.ny1,
+                fine.xvy, fine.yvy, fine.rho,
+                self.nx1, self.ny1,
+                self.xvy, self.yvy,
+                self.rho, self._w
+            )
+            self.etab = restrict(
+                fine.nx1, fine.ny1,
+                fine.x, fine.y, fine.etab,
+                self.nx1, self.ny1,
+                self.x, self.y,
+                self.etab, self._w
+            )
+            self.etap = restrict(
+                fine.nx1, fine.ny1,
+                fine.xp, fine.yp, fine.etap,
+                self.nx1, self.ny1,
+                self.xp, self.yp,
+                self.etap, self._w
+            )
+        elif fine.is_gpu and self.is_gpu:
+            # GPU to GPU
+            from Pyroclast.solvers.multigrid.mg_routines_gpu import restrict_2D
+            self.rho = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.xvy, fine.yvy, fine.rho,
+                self.nx1, self.ny1,
+                self.xvy, self.yvy,
+                self.rho, self._w
+            )
+            self.etab = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.x, fine.y, fine.etab,
+                self.nx1, self.ny1,
+                self.x, self.y,
+                self.etab, self._w
+            )
+            self.etap = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.xp, fine.yp, fine.etap,
+                self.nx1, self.ny1,
+                self.xp, self.yp,
+                self.etap, self._w
+            )
+        elif fine.is_gpu and not self.is_gpu:
+            # Transition GPU to CPU
+            from Pyroclast.solvers.multigrid.mg_routines_gpu import restrict_2D
+
+            assert self.__gpu_acc is not None and self.__gpu_weights is not None, \
+                "Configuration Error, Transition grid has no transition arrays"
+
+            self.__gpu_acc = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.xvy, fine.yvy, fine.rho,
+                self.nx1, self.ny1,
+                self.xvy, self.yvy,
+                self.__gpu_acc, self.__gpu_weights
+            )
+            self._copy_from_device("rho")
+
+            self.__gpu_acc = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.x, fine.y, fine.etab,
+                self.nx1, self.ny1,
+                self.x, self.y,
+                self.__gpu_acc, self.__gpu_weights
+            )
+            self._copy_from_device("etab")
+
+            self.__gpu_acc = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.xp, fine.yp, fine.etap,
+                self.nx1, self.ny1,
+                self.xp, self.yp,
+                self.__gpu_acc, self.__gpu_weights
+            )
+            self._copy_from_device("etap")
+        else:
+            raise ValueError("Configuration issue: should not occur fine on cpu and coarse on gpu")
 
     @timer.time_function("Vcycle", "Restriction")
     def restrict_residuals(self, fine: "Grid") -> None:
-        self.vx_rhs = restrict(
-            fine.nx1, fine.ny1,
-            fine.xvx, fine.yvx, fine.vx_res,
-            self.nx1, self.ny1,
-            self.xvx, self.yvx,
-            self.vx_rhs, self._w
-        )
-        self.vy_rhs = restrict(
-            fine.nx1, fine.ny1,
-            fine.xvy, fine.yvy, fine.vy_res,
-            self.nx1, self.ny1,
-            self.xvy, self.yvy,
-            self.vy_rhs, self._w
-        )
+        if not self.is_gpu and not fine.is_gpu:
+            # CPU to CPU
+            self.vx_rhs = restrict(
+                fine.nx1, fine.ny1,
+                fine.xvx, fine.yvx, fine.vx_res,
+                self.nx1, self.ny1,
+                self.xvx, self.yvx,
+                self.vx_rhs, self._w
+            )
+            self.vy_rhs = restrict(
+                fine.nx1, fine.ny1,
+                fine.xvy, fine.yvy, fine.vy_res,
+                self.nx1, self.ny1,
+                self.xvy, self.yvy,
+                self.vy_rhs, self._w
+            )
+        elif self.is_gpu and fine.is_gpu:
+            # GPU to GPU
+            from Pyroclast.solvers.multigrid.mg_routines_gpu import restrict_2D
+            self.vx_rhs = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.xvx, fine.yvx, fine.vx_res,
+                self.nx1, self.ny1,
+                self.xvx, self.yvx,
+                self.vx_rhs, self._w
+            )
+            self.vy_rhs = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.xvy, fine.yvy, fine.vy_res,
+                self.nx1, self.ny1,
+                self.xvy, self.yvy,
+                self.vy_rhs, self._w
+            )
+        elif fine.is_gpu and not self.is_gpu:
+            # Transition GPU to CPU
+            from Pyroclast.solvers.multigrid.mg_routines_gpu import restrict_2D
+
+            assert self.__gpu_acc is not None and self.__gpu_weights is not None, \
+                "Configuration Error, Transition grid has no transition arrays"
+
+            self.__gpu_acc = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.xvx, fine.yvx, fine.vx_res,
+                self.nx1, self.ny1,
+                self.xvx, self.yvx,
+                self.__gpu_acc, self.__gpu_weights
+            )
+            self._copy_from_device("vx_res")
+
+            self.__gpu_acc = restrict_2D(
+                fine.nx1, fine.ny1,
+                fine.xvy, fine.yvy, fine.vy_res,
+                self.nx1, self.ny1,
+                self.xvy, self.yvy,
+                self.__gpu_acc, self.__gpu_weights
+            )
+            self._copy_from_device("vy_res")
+        else:
+            raise ValueError("Configuration issue: should not occur fine on cpu and coarse on gpu")
 
     @timer.time_function("Vcycle", "Prolongation")
     def prolong_correction(self, coarse: "Grid") -> None:
-        self.vx += prolong(
-            coarse.nx1, coarse.ny1,
-            coarse.xvx, coarse.yvx,
-            coarse.vx,
-            self.nx1, self.ny1,
-            self.xvx, self.yvx,
-            self.vx_res # Store correction in residual array
-        )
-        self.vy += prolong(
-            coarse.nx1, coarse.ny1,
-            coarse.xvy, coarse.yvy,
-            coarse.vy,
-            self.nx1, self.ny1,
-            self.xvy, self.yvy,
-            self.vy_res # Store correction in residual array
-        )
+        if not self.is_gpu and not coarse.is_gpu:
+            # CPU to CPU
+            self.vx += prolong(
+                coarse.nx1, coarse.ny1,
+                coarse.xvx, coarse.yvx,
+                coarse.vx,
+                self.nx1, self.ny1,
+                self.xvx, self.yvx,
+                self.vx_res # Store correction in residual array
+            )
+            self.vy += prolong(
+                coarse.nx1, coarse.ny1,
+                coarse.xvy, coarse.yvy,
+                coarse.vy,
+                self.nx1, self.ny1,
+                self.xvy, self.yvy,
+                self.vy_res # Store correction in residual array
+            )
+        elif self.is_gpu and coarse.is_gpu:
+            # GPU to GPU
+            from Pyroclast.solvers.multigrid.mg_routines_gpu import prolong_2D
+
+            self.vx += prolong_2D(
+                coarse.nx1, coarse.ny1,
+                coarse.xvx, coarse.yvx,
+                coarse.vx,
+                self.nx1, self.ny1,
+                self.xvx, self.yvx,
+                self.vx_res # Store correction in residual array
+            )
+            self.vy += prolong_2D(
+                coarse.nx1, coarse.ny1,
+                coarse.xvy, coarse.yvy,
+                coarse.vy,
+                self.nx1, self.ny1,
+                self.xvy, self.yvy,
+                self.vy_res # Store correction in residual array
+            )
+        elif self.is_gpu and not coarse.is_gpu:
+            # Transition
+            from Pyroclast.solvers.multigrid.mg_routines_gpu import prolong_2D
+
+            assert self.__gpu_acc is not None and self.__gpu_weights is not None, \
+                "Configuration Error, Transition grid has no transition arrays"
+
+            gpu_source_vx = self._copy_to_device("vx")
+            self.vx += prolong_2D(
+                coarse.nx1, coarse.ny1,
+                coarse.xvx, coarse.yvx,
+                gpu_source_vx,
+                self.nx1, self.ny1,
+                self.xvx, self.yvx,
+                self.vx_res  # Store correction in residual array
+            )
+
+            gpu_source_vy = self._copy_to_device("vy")
+            self.vx += prolong_2D(
+                coarse.nx1, coarse.ny1,
+                coarse.xvx, coarse.yvx,
+                gpu_source_vy,
+                self.nx1, self.ny1,
+                self.xvx, self.yvx,
+                self.vy_res  # Store correction in residual array
+            )
+
+        else:
+            raise ValueError("Configuration issue: should not occur fine on cpu and coarse on gpu")
