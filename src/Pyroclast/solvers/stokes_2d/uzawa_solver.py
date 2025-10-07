@@ -7,7 +7,7 @@ File: uzawa_solver.py
 Description: This file implements the Uzawa solver for the Stokes flow
               and continuity equations in 2D.
                     
-Author: Marcel Ferrari
+Author: Marcel Ferrari, Alexander Sotoudeh
 Copyright (c) 2025 Marcel Ferrari.
 
 This Source Code Form is subject to the terms of the Mozilla Public
@@ -173,9 +173,15 @@ class UzawaSolver:
             pbar = np.mean(self.p[1:-1, 1:-1])
             self.p -= pbar 
         if vx_guess is not None:
-            self.vx[...] = vx_guess
+            if self.fine.is_gpu:
+                self.fine.init_to_device(vx_guess, "vx")
+            else:
+                self.vx[...] = vx_guess
         if vy_guess is not None:
-            self.vy[...] = vy_guess
+            if self.fine.is_gpu:
+                self.fine.init_to_device(vy_guess, "vy")
+            else:
+                self.vy[...] = vy_guess
 
         # Store rhs for original stokes problem
         self.stokes_p_rhs = stokes_p_rhs
