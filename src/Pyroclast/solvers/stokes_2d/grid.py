@@ -19,15 +19,16 @@ import numpy as np
 from Pyroclast.profiling import timer
 
 try:
+    raise ImportError
+    # raise ImportError
     from Pyroclast.turbo.mg_routines import restrict_2D as restrict, prolong_2D as prolong
     print("Using Turbo mg_routines.")
 except ImportError:
     from Pyroclast.solvers.multigrid.mg_routines import restrict_2D as restrict, prolong_2D as prolong
     print("Turbo mg_routines not found, using pure Python version.")
 
-
-from .smoother import velocity_smoother, velocity_jacobi_smoother
-from .bc import apply_vx_BC, apply_vy_BC
+from .smoothers import jacobi_velocity_smoother
+from .smoothers.bc import apply_vx_BC, apply_vy_BC
 from .implicit_operators import uzawa_vx_residual, uzawa_vy_residual
 
 class Grid:
@@ -141,7 +142,7 @@ class Grid:
 
     @timer.time_function("Vcycle", "Smooth")
     def smooth(self, iterations: int) -> None:
-        self.vx, self.vy = velocity_jacobi_smoother(
+        self.vx, self.vy = jacobi_velocity_smoother(
             self.nx1, self.ny1,
             self.dx, self.dy,
             self.etap, self.etab,
@@ -151,7 +152,6 @@ class Grid:
             self.vx_rhs, self.vy_rhs,
             iterations
         )
-
 
     def apply_bc(self) -> None:
         apply_vx_BC(self.vx, self.BC)

@@ -19,17 +19,16 @@ import numpy as np
 
 # Use the solver-agnostic multigrid base with Stokes-specific hooks
 from Pyroclast.logging import get_logger
-from Pyroclast.context import ContextNamespace
-from Pyroclast.solvers.stokes_2d.bc import apply_BC
 from Pyroclast.solvers.anderson import AndersonAccelerator
 
 from .grid_hierarchy import GridHierarchy
 from .velocity_multigrid_2D import VelocityMultigrid2D
-from .smoother import pressure_sweep
+from .smoothers import pressure_sweep
 from .implicit_operators import uzawa_velocity_rhs, \
                                 p_residual, vx_residual, vy_residual, \
                                 compute_p_energy_norm, compute_vx_energy_norm, compute_vy_energy_norm
 from .viscosity_rescaler import ViscosityRescaler
+from .smoothers.bc import apply_BC
 
 
 logger = get_logger(__name__)
