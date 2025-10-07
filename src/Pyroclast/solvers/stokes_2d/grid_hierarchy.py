@@ -42,7 +42,9 @@ class GridHierarchy:
             assert len(is_gpu_array) == nlevels, "Unexpected number of GPU arrays"
 
         # Init grid
-        base = Grid(state.nx1 - 1, state.ny1 - 1, 0, ctx)
+        x, y = state.nx1 - 1, state.ny1 - 1
+        ig = self.determine_is_gpu(gpu_enable, is_gpu_array, 0, x, y, gpu_threshold)
+        base = Grid(x, y, 0, ctx, ig)
         
         # Copy over material properties
         base.rho[:,:] = state.rho
