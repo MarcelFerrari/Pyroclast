@@ -29,7 +29,7 @@ except ImportError:
 
 
 from .smoother import velocity_jacobi_smoother
-from .bc import cpu_apply_vy_BC, cpu_apply_vx_BC
+from .bc import cpu_apply_vy_BC, cpu_apply_vx_BC, gpu_apply_vx_bc_kernel, gpu_apply_vy_bc_kernel
 from .implicit_operators import uzawa_vx_residual, uzawa_vy_residual
 
 class Grid:
