@@ -32,6 +32,15 @@ class GridHierarchy:
 
         state, params, _opts = ctx
 
+        # TODO move to pydantic
+        gpu_enable = params.get("is_gpu_array", False)
+        is_gpu_array: Optional[list[bool]] = params.get("is_gpu_array", None)
+        gpu_threshold: int = params.get("gpu_threshold", 1024)
+
+        # TODO move to pydantic
+        if gpu_enable and is_gpu_array is not None:
+            assert len(is_gpu_array) == nlevels, "Unexpected number of GPU arrays"
+
         # Init grid
         base = Grid(state.nx1 - 1, state.ny1 - 1, 0, ctx)
         
