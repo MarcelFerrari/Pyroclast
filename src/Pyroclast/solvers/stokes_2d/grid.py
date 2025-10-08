@@ -146,9 +146,9 @@ class Grid:
         Internal function for prolong and restrict. Copies to a reused and constantly allocated array on gpu.
         """
         import cupy as cp
-
-        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs"):
-            raise ValueError("Unsupported source array")
+        supported = ("rho", "etab", "etap", "vx_rhs", "vy_rhs", "vx_res", "vx_res")
+        if attr not in supported:
+            raise ValueError(f"fUnsupported source array: {attr}, valid are {supported}")
 
         if self.__gpu_acc is None:
             raise ValueError("Implementation incorrect. temp arrays needed for transitional grid")
@@ -170,8 +170,9 @@ class Grid:
         """
         import cupy as cp
 
-        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs", "vx", "vy", "vx_new", "vy_new", "vx_res", "vx_res"):
-            raise ValueError("Unsupported source array")
+        supported = ("rho", "etab", "etap", "vx_rhs", "vy_rhs", "vx", "vy", "vx_new", "vy_new", "vx_res", "vx_res")
+        if attr not in supported:
+            raise ValueError(f"Unsupported source array: {attr}, valid are {supported}")
 
         target: cp.ndarray = getattr(self, attr)
         assert target.shape == source.shape, \
@@ -189,8 +190,9 @@ class Grid:
         """
         import cupy as cp
 
-        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs"):
-            raise ValueError("Unsupported source array")
+        supported = ("rho", "etab", "etap", "vx_rhs", "vy_rhs", "vx_res", "vx_res")
+        if attr not in supported:
+            raise ValueError(f"fUnsupported source array: {attr}, valid are {supported}")
 
         if self.__gpu_acc is None:
             raise ValueError("Implementation incorrect. temp arrays needed for transitional grid")
@@ -211,8 +213,9 @@ class Grid:
         """
         import cupy as cp
 
-        if attr not in ("rho", "etab", "etap", "vx_rhs", "vy_rhs", "vx", "vy", "vx_new", "vy_new", "vx_res", "vx_res"):
-            raise ValueError("Unsupported source array")
+        supported = ("rho", "etab", "etap", "vx_rhs", "vy_rhs", "vx", "vy", "vx_new", "vy_new", "vx_res", "vx_res")
+        if attr not in supported:
+            raise ValueError(f"Unsupported source array: {attr}, valid are {supported}")
 
         source: cp.ndarray = getattr(self, attr)
         assert source.shape == target.shape, \
