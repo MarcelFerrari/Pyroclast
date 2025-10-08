@@ -156,11 +156,11 @@ class Grid:
         source = getattr(self, attr)
 
         self.__gpu_acc: cp.ndarray
-        cp.cuda.runtime.memcpy(self.__gpu_acc.data.ptr,
-                               source.ctypes.data,
-                               source.nbytes,
-                               cp.cuda.runtime.memcpyHostToDevice)
-        # self.__gpu_acc.set(source)
+        # cp.cuda.runtime.memcpy(self.__gpu_acc.data.ptr,
+        #                        source.ctypes.data,
+        #                        source.nbytes,
+        #                        cp.cuda.runtime.memcpyHostToDevice)
+        self.__gpu_acc.set(source)
 
         return self.__gpu_acc
 
@@ -177,11 +177,11 @@ class Grid:
         assert target.shape == source.shape, \
             "Shape mismatch, outer_to_device only accepts source arrays of the same shape"
 
-        cp.cuda.runtime.memcpy(target.data.ptr,
-                               source.ctypes.data,
-                               source.nbytes,
-                               cp.cuda.runtime.memcpyHostToDevice)
-        # target.set(source)
+        # cp.cuda.runtime.memcpy(target.data.ptr,
+        #                        source.ctypes.data,
+        #                        source.nbytes,
+        #                        cp.cuda.runtime.memcpyHostToDevice)
+        target.set(source)
 
     def _copy_from_device(self, attr: str):
         """
@@ -199,11 +199,11 @@ class Grid:
         tgt: np.ndarray = getattr(self, attr)
 
         # Ok, we're going to use some scary functions.
-        cp.cuda.runtime.memcpy(tgt.ctypes.data,
-                               self.__gpu_acc.data.ptr,
-                               self.__gpu_acc.nbytes,
-                               cp.cuda.runtime.memcpyDeviceToHost)
-        # self.__gpu_acc.get(tgt)
+        # cp.cuda.runtime.memcpy(tgt.ctypes.data,
+        #                        self.__gpu_acc.data.ptr,
+        #                        self.__gpu_acc.nbytes,
+        #                        cp.cuda.runtime.memcpyDeviceToHost)
+        self.__gpu_acc.get(out=tgt)
 
     def outer_from_device(self, target: np.ndarray, attr: str):
         """
@@ -218,10 +218,12 @@ class Grid:
         assert source.shape == target.shape, \
             "Shape mismatch, outer_from_device only accepts target arrays of the same shape"
 
-        cp.cuda.runtime.memcpy(target.ctypes.data,
-                               source.data.ptr,
-                               source.nbytes,
-                               cp.cuda.runtime.memcpyDeviceToHost)
+        # cp.cuda.runtime.memcpy(target.ctypes.data,
+        #                        source.data.ptr,
+        #                        source.nbytes,
+        #                        cp.cuda.runtime.memcpyDeviceToHost)
+        self.__gpu_acc.get(out=target)
+
 
     @timer.time_function("Vcycle", "Update Residual")
     def update_residuals(self) -> None:
