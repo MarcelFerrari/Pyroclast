@@ -492,10 +492,10 @@ class Grid:
             # Transition
             from Pyroclast.solvers.multigrid.mg_routines_gpu import prolong_2D
 
-            assert self.__gpu_acc is not None and self.__gpu_weights is not None, \
+            assert coarse.__gpu_acc is not None and coarse.__gpu_weights is not None, \
                 "Configuration Error, Transition grid has no transition arrays"
 
-            gpu_source_vx = self._copy_to_device("vx")
+            gpu_source_vx = coarse._copy_to_device("vx")
             self.vx += prolong_2D(
                 coarse.nx1, coarse.ny1,
                 coarse.xvx, coarse.yvx,
@@ -505,7 +505,7 @@ class Grid:
                 self.vx_res  # Store correction in residual array
             )
 
-            gpu_source_vy = self._copy_to_device("vy")
+            gpu_source_vy = coarse._copy_to_device("vy")
             self.vx += prolong_2D(
                 coarse.nx1, coarse.ny1,
                 coarse.xvx, coarse.yvx,
