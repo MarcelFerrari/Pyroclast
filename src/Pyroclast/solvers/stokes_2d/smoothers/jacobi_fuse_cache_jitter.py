@@ -26,10 +26,12 @@ import numpy as np
 from Pyroclast.solvers.stokes_2d.bc import cpu_apply_vx_BC, cpu_apply_vy_BC
 from Pyroclast.solvers.stokes_2d.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
 from Pyroclast.solvers.stokes_2d.smoothers.jacobi_fuse import velocity_smoother_jacobi as velocity_smoother_jacobi_base
+from Pyroclast.utils import inject_threads
 
 use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
 
 
+@inject_threads
 @nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
 def velocity_smoother_jacobi(nx1: int, ny1: int,
                              dx: float, dy: float,

@@ -227,7 +227,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                          etap_d=self.device_arrays[2], etab_d=self.device_arrays[3],
                                          vx_d=self.device_arrays[0], vy_d=self.device_arrays[1],
                                          relax_v=self.relax_v, BC=self.boundary_condition,
-                                         max_iter=1,
+                                         max_iter=self.max_iter,
                                          vx_rhs_d=self.device_arrays[4], vy_rhs_d=self.device_arrays[5])
             end = dtf()
 

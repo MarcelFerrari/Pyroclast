@@ -28,11 +28,11 @@ use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
 
 
 @nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
-def _vx_rb_gs_sweep(nx1, ny1,
-                    dx, dy,
-                    etap, etab,
-                    vx, vy,
-                    relax_v, rhs, BC) -> np.ndarray:
+def _vx_rb_gs_sweep(nx1: int, ny1: int,
+                    dx: float, dy: float,
+                    etap: np.ndarray, etab: np.ndarray,
+                    vx: np.ndarray, vy: np.ndarray,
+                    relax_v: float, rhs: np.ndarray, BC: float) -> np.ndarray:
     """
     In-place Red-Black Gauss-Seidel update for vx.
     """
@@ -69,11 +69,11 @@ def _vx_rb_gs_sweep(nx1, ny1,
 
 
 @nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
-def _vy_red_black_gs_sweep(nx1, ny1,
-                           dx, dy,
-                           etap, etab,
-                           vx, vy,
-                           relax_v, rhs, BC) -> np.ndarray:
+def _vy_red_black_gs_sweep(nx1: int, ny1: int,
+                           dx: float, dy: float,
+                           etap: np.ndarray, etab: np.ndarray,
+                           vx: np.ndarray, vy: np.ndarray,
+                           relax_v: float, rhs: np.ndarray, BC: float) -> np.ndarray:
     """
     In-place Red-Black Gauss-Seidel update for vy.
     """

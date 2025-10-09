@@ -306,14 +306,12 @@ class Grid:
         # Handle operations depending on source and target
         if not self.is_gpu and not fine.is_gpu:
             # CPU to CPU
-            threads = nb.get_num_threads()
             self.rho = restrict(
                 fine.nx1, fine.ny1,
                 fine.xvy, fine.yvy, fine.rho,
                 self.nx1, self.ny1,
                 self.xvy, self.yvy,
                 self.rho, self._w,
-                threads=threads,
             )
             self.etab = restrict(
                 fine.nx1, fine.ny1,
@@ -321,7 +319,6 @@ class Grid:
                 self.nx1, self.ny1,
                 self.x, self.y,
                 self.etab, self._w,
-                threads=threads,
             )
             self.etap = restrict(
                 fine.nx1, fine.ny1,
@@ -329,7 +326,6 @@ class Grid:
                 self.nx1, self.ny1,
                 self.xp, self.yp,
                 self.etap, self._w,
-                threads=threads,
             )
         elif fine.is_gpu and self.is_gpu:
             # GPU to GPU
@@ -395,14 +391,12 @@ class Grid:
     def restrict_residuals(self, fine: "Grid") -> None:
         if not self.is_gpu and not fine.is_gpu:
             # CPU to CPU
-            threads = nb.get_num_threads()
             self.vx_rhs = restrict(
                 fine.nx1, fine.ny1,
                 fine.xvx, fine.yvx, fine.vx_res,
                 self.nx1, self.ny1,
                 self.xvx, self.yvx,
                 self.vx_rhs, self._w,
-                threads=threads,
             )
             self.vy_rhs = restrict(
                 fine.nx1, fine.ny1,
@@ -410,7 +404,6 @@ class Grid:
                 self.nx1, self.ny1,
                 self.xvy, self.yvy,
                 self.vy_rhs, self._w,
-                threads=threads,
             )
         elif self.is_gpu and fine.is_gpu:
             # GPU to GPU

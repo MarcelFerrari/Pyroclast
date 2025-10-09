@@ -13,6 +13,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+
 import math
 import os
 from typing import Type
@@ -23,11 +24,13 @@ import numpy as np
 from Pyroclast.solvers.stokes_2d.smoothers.rb_gs_fuse import velocity_smoother_rb_gs as base_rb_gs
 from Pyroclast.solvers.stokes_2d.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
 from Pyroclast.solvers.stokes_2d.bc import cpu_apply_vx_BC, cpu_apply_vy_BC
+from Pyroclast.utils import inject_threads
 
 
 use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
 
 
+@inject_threads
 @nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
 def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             dx: float, dy: float,
@@ -113,7 +116,6 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
         needs_cache_block_size_1: bool = True
 
         def benchmark_preamble(self):
-            th = nb.get_num_threads()
             start = dtf()
             velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1, step_size=1,
                                     dx=self.dx, dy=self.dy,
@@ -122,7 +124,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                     relax_v=self.relax_v, BC=self.boundary_condition,
                                     max_iter=1,
                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                    th=th, cache_a=self.cache_block_size_1)
+                                    cache_a=self.cache_block_size_1)
             end = dtf()
 
             # Add the timing information
@@ -141,16 +143,15 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             Perform the actual run of the benchmark.
             """
-            th = nb.get_num_threads()
             start = dtf()
             velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1, step_size=1,
                                     dx=self.dx, dy=self.dy,
                                     etap=self.eta_p, etab=self.eta_b,
                                     vx=self.vx, vy=self.vy,
                                     relax_v=self.relax_v, BC=self.boundary_condition,
-                                    max_iter=1,
+                                    max_iter=self.max_iter,
                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                    th=th, cache_a=self.cache_block_size_1)
+                                    cache_a=self.cache_block_size_1)
             end = dtf()
 
             # Add the timing information

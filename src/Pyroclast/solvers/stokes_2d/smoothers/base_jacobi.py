@@ -95,7 +95,6 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     module_name = os.path.basename(__file__).replace(".py", "")
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
-        needs_cache_block_size_1: bool = True
 
         def __init__(self, arguments: bw.BenchmarkValidatorSmoother):
             super().__init__(arguments=arguments)
@@ -139,7 +138,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                      etap=self.eta_p, etab=self.eta_b,
                                      vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
                                      relax_v=self.relax_v, BC=self.boundary_condition,
-                                     max_iter=1,
+                                     max_iter=self.max_iter,
                                      vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
             end = dtf()
 

@@ -33,7 +33,7 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             vx: np.ndarray, vy: np.ndarray,
                             relax_v: float, BC: float,
                             vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
-                            th: int, cache_a: int, step_size: int):
+                            step_size: int):
     for _ in range(max_iter):
         for i in nb.prange(1, ny1 - 1 + step_size * 3):
             for j in range(1 , nx1 - 1):
@@ -85,7 +85,6 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
         def benchmark_preamble(self):
-            th = nb.get_num_threads()
             start = dtf()
             velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1,
                                     dx=self.dx, dy=self.dy,
@@ -93,8 +92,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                     vx=self.vx, vy=self.vy,
                                     relax_v=self.relax_v, BC=self.boundary_condition,
                                     max_iter=1,
-                                    vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                    th=th, cache_a=self.cache_block_size_1, step_size=1)
+                                    vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs, step_size=1)
             end = dtf()
 
             # Add the timing information
@@ -120,7 +118,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                     etap=self.eta_p, etab=self.eta_b,
                                     vx=self.vx, vy=self.vy,
                                     relax_v=self.relax_v, BC=self.boundary_condition,
-                                    max_iter=1,
+                                    max_iter=self.max_iter,
                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
                                     th=th, cache_a=self.cache_block_size_1, step_size=1)
             end = dtf()

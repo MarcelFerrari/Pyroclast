@@ -74,7 +74,6 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     module_name = os.path.basename(__file__).replace(".py", "")
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
-        needs_cache_block_size_1: bool = True
 
         def __init__(self, arguments: bw.BenchmarkValidatorSmoother):
             super().__init__(arguments=arguments)
@@ -86,7 +85,6 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                 self.vy_new = np.zeros((self.nx1, self.ny1))
 
         def benchmark_preamble(self):
-            th = nb.get_num_threads()
             start = dtf()
             velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
                                      dx=self.dx, dy=self.dy,
@@ -94,8 +92,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                      vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
                                      relax_v=self.relax_v, BC=self.boundary_condition,
                                      max_iter=1,
-                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                     th=th, cache_a=self.cache_block_size_1)
+                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
             end = dtf()
 
             # Add the timing information
@@ -114,16 +111,14 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             Perform the actual run of the benchmark.
             """
-            th = nb.get_num_threads()
             start = dtf()
             velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
                                      dx=self.dx, dy=self.dy,
                                      etap=self.eta_p, etab=self.eta_b,
                                      vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
                                      relax_v=self.relax_v, BC=self.boundary_condition,
-                                     max_iter=1,
-                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                     th=th, cache_a=self.cache_block_size_1)
+                                     max_iter=self.max_iter,
+                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
             end = dtf()
 
             # Add the timing information
