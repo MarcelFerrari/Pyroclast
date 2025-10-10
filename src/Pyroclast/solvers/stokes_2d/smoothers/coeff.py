@@ -4,7 +4,6 @@ import numpy as np
 # -----------------------------
 # Coefficient helpers (inlined)
 # -----------------------------
-@nb.njit(inline='always', fastmath=True)
 def x_momentum_coefficients(dx, dy, etaA, etaB, eta1, eta2):
     # vx-stencil coeffs
     vx1 = 2.0 * etaA / (dx * dx)
@@ -20,7 +19,6 @@ def x_momentum_coefficients(dx, dy, etaA, etaB, eta1, eta2):
     return vx1, vx2, vx3, vx4, vx5, vy1, vy2, vy3, vy4
 
 
-@nb.njit(inline='always', fastmath=True)
 def y_momentum_coefficients(dx, dy, etaA, etaB, eta1, eta2):
     # vy-stencil coeffs
     vy1 = eta1 / (dx * dx)

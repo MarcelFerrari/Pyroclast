@@ -24,34 +24,52 @@ class GridHierarchy:
     """
     Builds and stores grid levels from fine to coarse.
     """
-    def __init__(self, ctx, nlevels, scaling):
+    def __init__(self, ctx, nlevels, scaling, material):
         state, params, _opts = ctx
 
+        self.gpu_enable = params.get("enable_gpu", False)
+        self.gpu_threshold: int = params.get("gpu_threshold", 1024)
+
         # Init grid
-        base = Grid(state.nx1 - 1, state.ny1 - 1, 0, ctx)
+        base = Grid(state.nx1 - 1, state.ny1 - 1, 0, ctx, \
+                    device = self.get_device(state.nx1 - 1, state.ny1 - 1))
         
         # Copy over material properties
-        base.rho[:,:] = state.rho
-        base.etab[:,:] = state.etab
-        base.etap[:,:] = state.etap
+        base.rho[:,:] = material["rho"]
+        base.etab[:,:] = material["etab"]
+        base.etap[:,:] = material["etap"]
 
         # Initialize coarse levels
         self.nlevels = nlevels
         self.levels = [base]
-        logger.info(f"Grid Hierarchy: {self.nlevels} levels, scaling {scaling:.2f}")
+        logger.info(f"Grid Hierarchy: {self.nlevels} levels, scaling {scaling:.2f} on device {base.device}")
         logger.info(f"Fine grid: {base.ny1} x {base.nx1}")
     
         # Build coarse grids and propagate properties
         for lvl in range(1, self.nlevels):
             prev = self.levels[-1]
+            
             # Half the number of cells
             nx_coarse = int((prev.nx - 1) / scaling) + 1
-            ny_coarse = int((prev.ny - 1) / scaling) + 1 
-            coarse = Grid(ny_coarse, nx_coarse, lvl, ctx)
+            ny_coarse = int((prev.ny - 1) / scaling) + 1
+            coarse_device = self.get_device(nx_coarse, ny_coarse)
+            coarse = Grid(ny_coarse, nx_coarse, lvl, ctx, device=coarse_device)
+            
+            # # Allocate temp arrays if device changes from GPU to CPU
+            # if prev.device == "gpu" and coarse.device == "cpu":
+            #     coarse.allocate_temp_arrays()
+                
             coarse.restrict_properties(prev)
             self.levels.append(coarse)
-            logger.info(f"Coarse grid {lvl}: {coarse.ny1} x {coarse.nx1}")
+            logger.info(f"Coarse grid {lvl}: {coarse.ny1} x {coarse.nx1} on device {coarse.device}")
 
+    def get_device(self, nx, ny):
+        if not self.gpu_enable or \
+           np.sqrt(nx * ny) < self.gpu_threshold:
+            return "cpu"
+        else:
+            return "gpu"
+    
     def __getitem__(self, idx):
         return self.levels[idx]
 

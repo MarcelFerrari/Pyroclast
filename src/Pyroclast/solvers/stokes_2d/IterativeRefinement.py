@@ -1,6 +1,6 @@
 import numpy as np
 from Pyroclast.logging import get_logger
-from .smoothers.bc import apply_BC
+from .smoothers.cpu.bc import apply_BC
 
 logger = get_logger(__name__)
 class IterativeRefinement:

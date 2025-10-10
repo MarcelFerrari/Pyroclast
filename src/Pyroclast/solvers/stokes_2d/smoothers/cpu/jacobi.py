@@ -1,7 +1,11 @@
 import numba as nb
 import numpy as np
 from .bc import apply_p_BC, apply_vx_BC, apply_vy_BC
-from .coeff import x_momentum_coefficients, y_momentum_coefficients
+from ..coeff import x_momentum_coefficients, y_momentum_coefficients
+
+# JIT-compile the coefficient functions
+x_momentum_coefficients = nb.njit(inline='always', fastmath=True)(x_momentum_coefficients)
+y_momentum_coefficients = nb.njit(inline='always', fastmath=True)(y_momentum_coefficients)
 
 @nb.njit(cache=True, parallel=True, fastmath=True)
 def pressure_sweep(nx1, ny1, dx, dy,

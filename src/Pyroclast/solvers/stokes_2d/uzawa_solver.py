@@ -19,16 +19,16 @@ import numpy as np
 
 # Use the solver-agnostic multigrid base with Stokes-specific hooks
 from Pyroclast.logging import get_logger
+from Pyroclast.linalg import get_xp
+
 from Pyroclast.solvers.anderson import AndersonAccelerator
 
 from .grid_hierarchy import GridHierarchy
 from .velocity_multigrid_2D import VelocityMultigrid2D
-from .smoothers import pressure_sweep
-from .implicit_operators import uzawa_velocity_rhs, \
-                                p_residual, vx_residual, vy_residual, \
-                                compute_p_energy_norm, compute_vx_energy_norm, compute_vy_energy_norm
 from .viscosity_rescaler import ViscosityRescaler
-from .smoothers.bc import apply_BC
+
+
+
 
 
 logger = get_logger(__name__)
@@ -47,6 +47,7 @@ class _UzawaSolverParams:
         self.nu2 = p.get("mg_nu2", 5)
         self.BC = p.BC
         self.res_tol = p.get("uzawa_stokes_res_tol", 1e-4)
+        self.enable_gpu = p.get("enable_gpu", False)
 
 class UzawaSolver:
     """Solve the Stokes system using Uzawa iterations and multigrid."""
@@ -65,11 +66,27 @@ class UzawaSolver:
         self.max_cycles = params.max_iterations
         self.BC = params.BC  # type depends on your BC convention
         self.res_tol = params.res_tol
+        self.enable_gpu = params.enable_gpu
+        self.device = 'gpu' if self.enable_gpu else 'cpu'
+        
+        # Get xnp module
+        xnp = get_xp(self.device)
 
+        # Store original stokes problem material properties
+        self.stokes_etab = xnp.asarray(s.etab)
+        self.stokes_etap = xnp.asarray(s.etap)
+        self.stokes_rho = xnp.asarray(s.rho)
+        material = {"etab": self.stokes_etab,
+                    "etap": self.stokes_etap,
+                    "rho": self.stokes_rho}
+        
         # Set up multigrid solver for the velocity field
-        self.hierarchy = GridHierarchy(ctx, nlevels, scaling)
+        self.hierarchy = GridHierarchy(ctx, nlevels, scaling, material)
         self.mg = VelocityMultigrid2D(self.hierarchy, scaling)
         self.fine = self.hierarchy[0] # Fine grid solution
+
+        # Bind device-specific methods (CPU/GPU)
+        self.bind_methods(device=self.device)
         
         # Read Resolution from fine grid
         # The pressure sub-problem should match this
@@ -93,18 +110,14 @@ class UzawaSolver:
         self.etap = self.fine.etap
         self.rho = self.fine.rho
 
-        # Store original stokes problem material properties
-        self.stokes_etab = s.etab
-        self.stokes_etap = s.etap
-        self.stokes_rho = s.rho
+        # Set up viscosity rescaler
+        self.rescaler = ViscosityRescaler(ctx, self.hierarchy,\
+                                          self.stokes_etab, self.stokes_etap)
 
         # Allocate memory for pressure solution and residual
-        self.p = np.zeros((self.ny1, self.nx1))
-        self.p_rhs = np.zeros((self.ny1, self.nx1))
-        self.p_res = np.zeros((self.ny1, self.nx1))
-
-        # Set up viscosity rescaler
-        self.rescaler = ViscosityRescaler(ctx, self.hierarchy)
+        self.p = xnp.zeros((self.ny1, self.nx1))
+        self.p_rhs = xnp.zeros((self.ny1, self.nx1))
+        self.p_res = xnp.zeros((self.ny1, self.nx1))
 
         # Set up Anderson Acceleration
         self.accel = AndersonAccelerator(ctx, shape=(3, self.ny1, self.nx1))
@@ -112,8 +125,47 @@ class UzawaSolver:
             logger.info(f"Using Anderson Acceleration with m={self.accel.m}, "
                         f"beta={self.accel.beta}, reg={self.accel.reg}, "
                         f"scale_reg={self.accel.scale_reg}")
-            self.state_k    = np.zeros((3, self.ny1, self.nx1))      # [vx, vy, p] at k
-            self.state_next = np.zeros_like(self.state_k)            # G(x_k)
+            self.state_k    = xnp.zeros((3, self.ny1, self.nx1))      # [vx, vy, p] at k
+            self.state_next = xnp.zeros_like(self.state_k)            # G(x_k)
+
+    def bind_methods(self, device):
+        if device not in ['cpu', 'gpu']:
+            raise ValueError(f"Unknown device: {device}")
+        
+        """Bind methods to the appropriate device (CPU/GPU)."""
+        if device == 'cpu':
+            from .smoothers.cpu import pressure_sweep
+            self.pressure_sweep = pressure_sweep
+
+            from .implicit_operators.cpu import uzawa_velocity_rhs, \
+                                p_residual, vx_residual, vy_residual, \
+                                compute_p_energy_norm, compute_vx_energy_norm, compute_vy_energy_norm
+            self.uzawa_velocity_rhs = uzawa_velocity_rhs
+            self.p_residual = p_residual
+            self.vx_residual = vx_residual
+            self.vy_residual = vy_residual
+            self.compute_p_energy_norm = compute_p_energy_norm
+            self.compute_vx_energy_norm = compute_vx_energy_norm
+            self.compute_vy_energy_norm = compute_vy_energy_norm
+            
+            from .smoothers.cpu.bc import apply_BC
+            self.apply_BC = apply_BC
+        else:
+            from .smoothers.gpu import pressure_sweep
+            self.pressure_sweep = pressure_sweep
+
+            from .implicit_operators.gpu import uzawa_velocity_rhs, \
+                                p_residual, vx_residual, vy_residual, \
+                                compute_p_energy_norm, compute_vx_energy_norm, compute_vy_energy_norm
+            self.uzawa_velocity_rhs = uzawa_velocity_rhs
+            self.p_residual = p_residual
+            self.vx_residual = vx_residual
+            self.vy_residual = vy_residual
+            self.compute_p_energy_norm = compute_p_energy_norm
+            self.compute_vx_energy_norm = compute_vx_energy_norm
+            self.compute_vy_energy_norm = compute_vy_energy_norm
+            from .smoothers.gpu.bc import apply_BC
+            self.apply_BC = apply_BC
 
     def reset(self):
         """Reset the solver state (solution and residuals)."""
@@ -128,33 +180,33 @@ class UzawaSolver:
         
         # Compute energy norm of residuals
         # Pressure residual
-        self.p_res = p_residual(self.nx1, self.ny1,
+        self.p_res = self.p_residual(self.nx1, self.ny1,
                                 self.dx, self.dy,
                                 vx, vy,
                                 self.p_res, self.stokes_p_rhs)
     
         # Velocity residuals
-        self.vx_res = vx_residual(self.nx1, self.ny1,
+        self.vx_res = self.vx_residual(self.nx1, self.ny1,
                                     self.dx, self.dy,
                                     self.stokes_etap, self.stokes_etab,
                                     vx, vy, p,
                                     self.vx_res, self.stokes_vx_rhs)
 
-        self.vy_res = vy_residual(self.nx1, self.ny1,
+        self.vy_res = self.vy_residual(self.nx1, self.ny1,
                                     self.dx, self.dy,
                                     self.stokes_etap, self.stokes_etab,
                                     vx, vy, p,
                                     self.vy_res, self.stokes_vy_rhs)
 
         # Compute energy norm residuals
-        p_energy = compute_p_energy_norm(self.nx1, self.ny1, self.dx, self.dy, self.etap, self.p_res)
-        vx_energy = compute_vx_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
+        p_energy = self.compute_p_energy_norm(self.nx1, self.ny1, self.dx, self.dy, self.etap, self.p_res)
+        vx_energy = self.compute_vx_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
                                            self.stokes_etap, self.stokes_etab, self.vx_res)
-        vy_energy = compute_vy_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
+        vy_energy = self.compute_vy_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
                                            self.stokes_etap, self.stokes_etab, self.vy_res)
         
         # Gravity drives the flow only in vy direction
-        vy_rhs_norm = compute_vy_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
+        vy_rhs_norm = self.compute_vy_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
                                            self.stokes_etap, self.stokes_etab, self.stokes_vy_rhs)
 
         residual = p_energy**2 + vx_energy**2 + vy_energy**2
@@ -165,21 +217,28 @@ class UzawaSolver:
               p_guess=None, vx_guess=None, vy_guess=None):
         """Run Uzawa iterations until convergence."""
 
+        # Get xp module
+        xnp = get_xp(self.device)
+
         # Set up initial guess if given
         if p_guess is not None:
+            p_guess = xnp.asarray(p_guess)
             self.p[...] = p_guess
+
             # Enforce zero-mean pressure on initial guess
-            pbar = np.mean(self.p[1:-1, 1:-1])
+            pbar = xnp.mean(self.p[1:-1, 1:-1])
             self.p -= pbar 
         if vx_guess is not None:
+            vx_guess = xnp.asarray(vx_guess)
             self.vx[...] = vx_guess
         if vy_guess is not None:
+            vy_guess = xnp.asarray(vy_guess)
             self.vy[...] = vy_guess
 
         # Store rhs for original stokes problem
-        self.stokes_p_rhs = stokes_p_rhs
-        self.stokes_vx_rhs = stokes_vx_rhs
-        self.stokes_vy_rhs = stokes_vy_rhs
+        self.stokes_p_rhs = xnp.asarray(stokes_p_rhs)
+        self.stokes_vx_rhs = xnp.asarray(stokes_vx_rhs)
+        self.stokes_vy_rhs = xnp.asarray(stokes_vy_rhs)
 
         # Set up viscosity rescaler
         self.rescaler.set(self.stokes_etab, self.stokes_etap)
@@ -196,7 +255,7 @@ class UzawaSolver:
             # Update velocity right hand sides using the current pressure
             # This routine computes the uzawa rhs from the original stokes problem
             # Pressure here is assumed to be constant
-            self.vx_rhs, self.vy_rhs = uzawa_velocity_rhs(self.nx1, self.ny1,
+            self.vx_rhs, self.vy_rhs = self.uzawa_velocity_rhs(self.nx1, self.ny1,
                                                             self.dx, self.dy,
                                                             self.stokes_vx_rhs, self.stokes_vy_rhs, self.p,
                                                             self.vx_rhs, self.vy_rhs)
@@ -207,7 +266,7 @@ class UzawaSolver:
                 self.mg.vcycle(0, self.nu1, self.nu2)
 
             # Pressure update
-            self.p = pressure_sweep(self.nx1, self.ny1,
+            self.p = self.pressure_sweep(self.nx1, self.ny1,
                                     self.dx, self.dy,
                                     self.vx, self.vy,
                                     self.p, 
@@ -231,9 +290,9 @@ class UzawaSolver:
                     self.vy[...] = x_acc[1, ...]
                     self.p[...]  = x_acc[2, ...]
 
-                    pbar = np.mean(self.p[1:-1, 1:-1])
+                    pbar = xnp.mean(self.p[1:-1, 1:-1])
                     self.p -= pbar  # Remove mean pressure drift
-                    apply_BC(self.p, self.vx, self.vy, self.BC)
+                    self.apply_BC(self.p, self.vx, self.vy, self.BC)
 
             
             # Compute residuals of the new solution
@@ -249,7 +308,6 @@ class UzawaSolver:
                 self.accel.reset()  # Reset Anderson history if viscosity changed
 
             # Check convergence
-
             if res < self.res_tol and \
                self.rescaler.done_rescaling():
                 logger.info(f"Uzawa solver converged in {cycle} cycles "
