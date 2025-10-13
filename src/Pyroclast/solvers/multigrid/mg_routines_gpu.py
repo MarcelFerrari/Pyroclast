@@ -27,7 +27,9 @@ def _restrict2d_scatter(
 ):
     j = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     i = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
-    if i >= nyh - 1 or j >= nxh - 1:
+    # if i >= nyh - 1 or j >= nxh - 1:
+    #     return
+    if not (0 <= i < nyh - 1 and 0 <= j < nxh - 1):
         return
 
     yhi = yh[i]

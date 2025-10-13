@@ -7,11 +7,11 @@ from ..coeff import x_momentum_coefficients as _x_coeff,\
                     y_momentum_coefficients as _y_coeff
 
 # Device-callable wrappers for your coefficient functions
-x_momentum_coefficients = cuda.jit(device=True)(_x_coeff)
-y_momentum_coefficients = cuda.jit(device=True)(_y_coeff)
+x_momentum_coefficients = cuda.jit(inline="always")(_x_coeff)
+y_momentum_coefficients = cuda.jit(inline="always")(_y_coeff)
 
 # Utility to determine grid/block sizes
-def _launch_2d(shape, block=(32, 32)):
+def _launch_2d(shape, block=(64, 16)):
     ny, nx = shape
     bx, by = block
     gx = (nx + bx - 1) // bx
@@ -111,6 +111,7 @@ def pressure_sweep(nx1, ny1, dx, dy,
     # 1) interior update on GPU
     grid, block = _launch_2d((ny1, nx1))
     _pressure_sweep_interior_kernel[grid, block](nx1, ny1, dx, dy, vx, vy, p, beta, relax_p, rhs)
+    cuda.synchronize()  # ensure interior is ready before applying BC
 
     # 2) zero-mean using CuPy reductions (interior mean)
     pbar = cp.mean(p[1:ny1-1, 1:nx1-1])
@@ -119,31 +120,6 @@ def pressure_sweep(nx1, ny1, dx, dy,
     # 3) pressure BCs (provided by your codebase)
     apply_p_BC(p)
     return p
-
-
-def _vx_jacobi_sweep(nx1, ny1,
-                     dx, dy,
-                     etap, etab,
-                     vx_old, vy_old,
-                     relax_v, rhs,
-                     vx_new_out):
-    grid, block = _launch_2d((ny1, nx1))
-    _vx_jacobi_sweep_kernel[grid, block](nx1, ny1, dx, dy, etap, etab,
-                                         vx_old, vy_old, relax_v, rhs, vx_new_out)
-    return vx_new_out
-
-
-def _vy_jacobi_sweep(nx1, ny1,
-                     dx, dy,
-                     etap, etab,
-                     vx_old, vy_old,
-                     relax_v, rhs,
-                     vy_new_out):
-    grid, block = _launch_2d((ny1, nx1))
-    _vy_jacobi_sweep_kernel[grid, block](nx1, ny1, dx, dy, etap, etab,
-                                         vx_old, vy_old, relax_v, rhs, vy_new_out)
-    return vy_new_out
-
 
 def jacobi_velocity_smoother(nx1, ny1,
                              dx, dy,
@@ -161,11 +137,14 @@ def jacobi_velocity_smoother(nx1, ny1,
         # vx sweep
         _vx_jacobi_sweep_kernel[grid, block](nx1, ny1, dx, dy, etap, etab,
                                              vx, vy, relax_v, vx_rhs, vx_new)
+        cuda.synchronize()  # ensure vx is ready before applying BC
+
         apply_vx_BC(vx_new, BC)
 
         # vy sweep
         _vy_jacobi_sweep_kernel[grid, block](nx1, ny1, dx, dy, etap, etab,
                                              vx, vy, relax_v, vy_rhs, vy_new)
+        cuda.synchronize()  # ensure vy is ready before applying BC
         apply_vy_BC(vy_new, BC)
 
         # ping-pong

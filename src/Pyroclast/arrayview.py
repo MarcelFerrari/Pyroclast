@@ -50,7 +50,7 @@ def view(arr, *, intent: str, device: str):
             arr_dev = cp.asarray(arr)
         else:  # intent == "out"
             # allocate only; no copy-in
-            arr_dev = cp.empty_like(arr)
+            arr_dev = cp.zeros_like(arr)
         
         # yield the device array
         yield arr_dev
@@ -70,7 +70,7 @@ def view(arr, *, intent: str, device: str):
             arr_host = arr.get()
         else:  # intent == "out"
             # allocate only; no copy-in
-            arr_host = np.empty_like(arr)
+            arr_host = np.zeros_like(arr)
 
         # yield the host array
         yield arr_host

@@ -87,7 +87,7 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         self.vy_rhs[...] = -self.gy * s.rho
 
         # Create Uzawa solver
-        solver = UzawaSolver(ctx, nlevels=4, scaling=2.5)
+        solver = UzawaSolver(ctx, nlevels=6, scaling=2.0)
         #refinement = IterativeRefinement(solver, ctx)
 
         # Solve the system

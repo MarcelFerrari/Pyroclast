@@ -11,13 +11,13 @@ seed = 42
 dt_initial = 1e11
 
 # Time integration options
-max_iterations=20
+max_iterations=1
 
 # Grid options
 xsize = 100000 # Hortizontal size, m
 ysize = 100000 # Vertical size, m
-nx = 151       # Horizontal resolution
-ny = 181       # Vertical resolution
+nx = 5001       # Horizontal resolution
+ny = 5001       # Vertical resolution
 gy = 10.0      # Vertical gravity, m/s^2
 
 # Marker options
@@ -46,14 +46,18 @@ eta_cycle_interval = 25
 eta_ncycles = 4
 
 # Relaxation parameters
-relax_v = 0.7
-relax_p = 0.7
+relax_v = 0.3
+relax_p = 0.6
 
 # Stokes solver options
-max_uzawa_iterations = 1000
-uzawa_velocity_cycles = 1
+max_uzawa_iterations = 10
+uzawa_stokes_res_tol = 1e-5
+uzawa_velocity_cycles = 2
 enable_anderson = false
-anderson_m = 5
+anderson_m = 10
 anderson_scale_reg = false
 anderson_beta = 0.7
-anderson_reg = 1e-5
+anderson_reg = 1e-3
+
+enable_gpu = false
+gpu_threshold = 2000

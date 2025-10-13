@@ -27,10 +27,6 @@ from .grid_hierarchy import GridHierarchy
 from .velocity_multigrid_2D import VelocityMultigrid2D
 from .viscosity_rescaler import ViscosityRescaler
 
-
-
-
-
 logger = get_logger(__name__)
 
 class _UzawaSolverParams:
@@ -71,17 +67,18 @@ class UzawaSolver:
         
         # Get xnp module
         xnp = get_xp(self.device)
-
-        # Store original stokes problem material properties
+        
+        # Store material properties for the original Stokes problem
         self.stokes_etab = xnp.asarray(s.etab)
         self.stokes_etap = xnp.asarray(s.etap)
         self.stokes_rho = xnp.asarray(s.rho)
-        material = {"etab": self.stokes_etab,
-                    "etap": self.stokes_etap,
-                    "rho": self.stokes_rho}
-        
+
         # Set up multigrid solver for the velocity field
-        self.hierarchy = GridHierarchy(ctx, nlevels, scaling, material)
+        self.hierarchy = GridHierarchy(ctx, nlevels, scaling)
+        self.hierarchy.set_properties(self.stokes_etab,
+                                      self.stokes_etap,
+                                      self.stokes_rho)
+        
         self.mg = VelocityMultigrid2D(self.hierarchy, scaling)
         self.fine = self.hierarchy[0] # Fine grid solution
 
@@ -111,8 +108,7 @@ class UzawaSolver:
         self.rho = self.fine.rho
 
         # Set up viscosity rescaler
-        self.rescaler = ViscosityRescaler(ctx, self.hierarchy,\
-                                          self.stokes_etab, self.stokes_etap)
+        self.rescaler = ViscosityRescaler(ctx, self.hierarchy)
 
         # Allocate memory for pressure solution and residual
         self.p = xnp.zeros((self.ny1, self.nx1))
@@ -206,9 +202,11 @@ class UzawaSolver:
                                            self.stokes_etap, self.stokes_etab, self.vy_res)
         
         # Gravity drives the flow only in vy direction
+        # TODO: fix this ugly hack
+        self.fine._w[...] = self.stokes_vy_rhs
         vy_rhs_norm = self.compute_vy_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
-                                           self.stokes_etap, self.stokes_etab, self.stokes_vy_rhs)
-
+                                           self.stokes_etap, self.stokes_etab, self.fine._w)
+        
         residual = p_energy**2 + vx_energy**2 + vy_energy**2
         rhs_norm = vy_rhs_norm**2
         return np.sqrt(residual / (rhs_norm))
@@ -314,5 +312,9 @@ class UzawaSolver:
                             f"with relative residual {res:.3e}.")
                 break
 
-        return self.p, self.vx, self.vy
-
+        if hasattr(xnp, 'asnumpy'):
+            return xnp.asnumpy(self.p), \
+                   xnp.asnumpy(self.vx), \
+                   xnp.asnumpy(self.vy)
+        else:
+            return self.p, self.vx, self.vy
