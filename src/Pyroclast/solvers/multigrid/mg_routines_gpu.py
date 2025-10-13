@@ -1,19 +1,14 @@
+from Pyroclast.gpu_utils import get_numba_stream, launch_2D
 import cupy as cp
 from numba import cuda
 
 # -----------------------
 # Device helpers
 # -----------------------
-
-@cuda.jit(device=True, inline=True)
+@cuda.jit(inline="always")
 def _clip_i(x, lo, hi):
     return lo if x < lo else (hi if x > hi else x)
 
-def _grid2d(ny, nx, block=(16, 16)):
-    by, bx = block
-    gy = (ny + by - 1) // by
-    gx = (nx + bx - 1) // bx
-    return (gx, gy), (bx, by)
 # -----------------------
 # Kernels
 # -----------------------
@@ -59,17 +54,6 @@ def _restrict2d_scatter(
     cuda.atomic.add(wH_accum, (iH+1, jH  ), w10)
     cuda.atomic.add(wH_accum, (iH,   jH+1), w01)
     cuda.atomic.add(wH_accum, (iH+1, jH+1), w11)
-
-@cuda.jit
-def _normalize2d(uH, wH):
-    j = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    i = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
-    ny, nx = uH.shape
-    if i >= ny or j >= nx:
-        return
-    w = wH[i, j]
-    if w > 0.0:
-        uH[i, j] = uH[i, j] / w
 
 @cuda.jit
 def _prolong2d(
@@ -118,10 +102,9 @@ def restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw):
     yH0 = float(yH[0].item())
 
     # launch over fine interior (exclude last row/col)
-    by, bx = 16, 16
-    gy = (nyh - 1 + by - 1) // by
-    gx = (nxh - 1 + bx - 1) // bx
-    _restrict2d_scatter[(gx, gy), (bx, by)](
+    grid, block = launch_2D((nyh - 1, nxh - 1))
+    stream = get_numba_stream()
+    _restrict2d_scatter[grid, block, stream](
         nxh, nyh, xh, yh, uh,
         nxH, nyH, xH, yH,
         uH, uHw,
@@ -129,10 +112,7 @@ def restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw):
     )
 
     # normalize uH by weights uHw
-    gyN = (nyH + by - 1) // by
-    gxN = (nxH + bx - 1) // bx
-    _normalize2d[(gxN, gyN), (bx, by)](uH, uHw)
-
+    uH /= uHw  # in-place device op
     return uH
 
 def prolong_2D(nxH, nyH, xH, yH, uH,
@@ -146,10 +126,9 @@ def prolong_2D(nxH, nyH, xH, yH, uH,
     xH0 = float(xH[0].item())
     yH0 = float(yH[0].item())
 
-    by, bx = 16, 16
-    gy = (nyh + by - 1) // by
-    gx = (nxh + bx - 1) // bx
-    _prolong2d[(gx, gy), (bx, by)](
+    grid, block = launch_2D((nyh, nxh))
+    stream = get_numba_stream()
+    _prolong2d[grid, block, stream](
         nxH, nyH, xH, yH, uH,
         nxh, nyh, xh, yh, uh,
         dxH, dyH, xH0, yH0

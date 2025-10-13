@@ -1,3 +1,4 @@
+from Pyroclast.gpu_utils import launch_2D, get_numba_stream
 import numba as nb
 from numba import cuda
 import cupy as cp
@@ -9,14 +10,6 @@ from ..coeff import x_momentum_coefficients as _x_coeff,\
 # Device-callable wrappers for your coefficient functions
 x_momentum_coefficients = cuda.jit(inline="always")(_x_coeff)
 y_momentum_coefficients = cuda.jit(inline="always")(_y_coeff)
-
-# Utility to determine grid/block sizes
-def _launch_2d(shape, block=(64, 16)):
-    ny, nx = shape
-    bx, by = block
-    gx = (nx + bx - 1) // bx
-    gy = (ny + by - 1) // by
-    return (gx, gy), (bx, by)
 
 
 # =========================
@@ -109,9 +102,9 @@ def pressure_sweep(nx1, ny1, dx, dy,
                    beta,
                    relax_p, rhs):
     # 1) interior update on GPU
-    grid, block = _launch_2d((ny1, nx1))
-    _pressure_sweep_interior_kernel[grid, block](nx1, ny1, dx, dy, vx, vy, p, beta, relax_p, rhs)
-    cuda.synchronize()  # ensure interior is ready before applying BC
+    grid, block = launch_2D((ny1, nx1))
+    stream = get_numba_stream()
+    _pressure_sweep_interior_kernel[grid, block, stream](nx1, ny1, dx, dy, vx, vy, p, beta, relax_p, rhs)
 
     # 2) zero-mean using CuPy reductions (interior mean)
     pbar = cp.mean(p[1:ny1-1, 1:nx1-1])
@@ -131,20 +124,18 @@ def jacobi_velocity_smoother(nx1, ny1,
                              max_iter):
     # keep even number of iterations
     max_iter += max_iter % 2
-    grid, block = _launch_2d((ny1, nx1))
+    grid, block = launch_2D((ny1, nx1))
+    stream = get_numba_stream()
 
     for _ in range(max_iter):
         # vx sweep
-        _vx_jacobi_sweep_kernel[grid, block](nx1, ny1, dx, dy, etap, etab,
+        _vx_jacobi_sweep_kernel[grid, block, stream](nx1, ny1, dx, dy, etap, etab,
                                              vx, vy, relax_v, vx_rhs, vx_new)
-        cuda.synchronize()  # ensure vx is ready before applying BC
-
         apply_vx_BC(vx_new, BC)
 
         # vy sweep
-        _vy_jacobi_sweep_kernel[grid, block](nx1, ny1, dx, dy, etap, etab,
+        _vy_jacobi_sweep_kernel[grid, block, stream](nx1, ny1, dx, dy, etap, etab,
                                              vx, vy, relax_v, vy_rhs, vy_new)
-        cuda.synchronize()  # ensure vy is ready before applying BC
         apply_vy_BC(vy_new, BC)
 
         # ping-pong
