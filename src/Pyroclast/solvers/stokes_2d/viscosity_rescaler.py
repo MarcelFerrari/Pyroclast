@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 class ViscosityRescaler:
     """Manage viscosity rescaling for a grid hierarchy."""
 
-    def __init__(self, ctx, hierarchy, stokes_etab, stokes_etap):
+    def __init__(self, ctx, hierarchy):
         s, p, o = ctx
         self.hierarchy = hierarchy
         self.enable = p.get("eta_scaling", False)
@@ -25,13 +25,10 @@ class ViscosityRescaler:
         # Load correct array module
         self.xp = get_xp(hierarchy[0].device)
 
-        # Store reference to original viscosity
-        self.stokes_etab = stokes_etab
-        self.stokes_etap = stokes_etap
-
-        # Ensure that shapes match
-        assert self.stokes_etab.shape == self.etab_comp.shape
-        assert self.stokes_etap.shape == self.etap_comp.shape
+        # Reference to original viscosity
+        # These are set later via `set()`
+        self.stokes_etab = None
+        self.stokes_etap = None
 
         # Rescaling parameters
         self.cycle_count = 0
@@ -55,8 +52,17 @@ class ViscosityRescaler:
         """Set new reference viscosity fields."""
         if not self.enable:
             return
+        
+        # Reset
+        self.reset()
+        
         self.stokes_etab = etab
         self.stokes_etap = etap
+
+        # Ensure that shapes match
+        assert self.stokes_etab.shape == self.etab_comp.shape
+        assert self.stokes_etap.shape == self.etap_comp.shape
+
         self.etab_min = self.xp.min(self.stokes_etab[:-1, :-1])
         self.etap_min = self.xp.min(self.stokes_etap[:-1, :-1])
         # Apply scaling immediately
@@ -91,9 +97,8 @@ class ViscosityRescaler:
         if not self.enable:
             return
         theta = min(self.progress, 1.0)
-        fine = self.hierarchy[0]
-        self.etab_comp[:] = (1.0 - theta) * self.etab_min + theta * self.stokes_etab
-        self.etap_comp[:] = (1.0 - theta) * self.etap_min + theta * self.stokes_etap
+        self.etab_comp[...] = (1.0 - theta) * self.etab_min + theta * self.stokes_etab
+        self.etap_comp[...] = (1.0 - theta) * self.etap_min + theta * self.stokes_etap
 
         # _interpolate_viscosity(fine.nx1, fine.ny1, theta,
         #                        self.etab_min, self.etap_min,
