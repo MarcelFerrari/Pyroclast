@@ -122,6 +122,15 @@ def jacobi_velocity_smoother(nx1, ny1,
                              relax_v, BC,
                              vx_rhs, vy_rhs,
                              max_iter):
+    
+    # Check that arrays are already on GPU
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(vx_new, cp.ndarray)
+    assert isinstance(vy_new, cp.ndarray)
+
     # keep even number of iterations
     max_iter += max_iter % 2
     grid, block = launch_2D((ny1, nx1))

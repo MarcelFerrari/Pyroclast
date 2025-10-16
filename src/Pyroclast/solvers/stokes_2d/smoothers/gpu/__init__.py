@@ -1,1 +1,2 @@
 from .jacobi import jacobi_velocity_smoother, pressure_sweep
+from .jacobi_fused import jacobi_velocity_smoother_fused

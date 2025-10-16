@@ -6,6 +6,12 @@ except ImportError:
     cp = None
     cuda = None
 
+_block_size = (32, 8)  # (bx, by) following cuda convention (x, y)
+
+def get_block_size():
+    """Get the default block size for GPU kernels."""
+    return _block_size
+
 def get_numba_stream():
     """Get the current CuPy stream for interoperability with Numba CUDA."""
     if cp is None or cuda is None:
@@ -15,15 +21,43 @@ def get_numba_stream():
     return cuda.external_stream(ptr)
 
 
-# Utils for GPU computing
-def launch_2D(shape, block=(8, 32)):
+def launch_2D(shape, max_blocks=None):
     """
-    Utility to determine grid/block sizes for 2D kernels
-    We assume our input shape is (ny, nx), i.e. (rows, cols)
-    and that the Cuda convention of (x, y) = (cols, rows) is used.
+    Utility to determine grid/block sizes for 2D CUDA kernels.
+
+    Parameters
+    ----------
+    shape : tuple[int, int]
+        (ny, nx) grid shape — i.e. (rows, cols).
+    max_blocks : int or None, optional
+        If provided, limits total number of blocks (grid.x * grid.y)
+        to this maximum — useful for cooperative launches.
+        If None, the full grid is used.
+
+    Returns
+    -------
+    grid : tuple[int, int]
+        Grid dimensions (gridDim.x, gridDim.y)
+    block : tuple[int, int]
+        Block dimensions (blockDim.x, blockDim.y)
     """
     ny, nx = shape
-    by, bx = block
+    bx, by = _block_size  # global or external block size, e.g. (32, 4)
+
+    # Compute full grid that covers the whole array
     gx = (nx + bx - 1) // bx
     gy = (ny + by - 1) // by
+
+    if max_blocks is not None:
+        total = gx * gy
+        if total > max_blocks:
+            # shrink proportionally while keeping roughly same aspect ratio
+            aspect = gx / gy
+            gy = int((max_blocks / aspect) ** 0.5)
+            gx = max(1, max_blocks // max(1, gy))
+            gy = max(1, gy)
+            # ensure product doesn't exceed
+            if gx * gy > max_blocks:
+                gy = max(1, max_blocks // gx)
+
     return (gx, gy), (bx, by)
