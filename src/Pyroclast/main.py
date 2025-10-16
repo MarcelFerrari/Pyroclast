@@ -190,10 +190,12 @@ class Pyroclast():
             s.time += s.dt
             
             # 7) Write Data
-            if (s.iteration % o.framedump_interval) == 0:
+            if o.framedump_interval > 0 and \
+                (s.iteration % o.framedump_interval) == 0:
                 self.model.dump(self.ctx)
 
-            if ((s.iteration+1) % o.checkpoint_interval) == 0:
+            if o.checkpoint_interval > 0 and \
+               ((s.iteration+1) % o.checkpoint_interval) == 0:
                 self.write_checkpoint(o.checkpoint_file)
             
             percent = 100 * s.iteration / p.max_iterations
