@@ -269,7 +269,7 @@ class UzawaSolver:
                                     self.vx, self.vy,
                                     self.p, 
                                     self.etap,
-                                    self.relax_p, stokes_p_rhs)
+                                    self.relax_p, self.stokes_p_rhs)
 
             # Attempt Anderson Acceleration
             if self.accel.enabled:
