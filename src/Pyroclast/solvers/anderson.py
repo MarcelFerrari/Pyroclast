@@ -16,6 +16,8 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import numpy as np
 from Pyroclast.logging import get_logger
+from Pyroclast.arrayview import view
+from Pyroclast.linalg import get_xp
 
 logger = get_logger(__name__)
 
@@ -35,6 +37,8 @@ class _AAParams:
         self.beta = float(p.get("anderson_beta", 0.7))
         self.reg = float(p.get("anderson_reg", 0.0))
         self.scale_reg = bool(p.get("anderson_scale_reg", False))
+        self.enable_gpu= bool(p.get("enable_gpu", False))
+        self.device = "gpu" if self.enable_gpu else "cpu"
 
 class AndersonAccelerator:
     def __init__(self, ctx, shape, dtype=np.float64):
@@ -68,17 +72,20 @@ class AndersonAccelerator:
         self.beta = params.beta
         self.reg = params.reg
         self.scale_reg = params.scale_reg
-        
+        self.enable_gpu = params.enable_gpu
+        self.device = params.device
+
         assert self.m >= 1, "Anderson m must be at least 1"
 
+        self.xnp = get_xp(device=self.device)
         self.shape = tuple(shape)
         self.vec_size = int(np.prod(self.shape))
         self.dtype = dtype
 
         # ring buffers (vec_size × m)
-        self.X  = np.zeros((self.vec_size, self.m), dtype=self.dtype)
-        self.FX = np.zeros((self.vec_size, self.m), dtype=self.dtype)
-        self.R  = np.zeros((self.vec_size, self.m), dtype=self.dtype)
+        self.X  = self.xnp.zeros((self.vec_size, self.m), dtype=self.dtype)
+        self.FX = self.xnp.zeros((self.vec_size, self.m), dtype=self.dtype)
+        self.R  = self.xnp.zeros((self.vec_size, self.m), dtype=self.dtype)
 
         self.k = 0  # total updates made
 
@@ -98,7 +105,7 @@ class AndersonAccelerator:
         self.k = 0
 
     @check_enabled
-    def update(self, xk, fxk) -> np.ndarray | None:
+    def update(self, xk, fxk):
         """
         Provide xk and its mapped iterate fxk = G(x_k).
         Returns accelerated x with shape == self.shape, or None until enough history.
@@ -108,6 +115,8 @@ class AndersonAccelerator:
         """
 
         # Assert that arrays are flat and of correct size
+        assert isinstance(xk, self.xnp.ndarray), f"xk must be {self.xnp.ndarray}, got {type(xk)}"
+        assert isinstance(fxk, self.xnp.ndarray), f"fxk must be {self.xnp.ndarray}, got {type(fxk)}"
         assert xk.ndim == 1 and fxk.ndim == 1, "xk and fxk must be flat 1D arrays"
         assert xk.size == self.vec_size, f"xk size {xk.size} != expected {self.vec_size}"
         assert fxk.size == self.vec_size, f"fxk size {fxk.size} != expected {self.vec_size}"
@@ -130,26 +139,32 @@ class AndersonAccelerator:
 
         # KKT for: min ||R_sub α||^2 s.t. 1^T α = 1
         G = R_sub.T @ R_sub  # (n, n)
-        if self.reg > 0.0:
-            lam = self.reg
-            if self.scale_reg:
-                tr = float(np.trace(G))
-                lam *= (tr / n) if tr > 0.0 else 1.0
-            G = G + lam * np.eye(n, dtype=G.dtype)
 
-        ones = np.ones((n, 1), dtype=G.dtype)
-        KKT  = np.block([[G,      ones],
-                         [ones.T, np.zeros((1, 1), dtype=G.dtype)]])
-        rhs  = np.zeros(n + 1, dtype=G.dtype)
-        rhs[-1] = 1.0
+        # Move G to CPU for solving if needed
+        alpha = self.xnp.empty(n, dtype=G.dtype) # Results of the KKT solve
+        with view(G, device="cpu", intent="in") as _G, \
+             view(alpha, device="cpu", intent="out") as _alpha:
+            
+            if self.reg > 0.0:
+                lam = self.reg
+                if self.scale_reg:
+                    tr = float(np.trace(_G))
+                    lam *= (tr / n) if tr > 0.0 else 1.0
+                _G = _G + lam * np.eye(n, dtype=_G.dtype)
+            
+            # KKT system
+            ones = np.ones((n, 1), dtype=_G.dtype)
+            KKT  = np.block([[_G,      ones],
+                            [ones.T, np.zeros((1, 1), dtype=_G.dtype)]])
+            rhs  = np.zeros(n + 1, dtype=_G.dtype)
+            rhs[-1] = 1.0
 
-        try:
-            sol = np.linalg.solve(KKT, rhs)
-        except np.linalg.LinAlgError:
-            logger.warning("Singular KKT system in Anderson Acceleration")
-            return None
-
-        alpha = sol[:-1]  # (n,)
+            try:
+                sol = np.linalg.solve(KKT, rhs)
+            except np.linalg.LinAlgError:
+                logger.warning("Singular KKT system in Anderson Acceleration")
+                return None
+            _alpha[...] = sol[:-1]  # (n,)
 
         x_bar  = X_sub  @ alpha
         fx_bar = FX_sub @ alpha
