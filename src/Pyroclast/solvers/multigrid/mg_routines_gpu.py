@@ -91,6 +91,14 @@ def restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw):
     In-place GPU restriction (fine->coarse) using atomics.
     All arrays are CuPy and preallocated. Returns uH (normalized).
     """
+    assert isinstance(uH, cp.ndarray)
+    assert isinstance(uHw, cp.ndarray)
+    assert isinstance(xH, cp.ndarray)
+    assert isinstance(yH, cp.ndarray)
+    assert isinstance(xh, cp.ndarray)
+    assert isinstance(yh, cp.ndarray)
+    assert isinstance(uh, cp.ndarray)
+    
     # zero accumulators (in-place, no allocation)
     uH.fill(0)
     uHw.fill(0)
@@ -121,6 +129,14 @@ def prolong_2D(nxH, nyH, xH, yH, uH,
     In-place GPU prolongation (coarse->fine).
     All arrays are CuPy and preallocated. Returns uh.
     """
+
+    assert isinstance(uH, cp.ndarray)
+    assert isinstance(uh, cp.ndarray)
+    assert isinstance(xH, cp.ndarray)
+    assert isinstance(yH, cp.ndarray)
+    assert isinstance(xh, cp.ndarray)
+    assert isinstance(yh, cp.ndarray)
+
     dxH = float((xH[1] - xH[0]).item())
     dyH = float((yH[1] - yH[0]).item())
     xH0 = float(xH[0].item())

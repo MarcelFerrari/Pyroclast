@@ -145,12 +145,27 @@ def _vy_energy_inplace_kernel(dx, dy, etap, etab, vy_res, nx1, ny1):
 # ---------------------------
 
 def vx_operator(nx1, ny1, dx, dy, etap, etab, vx, vy, p, out):
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(p, cp.ndarray)
+    assert isinstance(out, cp.ndarray)
+
     grid, block = launch_2D(vx.shape)
     stream = get_numba_stream()
     _vx_operator_kernel[grid, block, stream](dx, dy, etap, etab, vx, vy, p, out, nx1, ny1)
     return out
 
 def vx_residual(nx1, ny1, dx, dy, etap, etab, vx, vy, p, res_vx, rhs):
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(p, cp.ndarray)
+    assert isinstance(res_vx, cp.ndarray)
+    assert isinstance(rhs, cp.ndarray)
+
     vx_operator(nx1, ny1, dx, dy, etap, etab, vx, vy, p, res_vx)
     grid, block = launch_2D(vx.shape)
     stream = get_numba_stream()
@@ -158,12 +173,27 @@ def vx_residual(nx1, ny1, dx, dy, etap, etab, vx, vy, p, res_vx, rhs):
     return res_vx
 
 def vy_operator(nx1, ny1, dx, dy, etap, etab, vx, vy, p, out):
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(p, cp.ndarray)
+    assert isinstance(out, cp.ndarray)
+
     grid, block = launch_2D(vy.shape)
     stream = get_numba_stream()
     _vy_operator_kernel[grid, block, stream](dx, dy, etap, etab, vx, vy, p, out, nx1, ny1)
     return out
 
 def vy_residual(nx1, ny1, dx, dy, etap, etab, vx, vy, p, res_vy, rhs):
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(p, cp.ndarray)
+    assert isinstance(res_vy, cp.ndarray)
+    assert isinstance(rhs, cp.ndarray)
+
     vy_operator(nx1, ny1, dx, dy, etap, etab, vx, vy, p, res_vy)
     grid, block = launch_2D(vy.shape)
     stream = get_numba_stream()
@@ -171,12 +201,21 @@ def vy_residual(nx1, ny1, dx, dy, etap, etab, vx, vy, p, res_vy, rhs):
     return res_vy
 
 def p_operator(nx1, ny1, dx, dy, vx, vy, out):
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(out, cp.ndarray)
+    
     grid, block = launch_2D(out.shape)
     stream = get_numba_stream()
     _p_operator_kernel[grid, block, stream](dx, dy, vx, vy, out, nx1, ny1)
     return out
 
 def p_residual(nx1, ny1, dx, dy, vx, vy, res_p, rhs):
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(res_p, cp.ndarray)
+    assert isinstance(rhs, cp.ndarray)
+    
     p_operator(nx1, ny1, dx, dy, vx, vy, res_p)
     grid, block = launch_2D(res_p.shape)
     stream = get_numba_stream()
@@ -184,6 +223,12 @@ def p_residual(nx1, ny1, dx, dy, vx, vy, res_p, rhs):
     return res_p
 
 def uzawa_velocity_rhs(nx1, ny1, dx, dy, vx_rhs, vy_rhs, p, out_vx, out_vy):
+    assert isinstance(vx_rhs, cp.ndarray)
+    assert isinstance(vy_rhs, cp.ndarray)
+    assert isinstance(p, cp.ndarray)
+    assert isinstance(out_vx, cp.ndarray)
+    assert isinstance(out_vy, cp.ndarray)
+    
     grid_vx, block_vx = launch_2D(vx_rhs.shape)
     stream = get_numba_stream()
     _uzawa_vx_rhs_kernel[grid_vx, block_vx, stream](dx, vx_rhs, p, out_vx, nx1, ny1)
@@ -192,12 +237,23 @@ def uzawa_velocity_rhs(nx1, ny1, dx, dy, vx_rhs, vy_rhs, p, out_vx, out_vy):
     return out_vx, out_vy
 
 def uzawa_vx_operator(nx1, ny1, dx, dy, etap, etab, vx, vy, out):
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(out, cp.ndarray)
+
     grid, block = launch_2D(vx.shape)
     stream = get_numba_stream()
     _uzawa_vx_operator_kernel[grid, block, stream](dx, dy, etap, etab, vx, vy, out, nx1, ny1)
     return out
 
 def uzawa_vx_residual(nx1, ny1, dx, dy, etap, etab, vx, vy, res_vx, rhs):
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+
     uzawa_vx_operator(nx1, ny1, dx, dy, etap, etab, vx, vy, res_vx)
     grid, block = launch_2D(vx.shape)
     stream = get_numba_stream()
@@ -205,12 +261,25 @@ def uzawa_vx_residual(nx1, ny1, dx, dy, etap, etab, vx, vy, res_vx, rhs):
     return res_vx
 
 def uzawa_vy_operator(nx1, ny1, dx, dy, etap, etab, vx, vy, out):
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(out, cp.ndarray)
+    
     grid, block = launch_2D(vy.shape)
     stream = get_numba_stream()
     _uzawa_vy_operator_kernel[grid, block, stream](dx, dy, etap, etab, vx, vy, out, nx1, ny1)
     return out
 
 def uzawa_vy_residual(nx1, ny1, dx, dy, etap, etab, vx, vy, res_vy, rhs):
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(vx, cp.ndarray)
+    assert isinstance(vy, cp.ndarray)
+    assert isinstance(res_vy, cp.ndarray)
+    assert isinstance(rhs, cp.ndarray)
+
     uzawa_vy_operator(nx1, ny1, dx, dy, etap, etab, vx, vy, res_vy)
     grid, block = launch_2D(vy.shape)
     stream = get_numba_stream()
@@ -218,6 +287,9 @@ def uzawa_vy_residual(nx1, ny1, dx, dy, etap, etab, vx, vy, res_vy, rhs):
     return res_vy
 
 def compute_p_energy_norm(nx1, ny1, dx, dy, etap, p_res):
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(p_res, cp.ndarray)
+
     grid, block = launch_2D(p_res.shape)
     stream = get_numba_stream()
     _p_energy_inplace_kernel[grid, block, stream](dx, dy, etap, p_res, nx1, ny1)
@@ -225,6 +297,10 @@ def compute_p_energy_norm(nx1, ny1, dx, dy, etap, p_res):
     return np.sqrt(total)
 
 def compute_vx_energy_norm(nx1, ny1, dx, dy, etap, etab, vx_res):
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(vx_res, cp.ndarray)
+
     grid, block = launch_2D(vx_res.shape)
     stream = get_numba_stream()
     _vx_energy_inplace_kernel[grid, block, stream](dx, dy, etap, etab, vx_res, nx1, ny1)
@@ -232,6 +308,10 @@ def compute_vx_energy_norm(nx1, ny1, dx, dy, etap, etab, vx_res):
     return np.sqrt(total)
 
 def compute_vy_energy_norm(nx1, ny1, dx, dy, etap, etab, vy_res):
+    assert isinstance(etap, cp.ndarray)
+    assert isinstance(etab, cp.ndarray)
+    assert isinstance(vy_res, cp.ndarray)
+    
     grid, block = launch_2D(vy_res.shape)
     stream = get_numba_stream()
     _vy_energy_inplace_kernel[grid, block, stream](dx, dy, etap, etab, vy_res, nx1, ny1)
