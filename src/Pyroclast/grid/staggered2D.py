@@ -94,7 +94,7 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
                             s.yvy,  
                             s.xm,                       # Marker x positions
                             s.ym,                       # Marker y positions
-                            (s.rhom,),                  # Marker density
+                            s.rhom,                     # Marker density
                             indexing="equidistant",     # Equidistant grid spacing
                             return_weights=False)       # Do not return weights
 
@@ -103,7 +103,7 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
                              s.y,
                              s.xm,                      # Marker x positions
                              s.ym,                      # Marker y positions
-                             (s.etam,),                 # Marker viscosity
+                             s.etam,                    # Marker viscosity
                              indexing="equidistant",    # Equidistant grid spacing
                              return_weights=False)      # Do not return weights
         
@@ -111,7 +111,7 @@ class BasicStaggered2D(BaseGrid): # Inherit from BaseGrid
                              s.yp,
                              s.xm,                      # Marker x positions
                              s.ym,                      # Marker y positions
-                             (s.etam,),                 # Marker viscosity
+                             s.etam,                    # Marker viscosity
                              indexing="equidistant",    # Equidistant grid spacing
                              return_weights=False)      # Do not return weights
 

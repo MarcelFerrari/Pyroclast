@@ -30,12 +30,12 @@ def reduce_marker_values(x, y, xm, ym, xidx, yidx, vals, grid_values, grid_weigh
     - xm, ym: 1D arrays of shape (n_markers,) containing marker coordinates 
     - xidx, yidx: 1D arrays of shape (n_markers,) containing the index of the reference node for each marker
     - vals: tuple of 1D arrays of shape (n_markers,) containing marker values to interpolate
-    - grid_values: tuple of 3D arrays of shape (n_threads, len(x), len(y)) with interpolated values at grid nodes
-    - grid_weights: 3D zeros array (n_threads, len(x), len(y)).
+    - grid_values: 2d array (len(x), len(y))
+    - grid_weights: 2D zeros array (n_threads, len(x), len(y)).
 
     Returns:
-    - grid_values: tuple of 3D arrays (n_threads, len(x), len(y)) with interpolated values at grid nodes
-    - grid_weights: 3D array (n_threads, len(x), len(y)) with accumulated weights at grid nodes
+    - grid_values: 2d array (len(x), len(y)) with interpolated values at grid nodes
+    - grid_weights: 2D array (len(x), len(y)) with accumulated weights at grid nodes
     """
 
     # Get dimensions of tensors
@@ -55,13 +55,12 @@ def reduce_marker_values(x, y, xm, ym, xidx, yidx, vals, grid_values, grid_weigh
         w10 = (1 - rx) * ry
         w01 = rx * (1 - ry)
         w11 = rx * ry
-        
-        for q in range(len(vals)):
-            grid_values[q][mi, mj] += w00 * vals[q][m]
-            grid_values[q][mi+1, mj] += w10 * vals[q][m]
-            grid_values[q][mi, mj+1] += w01 * vals[q][m]
-            grid_values[q][mi+1, mj+1] += w11 * vals[q][m]
-        
+
+        grid_values[mi, mj] += w00 * vals[m]
+        grid_values[mi+1, mj] += w10 * vals[m]
+        grid_values[mi, mj+1] += w01 * vals[m]
+        grid_values[mi+1, mj+1] += w11 * vals[m]
+
         grid_weights[mi, mj] += w00
         grid_weights[mi+1, mj] += w10
         grid_weights[mi, mj+1] += w01
@@ -77,7 +76,7 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
     Parameters:
     - x, y: 1D arrays defining the coordinates of the regular grid in 2D
     - xm, ym: 1D arrays of shape (n_markers,) containing marker coordinates
-    - vals: tuple of 1D arrays of shape (n_markers,) containing marker values to interpolate
+    - vals: 1D array of shape (n_markers,) containing marker values to interpolate
     - indexing: str, optional, default: "bisect". Indexing mode for grid nodes.
                 "equidistant": grid nodes are equidistantly spaced
                 "bisect": grid nodes are non-equidistantly spaced and indices are computed by bisection
@@ -97,7 +96,7 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
     assert isinstance(y, np.ndarray)
     assert isinstance(xm, np.ndarray)
     assert isinstance(ym, np.ndarray)
-    assert isinstance(vals, tuple)
+    assert isinstance(vals, np.ndarray)
     
     # Check input data types
     assert x.dtype == real
@@ -113,11 +112,11 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
     assert len(vals) > 0
 
     # Dimensions of the grid
-    nx, ny, q = len(x), len(y), len(vals)
+    nx, ny = len(x), len(y)
     
     # Initialize grid_values and grid_weights
     # Allocate leading dimension for number of threads
-    grid_values = tuple(np.zeros((ny, nx), dtype=real) for _ in range(q))
+    grid_values = np.zeros((ny, nx), dtype=real)
     grid_weights = np.zeros((ny, nx), dtype=real)
 
     # 1) Compute grid indices for each marker
@@ -142,8 +141,8 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
             warnings.simplefilter("ignore")
             # Ignore division by zero!
             # This is correct and represents values outside the grid!
-            rax = tuple(v / grid_weights for v in grid_values)
-        return rax if len(rax) > 1 else rax[0] # Return a single value if only one quantity is interpolated
+            grid_values /= grid_weights
+        return grid_values
 
 @nb.njit(parallel=True, cache=True)
 def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values):
@@ -154,7 +153,7 @@ def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values):
     - x, y: 1D arrays defining the coordinates of the regular grid in 2D
     - xm, ym: 1D arrays of shape (n_markers,) containing marker coordinates
     - xidx, yidx: 1D arrays of shape (n_markers,) containing the index of the reference node for each marker
-    - grid_values: tuple of 2D arrays of shape (len(x), len(y)) containing grid values to interpolate
+    - grid_values: 2D array of shape (len(y), len(x)) containing grid values to interpolate
     - marker_values: tuple of 1D arrays of shape (n_markers,) with interpolated values at markers
     - marker_weights: 1D array of shape (n_markers,) containing accumulated weights at each marker.
     - num_threads: int. Number of threads to use in the parallel loop.
@@ -166,7 +165,6 @@ def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values):
     # Get dimensions of tensors
     n_markers = len(xm)
     dx, dy = x[1] - x[0], y[1] - y[0]
-    q = len(grid_values)
 
     # Loop over each marker in parallel
     for m in nb.prange(n_markers):
@@ -188,8 +186,7 @@ def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values):
                     w = (1 - rx / dx) * (1 - ry / dy)
 
                     # Update weighted sums for quantities and weights at this grid point
-                    for q in range(len(grid_values)):
-                        marker_values[q][m] += w * grid_values[q][gy, gx]
+                    marker_values[m] += w * grid_values[gy, gx]
     return marker_values
 
 
@@ -210,7 +207,7 @@ def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", cont_
     
     Returns:
     If return_weights is True:
-    - marker_values: tuple of 1D arrays of shape (n_markers,) with normalized interpolated values at markers
+    - marker_values: 1D array of shape (n_markers,) with normalized interpolated values at markers
     If return_weights is False:
     - marker_values: tuple of 1D arrays of shape (n_markers,) with non-normalized interpolated values at markers
     - marker_weights: 1D array of shape (n_markers,) containing accumulated weights at each marker
@@ -221,16 +218,14 @@ def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", cont_
     assert isinstance(y, np.ndarray)
     assert isinstance(xm, np.ndarray)
     assert isinstance(ym, np.ndarray)
-    assert isinstance(grid_values, tuple)
+    assert isinstance(grid_values, np.ndarray)
 
     # Grid dimensions and grid spacing
     nx, ny = len(x), len(y)
 
     # Initialize marker values and weights
     n_markers = len(xm)
-    q = len(grid_values)
-
-    marker_values = tuple(np.zeros((n_markers,), dtype=real) for _ in range(q))
+    marker_values = np.zeros((n_markers,), dtype=real)
 
     # 1) Compute grid indices for each marker
     if indexing == "equidistant":
@@ -250,7 +245,4 @@ def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", cont_
                                        marker_values)
     
     # Unpack the marker_values tuple if only one quantity is interpolated
-    if len(marker_values) > 1:
-        return marker_values
-    else:
-        return marker_values[0]
+    return marker_values

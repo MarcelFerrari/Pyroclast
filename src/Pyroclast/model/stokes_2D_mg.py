@@ -75,7 +75,7 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
                            s.yp,  
                            s.xm,                      # Marker x positions
                            s.ym,                      # Marker y positions
-                           (s.rhom,),                 # Marker density
+                           s.rhom,                    # Density
                            indexing="equidistant",    # Equidistant grid spacing
                            return_weights=False)      # Do not return weights
 

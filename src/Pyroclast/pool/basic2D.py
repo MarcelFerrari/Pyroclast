@@ -73,14 +73,14 @@ class Basic2DStokes(BasePool): # Inherit from BasePool
         s.vxm = interpolate(s.xvx,                   # x and y coordinates of the vx nodes
                             s.yvx, 
                             s.xm, s.ym,              # x and y coordinates of the markers
-                            (s.vx,),                 # tuple with the values to interpolate (vx)
+                            s.vx,                    # values to interpolate (vx)
                             indexing="equidistant")  # equidistant grid
         
         # Interpolate velocity from vy nodes of staggered grid to markers
         s.vym = interpolate(s.xvy,                   # x and y coordinates of the vy nodes
                             s.yvy,
                             s.xm, s.ym,              # x and y coordinates of the markers
-                            (s.vy,),                 # tuple with the values to interpolate (vy)
+                            s.vy,                    # values to interpolate (vy)
                             indexing="equidistant")  # equidistant grid
                                
     def advect(self, ctx):
@@ -122,7 +122,7 @@ class RK42DStokes(Basic2DStokes):
         return interpolate(s.xvx,       # x and y coordinates of the vx nodes
                            s.yvx, 
                            xm, ym,                  # x and y coordinates of the markers
-                           (s.vx,),    # tuple with the values to interpolate (vx)
+                           s.vx,                    # values to interpolate (vx)
                            indexing="equidistant",  # equidistant grid
                            cont_corr="x")           # x-continuity correction  
     
@@ -135,7 +135,7 @@ class RK42DStokes(Basic2DStokes):
         return interpolate(s.xvy,       # x and y coordinates of the vy nodes
                            s.yvy,
                            xm, ym,                  # x and y coordinates of the markers
-                           (s.vy,),    # tuple with the values to interpolate (vy)
+                           s.vy,                    # values to interpolate (vy)
                            indexing="equidistant",  # equidistant grid
                            cont_corr="y")           # y-continuity correction
 
