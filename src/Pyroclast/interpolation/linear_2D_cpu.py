@@ -20,8 +20,13 @@ from Pyroclast.profiling import timer
 
 from Pyroclast.interpolation.utils import bisect_idx, compute_idx
 
+try:
+    from Pyroclast.turbo.interpolation import reduce_marker_values_2D as reduce_parallel
+except ImportError:
+    reduce_parallel = None
+
 @nb.njit(cache=True)
-def reduce_marker_values(x, y, xm, ym, xidx, yidx, vals, grid_values, grid_weights):
+def reduce_marker_values(nx1, ny1, x, y, n_markers, xm, ym, xidx, yidx, vals, grid_values, grid_weights):
     """
     Loops over each marker and computes the weighted sum of quantities for the surrounding grid nodes.
 
@@ -39,7 +44,6 @@ def reduce_marker_values(x, y, xm, ym, xidx, yidx, vals, grid_values, grid_weigh
     """
 
     # Get dimensions of tensors
-    n_markers = len(xm)
     dx, dy = x[1] - x[0], y[1] - y[0]
         
     for m in range(n_markers):
@@ -112,12 +116,13 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
     assert len(vals) > 0
 
     # Dimensions of the grid
-    nx, ny = len(x), len(y)
+    nx1, ny1 = len(x), len(y)
+    n_markers = len(xm)
     
     # Initialize grid_values and grid_weights
     # Allocate leading dimension for number of threads
-    grid_values = np.zeros((ny, nx), dtype=real)
-    grid_weights = np.zeros((ny, nx), dtype=real)
+    grid_values = np.zeros((ny1, nx1), dtype=real)
+    grid_weights = np.zeros((ny1, nx1), dtype=real)
 
     # 1) Compute grid indices for each marker
     # Important to pass nx and ny to the indexing functions
@@ -126,13 +131,14 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
         xidx = compute_idx(x, xm)
         yidx = compute_idx(y, ym)
     elif indexing == "bisect":
-        xidx = bisect_idx(x, xm, nx)
-        yidx = bisect_idx(y, ym, ny)
+        xidx = bisect_idx(x, xm, nx1)
+        yidx = bisect_idx(y, ym, ny1)
     else:
         raise ValueError("Invalid indexing mode. Choose 'equidistant' or 'bisect'.")
 
     # 2) Loop over markers and accumulate weighted values and weights
-    grid_values, grid_weights = reduce_marker_values(x, y, xm, ym, xidx, yidx, vals, grid_values, grid_weights)
+    reduction_fn = reduce_parallel if reduce_parallel is not None else reduce_marker_values
+    reduction_fn(nx1, ny1, x, y, n_markers, xm, ym, xidx, yidx, vals, grid_values, grid_weights)
 
     if return_weights: # We are done
         return grid_values, grid_weights

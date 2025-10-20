@@ -5,22 +5,19 @@
 namespace nb = nanobind;
 using nb::module_;
 
-namespace pyroclast_turbo {
-
-// Forward-declared in the header and defined in submodule binding TUs:
-//   void init_mg_routines_bindings(nb::module_&);
-
-} // namespace pyroclast_turbo
-
 // Single entry point: build the extension and wire submodules.
 NB_MODULE(turbo, m) {
     m.doc() = "Pyroclast Turbo – C++ accelerators (nanobind)";
 
     // Submodules
+    // Multigrid
     auto mg = m.def_submodule("mg_routines", "Multigrid routines");
     pyroclast_turbo::init_mg_routines_bindings(mg);
+    
+    // Interpolation
+    auto interp = m.def_submodule("interpolation", "Interpolation routines");
+    pyroclast_turbo::init_interpolation_bindings(interp);
 
-    // Simple diagnostics are handy
     m.def("openmp_enabled", []() {
     #ifdef PYROCLAST_USE_OPENMP
         return true;
