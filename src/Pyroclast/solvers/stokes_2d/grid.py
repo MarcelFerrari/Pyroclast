@@ -239,7 +239,7 @@ class Grid:
         self.vy_rhs.fill(0.0)
         self.vx_res.fill(0.0)
         self.vy_res.fill(0.0)
-        self._weights.fill(0.0)
+        self._w.fill(0.0)
 
     @timer.time_function("Vcycle", "Restriction")
     def restrict_properties(self, fine: "Grid") -> None:
