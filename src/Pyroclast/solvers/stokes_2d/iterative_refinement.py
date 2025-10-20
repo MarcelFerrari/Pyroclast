@@ -1,3 +1,18 @@
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: solvers/stokes_2d/iterative_refinement.py
+Description: Iterative refinement wrapper for Uzawa-based Stokes solves.
+
+Author: Marcel Ferrari
+Copyright (c) 2025 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
 import numpy as np
 from Pyroclast.logging import get_logger
 from .smoothers.cpu.bc import apply_BC

@@ -1,4 +1,17 @@
-"""Central logging utilities with optional MPI support."""
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: logging.py
+Description: Central logging utilities with optional MPI integration.
+
+Author: Marcel Ferrari
+Copyright (c) 2025 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
 
 import logging as py_logging
 

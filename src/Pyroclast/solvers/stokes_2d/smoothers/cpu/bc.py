@@ -1,3 +1,18 @@
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: solvers/stokes_2d/smoothers/cpu/bc.py
+Description: CPU boundary condition helpers for Stokes smoother fields.
+
+Author: Marcel Ferrari
+Copyright (c) 2025 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
 import numba as nb
 
 # ======== Utilities for boundary conditions ========

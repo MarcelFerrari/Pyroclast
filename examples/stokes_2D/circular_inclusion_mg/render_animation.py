@@ -1,3 +1,18 @@
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: examples/stokes_2D/circular_inclusion_mg/render_animation.py
+Description: Render animation for the multigrid circular inclusion example.
+
+Author: Marcel Ferrari
+Copyright (c) 2025 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
 import numpy as np
 import os
 import matplotlib.pyplot as plt

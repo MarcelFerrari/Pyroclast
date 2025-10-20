@@ -1,3 +1,18 @@
+"""
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: solvers/stokes_2d/smoothers/gpu/jacobi_fused.py
+Description: Fused GPU Jacobi smoothers for coupled Stokes velocity-pressure updates.
+
+Author: Marcel Ferrari
+Copyright (c) 2025 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
 from numba import cuda, types
 import cupy as cp
 import Pyroclast.gpu_utils as gpu_utils

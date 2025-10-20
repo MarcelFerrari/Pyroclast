@@ -1,4 +1,19 @@
 """
+Pyroclast: Scalable Geophysics Models
+https://github.com/MarcelFerrari/Pyroclast
+
+File: solvers/stokes_2d/viscosity_rescaler.py
+Description: Utilities for optional viscosity rescaling during multigrid solves.
+
+Author: Marcel Ferrari
+Copyright (c) 2025 Marcel Ferrari.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
+"""
 Utilities for optional viscosity rescaling during the multigrid solve.
 """
 

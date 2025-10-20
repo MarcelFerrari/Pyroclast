@@ -1,4 +1,16 @@
-// mg_routines_bindings.cpp
+// Pyroclast: Scalable Geophysics Models
+// https://github.com/MarcelFerrari/Pyroclast
+//
+// File: src/bindings/mg_routines_bindings.cpp
+// Description: Nanobind wrappers exposing multigrid routines to Python.
+//
+// Author: Marcel Ferrari
+// Copyright (c) 2025 Marcel Ferrari.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include "pyroclast_turbo/mg_routines.hpp"
