@@ -5,7 +5,7 @@ Pyroclast: Scalable Geophysics Models
 https://github.com/MarcelFerrari/Pyroclast
 
 File: bin/pyroclast
-Description: Command-line entry point for running Pyroclast simulations.
+Description: Command-line entry point for running the Pyroclast solver.
 
 Author: Marcel Ferrari
 Copyright (c) 2025 Marcel Ferrari.
