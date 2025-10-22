@@ -109,6 +109,7 @@ class Basic2DStokes(BasePool): # Inherit from BasePool
         logger.info(f"Marker spacing in y-direction: {s.dym:.1f}")
         logger.info(39*"-")
 
+
 class RK42DStokes(Basic2DStokes):
     """
     Same as Basic2DStokes, but implements RK4 advection scheme.
