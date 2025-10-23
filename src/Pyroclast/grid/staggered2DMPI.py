@@ -83,28 +83,28 @@ class BasicStaggered2DMPI(BaseGrid):
         rank = comm.Get_rank() # Rank from the Cartesian communicator, not COMM_WORLD
 
         # Compute local grid shape
-        gi, gj = comm.Get_coords(rank) # Get process grid coordinates
+        s.gi, s.gj = comm.Get_coords(rank) # Get process grid coordinates
                                        # gi = global i (y direction)
                                        # gj = global j (x direction)
         
         # Determine local grid shape
         s.ny, s.nx = self.get_local_grid_shape(p.ny_global,
                                                p.nx_global,
-                                               s.py, s.px, gi, gj)
+                                               s.py, s.px, s.gi, s.gj)
 
 
         # Determine global start indices for local grid
         s.istart, s.jstart = self.get_global_start_indices(p.ny_global,
                                                            p.nx_global,
-                                                           s.py, s.px, gi, gj)
+                                                           s.py, s.px, s.gi, s.gj)
                 
         # Compute bounds arrays for all processes (for I/O and ghost exchange)
         s.x_bounds = self.compute_bounds_array(p.nx_global, s.px, s.dx)
         s.y_bounds = self.compute_bounds_array(p.ny_global, s.py, s.dy)
 
         # Compute local domain size
-        s.xmin, s.xmax = s.x_bounds[gj]
-        s.ymin, s.ymax = s.y_bounds[gi]
+        s.xmin, s.xmax = s.x_bounds[s.gj]
+        s.ymin, s.ymax = s.y_bounds[s.gi]
         s.xsize = s.xmax - s.xmin
         s.ysize = s.ymax - s.ymin
     
