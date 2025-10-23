@@ -71,10 +71,10 @@ class BasicStaggered2DMPI(BaseGrid):
         # Set up local grid size
         # We want to approximately match the 2D process grid to the aspect ratio
         # of the global grid discretization
-        py, px = self.get_process_grid(size, p.ny_global, p.nx_global)
+        s.py, s.px = self.get_process_grid(size, p.ny_global, p.nx_global)
 
         # Setup cartesian communicator for 2D process grid
-        dims = (py, px) # Domain decomposition in y and x
+        dims = (s.py, s.px) # Domain decomposition in y and x
         periods = (False, False) # Non-periodic boundaries
         reorder = True # Allow rank reordering for efficiency
         
@@ -90,22 +90,24 @@ class BasicStaggered2DMPI(BaseGrid):
         # Determine local grid shape
         s.ny, s.nx = self.get_local_grid_shape(p.ny_global,
                                                p.nx_global,
-                                               py, px, gi, gj)
+                                               s.py, s.px, gi, gj)
 
 
         # Determine global start indices for local grid
         s.istart, s.jstart = self.get_global_start_indices(p.ny_global,
                                                            p.nx_global,
-                                                           py, px, gi, gj)
-        
-        # Determine physical domain bounds for local grid
-        s.xmin = s.jstart * s.dx
-        s.xmax = s.xmin + (s.nx - 1) * s.dx
-        s.ymin = s.istart * s.dy
-        s.ymax = s.ymin + (s.ny - 1) * s.dy
+                                                           s.py, s.px, gi, gj)
+                
+        # Compute bounds arrays for all processes (for I/O and ghost exchange)
+        s.x_bounds = self.compute_bounds_array(p.nx_global, s.px, s.dx)
+        s.y_bounds = self.compute_bounds_array(p.ny_global, s.py, s.dy)
+
+        # Compute local domain size
+        s.xmin, s.xmax = s.x_bounds[gj]
+        s.ymin, s.ymax = s.y_bounds[gi]
         s.xsize = s.xmax - s.xmin
         s.ysize = s.ymax - s.ymin
-
+    
         # Create local grid coordinates
         s.nx1 = s.nx + 2 + 1 # +2 for halo nodes, +1 for staggered grid ghost nodes
         s.ny1 = s.ny + 2 + 1
@@ -113,12 +115,6 @@ class BasicStaggered2DMPI(BaseGrid):
         # Create the main nodes
         s.x = np.linspace(s.xmin - s.dx, s.xmax + 2*s.dx, s.nx1)
         s.y = np.linspace(s.ymin - s.dy, s.ymax + 2*s.dy, s.ny1)
-
-        # Dump grid coordinates for debugging
-        np.savetxt(f"grid_x_rank{rank}.txt", s.x)
-        np.savetxt(f"grid_y_rank{rank}.txt", s.y)
-
-        exit()
 
         # Create the x-velocity nodes
         s.xvx = s.x
@@ -133,7 +129,8 @@ class BasicStaggered2DMPI(BaseGrid):
         s.yp = s.y - s.dy/2
 
         # Print some information about the grid
-        self.info(ctx)
+        self.info(ctx, comm)
+        exit()
 
     # Approximate optimal process grid based on global grid size
     # Idea: find Px, Py such that Px * Py = P and Px/Py ~ Nx/Ny 
@@ -171,6 +168,23 @@ class BasicStaggered2DMPI(BaseGrid):
         start_i = (ny_g // py) * gi + min(gi, ny_g % py)
         start_j = (nx_g // px) * gj + min(gj, nx_g % px)
         return start_i, start_j
+    
+    def compute_bounds_array(self, n_global, n_procs, d, origin=0.0):
+        bounds = np.empty((n_procs, 2), dtype=np.float64)
+
+        # Compute number of cells per rank (same logic as in get_local_grid_shape)
+        base = n_global // n_procs
+        remainder = n_global % n_procs
+
+        start_index = 0
+        for i in range(n_procs):
+            n_local = base + 1 if i < remainder else base
+            end_index = start_index + n_local - 1
+            bounds[i, 0] = origin + start_index * d
+            bounds[i, 1] = origin + end_index * d
+            start_index = end_index + 1
+
+        return bounds
 
     def interpolate(self, ctx):
         """
@@ -212,14 +226,53 @@ class BasicStaggered2DMPI(BaseGrid):
         mask = np.isfinite(etap)
         s.etap[mask] = etap[mask]
 
-    
-    def info(self, ctx):
+    def info(self, ctx, comm):
         s, p, o = ctx
-        logger.info(10*"-" + " Grid Information " + 10*"-")
-        logger.info("Basic staggered 2D grid initialized.")
-        logger.info(f"Domain size: {p.xsize:.1f} x {p.ysize:.1f}")
-        logger.info(f"Grid size: {s.nx1} x {s.ny1}")
-        logger.info(f"Grid spacing: {s.dx:.1f} x {s.dy:.1f}")
-        logger.info(f"Total nodes: {s.nx1 * s.ny1}")
-        logger.info(38*"-")
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+        logger.info(10 * "-" + " Grid Information " + 10 * "-")
+        logger.info("Basic staggered 2D grid initialized with MPI.")
+        logger.info(f"Global domain size: {p.xsize_global:.3f} x {p.ysize_global:.3f}")
+        logger.info(f"Global grid size: {p.nx_global} x {p.ny_global}")
+        logger.info(f"Grid spacing: dx = {s.dx:.3f}, dy = {s.dy:.3f}")
+        logger.info(f"Process grid shape: py x px = {s.py} x {s.px}")
+        logger.info(f"Total number of MPI ranks: {size}")
+        logger.info("")
+
+        logger.info("Per-rank local grid layout:")
+        header = (
+            f"{'Rank':>4}  {'(gi,gj)':>8}  {'nx x ny':>9}  "
+            f"{'[xmin, xmax]':>24}  {'[ymin, ymax]':>24}"
+        )
+        logger.info(header)
+        logger.info("-" * len(header))
+
+        for r in range(size):
+            gi, gj = comm.Get_coords(r)
+            istart, jstart = self.get_global_start_indices(
+                p.ny_global, p.nx_global, s.py, s.px, gi, gj
+            )
+            ny_local, nx_local = self.get_local_grid_shape(
+                p.ny_global, p.nx_global, s.py, s.px, gi, gj
+            )
+
+            xmin = jstart * s.dx
+            xmax = xmin + (nx_local - 1) * s.dx
+            ymin = istart * s.dy
+            ymax = ymin + (ny_local - 1) * s.dy
+
+            logger.info(
+                f"{r:>4d}  ({gi:>2d},{gj:>2d})   "
+                f"{nx_local:>4d}x{ny_local:<4d}   "
+                f"[{xmin:>7.3f}, {xmax:>7.3f}]   "
+                f"[{ymin:>7.3f}, {ymax:>7.3f}]"
+            )
+
+        logger.info("-" * len(header))
+
+
+
         
+
+
