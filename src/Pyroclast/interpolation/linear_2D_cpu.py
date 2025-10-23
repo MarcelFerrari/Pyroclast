@@ -19,6 +19,7 @@ import numpy as np
 from Pyroclast.profiling import timer
 
 from Pyroclast.interpolation.utils import bisect_idx, compute_idx
+from Pyroclast.mpi import get_cart_comm, MPI, halo_exchange_2D
 
 try:
     from Pyroclast.turbo.interpolation import reduce_marker_values_2D as reduce_parallel
@@ -73,7 +74,7 @@ def reduce_marker_values(nx1, ny1, x, y, n_markers, xm, ym, xidx, yidx, vals, gr
     return grid_values, grid_weights
 
 
-def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weights=False, ghost_nodes=True, real=np.float64):
+def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weights=False, mpi=False, real=np.float64):
     """
     Interpolates marker values to the grid nodes using distance-weighted linear interpolation.
     
@@ -139,6 +140,81 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
     # 2) Loop over markers and accumulate weighted values and weights
     reduction_fn = reduce_parallel if reduce_parallel is not None else reduce_marker_values
     reduction_fn(nx1, ny1, x, y, n_markers, xm, ym, xidx, yidx, vals, grid_values, grid_weights)
+
+    # 3) Check if we are in MPI mode
+    if mpi:
+        # We skip ghost nodes for MPI exchange
+        src_v = (
+            grid_values[0, :-1],        # up
+            grid_values[-2, :-1],       # down
+            grid_values[:-1, 0],        # left
+            grid_values[:-1, -2],       # right
+            grid_values[0, 0],          # nw
+            grid_values[0, -2],         # ne
+            grid_values[-2, 0],         # sw
+            grid_values[-2, -2]         # se
+        )
+
+        dst_v = (
+            np.zeros(nx1-1, dtype=real),    # up
+            np.zeros(nx1-1, dtype=real),    # down
+            np.zeros(ny1-1, dtype=real),    # left
+            np.zeros(ny1-1, dtype=real),    # right
+            np.zeros(1, dtype=real),      # nw
+            np.zeros(1, dtype=real),      # ne
+            np.zeros(1, dtype=real),      # sw
+            np.zeros(1, dtype=real),      # se
+        )
+
+        src_w = (
+            grid_weights[0, :-1],          # up
+            grid_weights[-2, :-1],         # down
+            grid_weights[:-1, 0],         # left
+            grid_weights[:-1, -2],         # right
+            grid_weights[0, 0],          # nw
+            grid_weights[0, -2],         # ne
+            grid_weights[-2, 0],         # sw
+            grid_weights[-2, -2],        # se
+        )
+
+        dst_w = (
+            np.zeros(nx1-1, dtype=real),    # up
+            np.zeros(nx1-1, dtype=real),    # down
+            np.zeros(ny1-1, dtype=real),    # left
+            np.zeros(ny1-1, dtype=real),    # right
+            np.zeros(1, dtype=real),      # nw
+            np.zeros(1, dtype=real),      # ne
+            np.zeros(1, dtype=real),      # sw
+            np.zeros(1, dtype=real),      # se
+        )
+
+
+        reqs = halo_exchange_2D(dst_v, src_v, wait=False)
+        reqs += halo_exchange_2D(dst_w, src_w, wait=False)
+
+        # Wait for all communications to complete
+        MPI.Request.Waitall(reqs)
+
+        # Reduce received halo values into local grid
+        # Values
+        grid_values[0, :-1] += dst_v[0]        # up
+        grid_values[-2, :-1] += dst_v[1]       # down
+        grid_values[:-1, 0] += dst_v[2]        # left
+        grid_values[:-1, -2] += dst_v[3]       # right
+        grid_values[0, 0] += dst_v[4]          # nw
+        grid_values[0, -2] += dst_v[5]         # ne
+        grid_values[-2, 0] += dst_v[6]         # sw
+        grid_values[-2, -2] += dst_v[7]        # se
+
+        # Weights
+        grid_weights[0, :-1] += dst_w[0]        # up
+        grid_weights[-2, :-1] += dst_w[1]       # down
+        grid_weights[:-1, 0] += dst_w[2]        # left
+        grid_weights[:-1, -2] += dst_w[3]       # right
+        grid_weights[0, 0] += dst_w[4]          # nw
+        grid_weights[0, -2] += dst_w[5]         # ne
+        grid_weights[-2, 0] += dst_w[6]         # sw
+        grid_weights[-2, -2] += dst_w[7]        # se
 
     if return_weights: # We are done
         return grid_values, grid_weights

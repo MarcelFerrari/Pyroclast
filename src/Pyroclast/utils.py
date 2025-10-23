@@ -25,3 +25,16 @@ def clip(x, xmin, xmax):
         return xmax
     else:
         return x
+    
+@nb.njit(cache = True, parallel = True)
+def wrap_periodic(x, xmin, xmax):
+    """
+    Wrap a 1D array x to the periodic range [xmin, xmax).
+    """
+    range_size = xmax - xmin
+    for i in nb.prange(x.shape[0]):
+        while x[i] < xmin:
+            x[i] += range_size
+        while x[i] >= xmax:
+            x[i] -= range_size
+    return x
