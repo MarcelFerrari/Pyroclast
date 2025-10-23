@@ -130,7 +130,6 @@ class BasicStaggered2DMPI(BaseGrid):
 
         # Print some information about the grid
         self.info(ctx, comm)
-        exit()
 
     # Approximate optimal process grid based on global grid size
     # Idea: find Px, Py such that Px * Py = P and Px/Py ~ Nx/Ny 
