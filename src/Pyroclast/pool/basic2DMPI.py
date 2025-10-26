@@ -77,7 +77,7 @@ class Basic2DStokesMPI(BasePool): # Inherit from BasePool
         # Marker positions
         s.xm = np.zeros(s.nm, dtype=np.float64)
         s.ym = np.zeros(s.nm, dtype=np.float64)
-
+        
         # Marker velocities
         s.vxm = np.zeros(s.nm, dtype=np.float64)
         s.vym = np.zeros(s.nm, dtype=np.float64)
@@ -169,6 +169,11 @@ class RectangularInclusionMPI(Basic2DStokesMPI):
                                                      p.eta_plume,
                                                      p.eta_mantle,
                                                      s.rhom, s.etam)
+        
+        # Apply periodic boundary conditions to marker positions
+        s.xm = wrap_periodic(s.xm, s.m_xmin, s.m_xmax)
+        s.ym = wrap_periodic(s.ym, s.m_ymin, s.m_ymax)
+
         
 @nb.njit(cache=True)
 def _init_rectangular_inclusion(nmx, nmy, xmin, ymin, dxm, dym, x0, y0, w, h, xm, ym, rho_plume, rho_mantle, eta_plume, eta_mantle, rhom, etam):
