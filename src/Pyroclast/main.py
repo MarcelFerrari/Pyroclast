@@ -28,12 +28,7 @@ from Pyroclast.banner import get_banner
 import Pyroclast.format as fmt
 from Pyroclast.defaults import default_config
 from Pyroclast.rng import set_seed
-
-try:
-    import mpi4py
-    from mpi4py import MPI
-except ImportError:
-    MPI = None  # If mpi4py is not available, set MPI to None
+from Pyroclast.mpi import get_shard_filename
 
 logger = get_logger(__name__)
 
@@ -50,11 +45,11 @@ class Pyroclast():
 
         # Read checkpoint options
         load_chkpt = options.get('load_checkpoint', False)
-        chkpt_file = options.checkpoint_file
-        if load_chkpt and os.path.exists(chkpt_file):
-            logger.info(f"Checkpoint file {chkpt_file} found. Loading checkpoint...")
+        self.chkpt_file = get_shard_filename(options.checkpoint_file)
+        if load_chkpt and os.path.exists(self.chkpt_file):
+            logger.info(f"Checkpoint file {self.chkpt_file} found. Loading checkpoint...")
             # Checkpoint file found -> load context from checkpoint
-            with open(chkpt_file, 'rb') as f:
+            with open(self.chkpt_file, 'rb') as f:
                 chkpt = pickle.load(f)
 
             self.ctx = chkpt['ctx']
@@ -196,7 +191,7 @@ class Pyroclast():
 
             if o.checkpoint_interval > 0 and \
                ((s.iteration+1) % o.checkpoint_interval) == 0:
-                self.write_checkpoint(o.checkpoint_file)
+                self.write_checkpoint(self.chkpt_file)
             
             percent = 100 * s.iteration / p.max_iterations
             it = s.iteration
