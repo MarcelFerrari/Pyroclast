@@ -19,9 +19,10 @@ import numpy as np
 from Pyroclast.profiling import timer
 
 from Pyroclast.interpolation.utils import bisect_idx, compute_idx
-from Pyroclast.mpi import get_cart_comm, MPI, halo_exchange_2D
+from Pyroclast.mpi import get_cart_comm, MPI
 
 try:
+    raise ImportError
     from Pyroclast.turbo.interpolation import reduce_marker_values_2D as reduce_parallel
 except ImportError:
     reduce_parallel = None
@@ -74,7 +75,7 @@ def reduce_marker_values(nx1, ny1, x, y, n_markers, xm, ym, xidx, yidx, vals, gr
     return grid_values, grid_weights
 
 
-def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weights=False, mpi=False, real=np.float64):
+def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weights=False, mpi=True, real=np.float64):
     """
     Interpolates marker values to the grid nodes using distance-weighted linear interpolation.
     
@@ -136,6 +137,7 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
         yidx = bisect_idx(y, ym, ny1)
     else:
         raise ValueError("Invalid indexing mode. Choose 'equidistant' or 'bisect'.")
+    
 
     # 2) Loop over markers and accumulate weighted values and weights
     reduction_fn = reduce_parallel if reduce_parallel is not None else reduce_marker_values
@@ -143,88 +145,373 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
 
     # 3) Check if we are in MPI mode
     if mpi:
-        # We skip ghost nodes for MPI exchange
-        src_v = (
-            grid_values[0, :-1],        # up
-            grid_values[-2, :-1],       # down
-            grid_values[:-1, 0],        # left
-            grid_values[:-1, -2],       # right
-            grid_values[0, 0],          # nw
-            grid_values[0, -2],         # ne
-            grid_values[-2, 0],         # sw
-            grid_values[-2, -2]         # se
-        )
+        # We perform halo exchange to reduce
+        # the contributions of neighboring ranks
 
-        dst_v = (
-            np.zeros(nx1-1, dtype=real),    # up
-            np.zeros(nx1-1, dtype=real),    # down
-            np.zeros(ny1-1, dtype=real),    # left
-            np.zeros(ny1-1, dtype=real),    # right
-            np.zeros(1, dtype=real),      # nw
-            np.zeros(1, dtype=real),      # ne
-            np.zeros(1, dtype=real),      # sw
-            np.zeros(1, dtype=real),      # se
-        )
+        # The weights and values written to the halo regions
+        # are accumulated to neighboring ranks
+        # Similarly, we receive contributions from neighboring ranks
+        # that are accumulated to their halo regions
+        # We never touch the ghost nodes (i.e. last row/column of each rank)
+        comm = get_cart_comm()
+        rank = comm.Get_rank()
+        gi, gj = comm.Get_coords(rank)
+        py, px = comm.Get_topo()[0]  # dims (rows, cols)
 
-        src_w = (
-            grid_weights[0, :-1],          # up
-            grid_weights[-2, :-1],         # down
-            grid_weights[:-1, 0],         # left
-            grid_weights[:-1, -2],         # right
-            grid_weights[0, 0],          # nw
-            grid_weights[0, -2],         # ne
-            grid_weights[-2, 0],         # sw
-            grid_weights[-2, -2],        # se
-        )
+        # Need to detect edge ranks
+        is_top_edge = (gi == 0)
+        is_bottom_edge = (gi == py - 1)
+        is_left_edge = (gj == 0)
+        is_right_edge = (gj == px - 1)
+        
+        # We only send/receive valid domain regions
+        row_size = nx1 - 3
+        if is_left_edge or is_right_edge:
+            row_size += 1
+        jmin = 1 if not is_left_edge else 0
+        jmax = -2 if not is_right_edge else -1
 
-        dst_w = (
-            np.zeros(nx1-1, dtype=real),    # up
-            np.zeros(nx1-1, dtype=real),    # down
-            np.zeros(ny1-1, dtype=real),    # left
-            np.zeros(ny1-1, dtype=real),    # right
-            np.zeros(1, dtype=real),      # nw
-            np.zeros(1, dtype=real),      # ne
-            np.zeros(1, dtype=real),      # sw
-            np.zeros(1, dtype=real),      # se
-        )
+        col_size = ny1 - 3
+        if is_top_edge or is_bottom_edge:
+            col_size += 1
+        imin = 1 if not is_top_edge else 0
+        imax = -2 if not is_bottom_edge else -1
 
+        def shift_coords(di, dj):
+            i, j = gi + di, gj + dj
 
-        reqs = halo_exchange_2D(dst_v, src_v, wait=False)
-        reqs += halo_exchange_2D(dst_w, src_w, wait=False)
+            # If out of bounds, return MPI.PROC_NULL
+            if i < 0 or i >= py or j < 0 or j >= px:
+                return MPI.PROC_NULL
+
+            return comm.Get_cart_rank((i, j))
+
+        # We need to perform 8-way halo exchange
+        N_rank = shift_coords(-1, 0)  # North rank coordinates
+        S_rank = shift_coords(1, 0)  # South rank coordinates
+        E_rank = shift_coords(0, 1)  # East rank coordinates
+        W_rank = shift_coords(0, -1) # West rank coordinates
+        NE_rank = shift_coords(-1, 1) # North-East rank coordinates
+        NW_rank = shift_coords(-1, -1) # North-West rank coordinates
+        SE_rank = shift_coords(1, 1)  # South-East rank coordinates
+        SW_rank = shift_coords(1, -1) # South-West rank coordinates
+
+        # Prepare source and destination buffers for halo exchange
+        reqs = []
+
+        # North halo
+        if N_rank != MPI.PROC_NULL:
+            # Need to send receive from North
+            N_w_recv_buf = np.empty(nx1 - 3, dtype=real)
+            N_v_recv_buf = np.empty(nx1 - 3, dtype=real)
+
+            # Post receives
+            reqs.append(comm.Irecv(N_w_recv_buf, source=N_rank, tag=0)) # 0: weights
+            reqs.append(comm.Irecv(N_v_recv_buf, source=N_rank, tag=1)) # 1: values
+
+            N_w_send_buf = grid_weights[0, jmin:jmax].copy()
+            N_v_send_buf = grid_values[0, jmin:jmax].copy()
+
+            # Post sends
+            reqs.append(comm.Isend(N_w_send_buf, dest=N_rank, tag=0)) # 0: weights
+            reqs.append(comm.Isend(N_v_send_buf, dest=N_rank, tag=1)) # 1: values
+
+        # South halo
+        if S_rank != MPI.PROC_NULL:
+            # Need to send receive from South
+            S_w_recv_buf = np.empty(nx1 - 3, dtype=real)
+            S_v_recv_buf = np.empty(nx1 - 3, dtype=real)
+            
+            # Post receives
+            reqs.append(comm.Irecv(S_w_recv_buf, source=S_rank, tag=0)) # 0: weights
+            reqs.append(comm.Irecv(S_v_recv_buf, source=S_rank, tag=1)) # 1: values
+
+            S_w_send_buf = grid_weights[-2, 1:-2]
+            S_v_send_buf = grid_values[-2, 1:-2]
+
+            # Post sends
+            reqs.append(comm.Isend(S_w_send_buf, dest=S_rank, tag=0)) # 0: weights
+            reqs.append(comm.Isend(S_v_send_buf, dest=S_rank, tag=1)) # 1: values
+
+        # West halo
+        if W_rank != MPI.PROC_NULL:
+            # Need to send receive from West
+            W_w_recv_buf = np.empty(ny1 - 3, dtype=real)
+            W_v_recv_buf = np.empty(ny1 - 3, dtype=real)
+            
+            # Post receives
+            reqs.append(comm.Irecv(W_w_recv_buf, source=W_rank, tag=0)) # 0: weights
+            reqs.append(comm.Irecv(W_v_recv_buf, source=W_rank, tag=1)) # 1: values
+
+            W_w_send_buf = grid_weights[1:-2, 0].copy()
+            W_v_send_buf = grid_values[1:-2, 0].copy()
+
+            # Post sends
+            reqs.append(comm.Isend(W_w_send_buf, dest=W_rank, tag=0)) # 0: weights
+            reqs.append(comm.Isend(W_v_send_buf, dest=W_rank, tag=1)) # 1: values
+
+        # East halo
+        if E_rank != MPI.PROC_NULL:
+            # Need to send receive from East
+            E_w_recv_buf = np.empty(ny1 - 3, dtype=real)
+            E_v_recv_buf = np.empty(ny1 - 3, dtype=real)
+            
+            # Post receives
+            reqs.append(comm.Irecv(E_w_recv_buf, source=E_rank, tag=0)) # 0: weights
+            reqs.append(comm.Irecv(E_v_recv_buf, source=E_rank, tag=1)) # 1: values
+
+            E_w_send_buf = grid_weights[1:-2, -2].copy()
+            E_v_send_buf = grid_values[1:-2, -2].copy()
+
+            # Post sends
+            reqs.append(comm.Isend(E_w_send_buf, dest=E_rank, tag=0)) # 0: weights
+            reqs.append(comm.Isend(E_v_send_buf, dest=E_rank, tag=1)) # 1: values
+
+        # North-West halo
+        if NW_rank != MPI.PROC_NULL:
+            NW_w_recv_buf = np.empty(1, dtype=real)
+            NW_v_recv_buf = np.empty(1, dtype=real)
+
+            # Post receives
+            reqs.append(comm.Irecv(NW_w_recv_buf, source=NW_rank, tag=0)) # 0: weights
+            reqs.append(comm.Irecv(NW_v_recv_buf, source=NW_rank, tag=1)) # 1: values
+
+            NW_w_send_buf = np.array([grid_weights[0, 0]], dtype=real)
+            NW_v_send_buf = np.array([grid_values[0, 0]], dtype=real)
+
+            # Post sends
+            reqs.append(comm.Isend(NW_w_send_buf, dest=NW_rank, tag=0)) # 0: weights
+            reqs.append(comm.Isend(NW_v_send_buf, dest=NW_rank, tag=1)) # 1: values
+
+        # South-West halo
+        if SW_rank != MPI.PROC_NULL:
+            SW_w_recv_buf = np.empty(1, dtype=real)
+            SW_v_recv_buf = np.empty(1, dtype=real)
+
+            # Post receives
+            reqs.append(comm.Irecv(SW_w_recv_buf, source=SW_rank, tag=0)) # 0: weights
+            reqs.append(comm.Irecv(SW_v_recv_buf, source=SW_rank, tag=1)) # 1: values
+
+            SW_w_send_buf = np.array([grid_weights[-2, 0]], dtype=real)
+            SW_v_send_buf = np.array([grid_values[-2, 0]], dtype=real)
+
+            # Post sends
+            reqs.append(comm.Isend(SW_w_send_buf, dest=SW_rank, tag=0)) # 0: weights
+            reqs.append(comm.Isend(SW_v_send_buf, dest=SW_rank, tag=1)) # 1: values
+
+        # North-East halo
+        if NE_rank != MPI.PROC_NULL:
+            NE_w_recv_buf = np.empty(1, dtype=real)
+            NE_v_recv_buf = np.empty(1, dtype=real)
+
+            # Post receives
+            reqs.append(comm.Irecv(NE_w_recv_buf, source=NE_rank, tag=0)) # 0: weights
+            reqs.append(comm.Irecv(NE_v_recv_buf, source=NE_rank, tag=1)) # 1: values
+
+            NE_w_send_buf = np.array([grid_weights[0, -2]], dtype=real)
+            NE_v_send_buf = np.array([grid_values[0, -2]], dtype=real)
+
+            # Post sends
+            reqs.append(comm.Isend(NE_w_send_buf, dest=NE_rank, tag=0)) # 0: weights
+            reqs.append(comm.Isend(NE_v_send_buf, dest=NE_rank, tag=1)) # 1: values
+
+        # South-East halo
+        if SE_rank != MPI.PROC_NULL:
+            SE_w_recv_buf = np.empty(1, dtype=real)
+            SE_v_recv_buf = np.empty(1, dtype=real)
+
+            # Post receives
+            reqs.append(comm.Irecv(SE_w_recv_buf, source=SE_rank, tag=0)) # 0: weights
+            reqs.append(comm.Irecv(SE_v_recv_buf, source=SE_rank, tag=1)) # 1: values
+
+            SE_w_send_buf = np.array([grid_weights[-2, -2]], dtype=real)
+            SE_v_send_buf = np.array([grid_values[-2, -2]], dtype=real)
+
+            # Post sends
+            reqs.append(comm.Isend(SE_w_send_buf, dest=SE_rank, tag=0)) # 0: weights
+            reqs.append(comm.Isend(SE_v_send_buf, dest=SE_rank, tag=1)) # 1: values
 
         # Wait for all communications to complete
         MPI.Request.Waitall(reqs)
 
-        # Reduce received halo values into local grid
-        # Values
-        grid_values[0, :-1] += dst_v[0]        # up
-        grid_values[-2, :-1] += dst_v[1]       # down
-        grid_values[:-1, 0] += dst_v[2]        # left
-        grid_values[:-1, -2] += dst_v[3]       # right
-        grid_values[0, 0] += dst_v[4]          # nw
-        grid_values[0, -2] += dst_v[5]         # ne
-        grid_values[-2, 0] += dst_v[6]         # sw
-        grid_values[-2, -2] += dst_v[7]        # se
+        # Accumulate received halo contributions
+        # Remember that we need to write to our own domain
+        # regions, not the halo regions!
+        # We will update halos once the full grid_values
+        # are normalized
+        if N_rank != MPI.PROC_NULL:
+            grid_weights[1, 1:-2] += N_w_recv_buf
+            grid_values[1, 1:-2] += N_v_recv_buf
 
-        # Weights
-        grid_weights[0, :-1] += dst_w[0]        # up
-        grid_weights[-2, :-1] += dst_w[1]       # down
-        grid_weights[:-1, 0] += dst_w[2]        # left
-        grid_weights[:-1, -2] += dst_w[3]       # right
-        grid_weights[0, 0] += dst_w[4]          # nw
-        grid_weights[0, -2] += dst_w[5]         # ne
-        grid_weights[-2, 0] += dst_w[6]         # sw
-        grid_weights[-2, -2] += dst_w[7]        # se
+        if S_rank != MPI.PROC_NULL:
+            grid_weights[-3, 1:-2] += S_w_recv_buf
+            grid_values[-3, 1:-2] += S_v_recv_buf
+        
+        if W_rank != MPI.PROC_NULL:
+            grid_weights[1:-2, 1] += W_w_recv_buf
+            grid_values[1:-2, 1] += W_v_recv_buf
 
-    if return_weights: # We are done
-        return grid_values, grid_weights
-    else: # Normalize grid values
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            # Ignore division by zero!
-            # This is correct and represents values outside the grid!
-            grid_values /= grid_weights
-        return grid_values
+        if E_rank != MPI.PROC_NULL:
+            grid_weights[1:-2, -3] += E_w_recv_buf
+            grid_values[1:-2, -3] += E_v_recv_buf
+
+        if NW_rank != MPI.PROC_NULL:
+            grid_weights[1, 1] += NW_w_recv_buf
+            grid_values[1, 1] += NW_v_recv_buf
+
+        if SW_rank != MPI.PROC_NULL:
+            grid_weights[-3, 1] += SW_w_recv_buf
+            grid_values[-3, 1] += SW_v_recv_buf
+
+        if NE_rank != MPI.PROC_NULL:
+            grid_weights[1, -3] += NE_w_recv_buf
+            grid_values[1, -3] += NE_v_recv_buf
+
+        if SE_rank != MPI.PROC_NULL:
+            grid_weights[-3, -3] += SE_w_recv_buf
+            grid_values[-3, -3] += SE_v_recv_buf
+
+    
+    # Normalize grid values by weights
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        # Ignore division by zero!
+        # This is correct and represents values outside the grid!
+        grid_values /= grid_weights
+
+    # Halo-exchange of normalized grid values if necessary
+    if mpi:
+        # We have correctly composed the grid values, including the
+        # boundaries of the domain that are affected by particles from
+        # neighboring ranks. However, the halo regions of each rank are still
+        # not updated and only store remote writes to the boundaries of neighboring ranks.
+        # We need to perform a final halo exchange of the normalized grid values to
+        # ensure that each rank has the correct values in its halo regions.
+        comm = get_cart_comm()
+
+        # We need to perform 8-way halo exchange
+        N_rank = shift_coords(-1, 0)  # North rank coordinates
+        S_rank = shift_coords(1, 0)  # South rank coordinates
+        E_rank = shift_coords(0, 1)  # East rank coordinates
+        W_rank = shift_coords(0, -1) # West rank coordinates
+        NE_rank = shift_coords(-1, 1) # North-East rank coordinates
+        NW_rank = shift_coords(-1, -1) # North-West rank coordinates
+        SE_rank = shift_coords(1, 1)  # South-East rank coordinates
+        SW_rank = shift_coords(1, -1) # South-West rank coordinates
+
+        # Prepare source and destination buffers for halo exchange
+        reqs = []
+
+        # North halo
+        if N_rank != MPI.PROC_NULL:
+            # Post receives
+            N_recv_buf = np.empty(nx1 - 3, dtype=real)
+            reqs.append(comm.Irecv(N_recv_buf, source=N_rank))
+
+            # Post sends
+            N_send_buf = grid_values[1, 1:-2]
+            reqs.append(comm.Isend(N_send_buf, dest=N_rank))
+
+        # South halo
+        if S_rank != MPI.PROC_NULL:
+            # Post receives
+            S_recv_buf = np.empty(nx1 - 3, dtype=real)
+            reqs.append(comm.Irecv(S_recv_buf, source=S_rank))
+
+            # Post sends
+            S_send_buf = grid_values[-3, 1:-2]
+            reqs.append(comm.Isend(S_send_buf, dest=S_rank))
+
+        # West halo
+        if W_rank != MPI.PROC_NULL:
+            # Post receives
+            W_recv_buf = np.empty(ny1 - 3, dtype=real)
+            reqs.append(comm.Irecv(W_recv_buf, source=W_rank))
+
+            # Post sends
+            W_send_buf = grid_values[1:-2, 1].copy()
+            reqs.append(comm.Isend(W_send_buf, dest=W_rank))
+
+        # East halo
+        if E_rank != MPI.PROC_NULL:
+            # Post receives
+            E_recv_buf = np.empty(ny1 - 3, dtype=real)
+            reqs.append(comm.Irecv(E_recv_buf, source=E_rank))
+
+            # Post sends
+            E_send_buf = grid_values[1:-2, -3].copy()
+            reqs.append(comm.Isend(E_send_buf, dest=E_rank))
+
+        # North-West halo
+        if NW_rank != MPI.PROC_NULL:
+            # Post receives
+            NW_recv_buf = np.empty(1, dtype=real)
+            reqs.append(comm.Irecv(NW_recv_buf, source=NW_rank))
+
+            # Post sends
+            NW_send_buf = np.array([grid_values[1, 1]], dtype=real)
+            reqs.append(comm.Isend(NW_send_buf, dest=NW_rank))
+        
+        # South-West halo
+        if SW_rank != MPI.PROC_NULL:
+            # Post receives
+            SW_recv_buf = np.empty(1, dtype=real)
+            reqs.append(comm.Irecv(SW_recv_buf, source=SW_rank))
+
+            # Post sends
+            SW_send_buf = np.array([grid_values[-3, 1]], dtype=real)
+            reqs.append(comm.Isend(SW_send_buf, dest=SW_rank))
+
+        # North-East halo
+        if NE_rank != MPI.PROC_NULL:
+            # Post receives
+            NE_recv_buf = np.empty(1, dtype=real)
+            reqs.append(comm.Irecv(NE_recv_buf, source=NE_rank))
+
+            # Post sends
+            NE_send_buf = np.array([grid_values[1, -3]], dtype=real)
+            reqs.append(comm.Isend(NE_send_buf, dest=NE_rank))
+
+        # South-East halo
+        if SE_rank != MPI.PROC_NULL:
+            # Post receives
+            SE_recv_buf = np.empty(1, dtype=real)
+            reqs.append(comm.Irecv(SE_recv_buf, source=SE_rank))
+
+            # Post sends
+            SE_send_buf = np.array([grid_values[-3, -3]], dtype=real)
+            reqs.append(comm.Isend(SE_send_buf, dest=SE_rank))
+
+        # Wait for all communications to complete
+        MPI.Request.Waitall(reqs)
+
+        # Update halo regions with received data
+        if N_rank != MPI.PROC_NULL:
+            grid_values[0, 1:-2] = N_recv_buf
+        
+        if S_rank != MPI.PROC_NULL:
+            grid_values[-2, 1:-2] = S_recv_buf
+
+        if W_rank != MPI.PROC_NULL:
+            grid_values[1:-2, 0] = W_recv_buf
+
+        if E_rank != MPI.PROC_NULL:
+            grid_values[1:-2, -2] = E_recv_buf
+
+        if NW_rank != MPI.PROC_NULL:
+            grid_values[0, 0] = NW_recv_buf
+
+        if SW_rank != MPI.PROC_NULL:
+            grid_values[-2, 0] = SW_recv_buf
+
+        if NE_rank != MPI.PROC_NULL:
+            grid_values[0, -2] = NE_recv_buf
+        
+        if SE_rank != MPI.PROC_NULL:
+            grid_values[-2, -2] = SE_recv_buf
+    
+    # All done!
+    return grid_values
 
 @nb.njit(parallel=True, cache=True)
 def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values):
