@@ -19,7 +19,7 @@ import numpy as np
 from Pyroclast.profiling import timer
 
 from Pyroclast.interpolation.utils import bisect_idx, compute_idx
-from Pyroclast.mpi import get_cart_comm, MPI
+from Pyroclast.mpi import get_cart_comm, MPI, halo_exchange_2D
 
 try:
     raise ImportError
@@ -75,7 +75,7 @@ def reduce_marker_values(nx1, ny1, x, y, n_markers, xm, ym, xidx, yidx, vals, gr
     return grid_values, grid_weights
 
 
-def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weights=False, mpi=True, real=np.float64):
+def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weights=False, mpi=False, real=np.float64):
     """
     Interpolates marker values to the grid nodes using distance-weighted linear interpolation.
     
@@ -158,25 +158,7 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
         gi, gj = comm.Get_coords(rank)
         py, px = comm.Get_topo()[0]  # dims (rows, cols)
 
-        # Need to detect edge ranks
-        is_top_edge = (gi == 0)
-        is_bottom_edge = (gi == py - 1)
-        is_left_edge = (gj == 0)
-        is_right_edge = (gj == px - 1)
-        
-        # We only send/receive valid domain regions
-        row_size = nx1 - 3
-        if is_left_edge or is_right_edge:
-            row_size += 1
-        jmin = 1 if not is_left_edge else 0
-        jmax = -2 if not is_right_edge else -1
-
-        col_size = ny1 - 3
-        if is_top_edge or is_bottom_edge:
-            col_size += 1
-        imin = 1 if not is_top_edge else 0
-        imax = -2 if not is_bottom_edge else -1
-
+        # Function to get shifted rank coordinates
         def shift_coords(di, dj):
             i, j = gi + di, gj + dj
 
@@ -185,6 +167,30 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
                 return MPI.PROC_NULL
 
             return comm.Get_cart_rank((i, j))
+
+        # Need to detect edge ranks
+        is_top_edge = (gi == 0)
+        is_bottom_edge = (gi == py - 1)
+        is_left_edge = (gj == 0)
+        is_right_edge = (gj == px - 1)
+        
+        # Standard halo row goes from 1 to -2
+        # That is nx1 - 3 elements
+        # However, if we are at the edge of the global domain,
+        # we extend the domain by 1 cell.
+        # This is because halo rows become boundary rows in that case.
+        row_size = nx1 - 3
+        if is_left_edge or is_right_edge:
+            row_size += 1
+        jmin = 1 if not is_left_edge else 0
+        jmax = -2 if not is_right_edge else -1
+
+        # Similarly for halo columns
+        col_size = ny1 - 3
+        if is_top_edge or is_bottom_edge:
+            col_size += 1
+        imin = 1 if not is_top_edge else 0
+        imax = -2 if not is_bottom_edge else -1
 
         # We need to perform 8-way halo exchange
         N_rank = shift_coords(-1, 0)  # North rank coordinates
@@ -202,8 +208,8 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
         # North halo
         if N_rank != MPI.PROC_NULL:
             # Need to send receive from North
-            N_w_recv_buf = np.empty(nx1 - 3, dtype=real)
-            N_v_recv_buf = np.empty(nx1 - 3, dtype=real)
+            N_w_recv_buf = np.empty(row_size, dtype=real)
+            N_v_recv_buf = np.empty(row_size, dtype=real)
 
             # Post receives
             reqs.append(comm.Irecv(N_w_recv_buf, source=N_rank, tag=0)) # 0: weights
@@ -219,15 +225,15 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
         # South halo
         if S_rank != MPI.PROC_NULL:
             # Need to send receive from South
-            S_w_recv_buf = np.empty(nx1 - 3, dtype=real)
-            S_v_recv_buf = np.empty(nx1 - 3, dtype=real)
-            
+            S_w_recv_buf = np.empty(row_size, dtype=real)
+            S_v_recv_buf = np.empty(row_size, dtype=real)
+
             # Post receives
             reqs.append(comm.Irecv(S_w_recv_buf, source=S_rank, tag=0)) # 0: weights
             reqs.append(comm.Irecv(S_v_recv_buf, source=S_rank, tag=1)) # 1: values
 
-            S_w_send_buf = grid_weights[-2, 1:-2]
-            S_v_send_buf = grid_values[-2, 1:-2]
+            S_w_send_buf = grid_weights[-2, jmin:jmax].copy()
+            S_v_send_buf = grid_values[-2, jmin:jmax].copy()
 
             # Post sends
             reqs.append(comm.Isend(S_w_send_buf, dest=S_rank, tag=0)) # 0: weights
@@ -236,15 +242,15 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
         # West halo
         if W_rank != MPI.PROC_NULL:
             # Need to send receive from West
-            W_w_recv_buf = np.empty(ny1 - 3, dtype=real)
-            W_v_recv_buf = np.empty(ny1 - 3, dtype=real)
-            
+            W_w_recv_buf = np.empty(col_size, dtype=real)
+            W_v_recv_buf = np.empty(col_size, dtype=real)
+
             # Post receives
             reqs.append(comm.Irecv(W_w_recv_buf, source=W_rank, tag=0)) # 0: weights
             reqs.append(comm.Irecv(W_v_recv_buf, source=W_rank, tag=1)) # 1: values
 
-            W_w_send_buf = grid_weights[1:-2, 0].copy()
-            W_v_send_buf = grid_values[1:-2, 0].copy()
+            W_w_send_buf = grid_weights[imin:imax, 0].copy()
+            W_v_send_buf = grid_values[imin:imax, 0].copy()
 
             # Post sends
             reqs.append(comm.Isend(W_w_send_buf, dest=W_rank, tag=0)) # 0: weights
@@ -253,15 +259,15 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
         # East halo
         if E_rank != MPI.PROC_NULL:
             # Need to send receive from East
-            E_w_recv_buf = np.empty(ny1 - 3, dtype=real)
-            E_v_recv_buf = np.empty(ny1 - 3, dtype=real)
+            E_w_recv_buf = np.empty(col_size, dtype=real)
+            E_v_recv_buf = np.empty(col_size, dtype=real)
             
             # Post receives
             reqs.append(comm.Irecv(E_w_recv_buf, source=E_rank, tag=0)) # 0: weights
             reqs.append(comm.Irecv(E_v_recv_buf, source=E_rank, tag=1)) # 1: values
 
-            E_w_send_buf = grid_weights[1:-2, -2].copy()
-            E_v_send_buf = grid_values[1:-2, -2].copy()
+            E_w_send_buf = grid_weights[imin:imax, -2].copy()
+            E_v_send_buf = grid_values[imin:imax, -2].copy()
 
             # Post sends
             reqs.append(comm.Isend(E_w_send_buf, dest=E_rank, tag=0)) # 0: weights
@@ -340,20 +346,20 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
         # We will update halos once the full grid_values
         # are normalized
         if N_rank != MPI.PROC_NULL:
-            grid_weights[1, 1:-2] += N_w_recv_buf
-            grid_values[1, 1:-2] += N_v_recv_buf
+            grid_weights[1, jmin:jmax] += N_w_recv_buf
+            grid_values[1, jmin:jmax] += N_v_recv_buf
 
         if S_rank != MPI.PROC_NULL:
-            grid_weights[-3, 1:-2] += S_w_recv_buf
-            grid_values[-3, 1:-2] += S_v_recv_buf
+            grid_weights[-3, jmin:jmax] += S_w_recv_buf
+            grid_values[-3, jmin:jmax] += S_v_recv_buf
         
         if W_rank != MPI.PROC_NULL:
-            grid_weights[1:-2, 1] += W_w_recv_buf
-            grid_values[1:-2, 1] += W_v_recv_buf
+            grid_weights[imin:imax, 1] += W_w_recv_buf
+            grid_values[imin:imax, 1] += W_v_recv_buf
 
         if E_rank != MPI.PROC_NULL:
-            grid_weights[1:-2, -3] += E_w_recv_buf
-            grid_values[1:-2, -3] += E_v_recv_buf
+            grid_weights[imin:imax, -3] += E_w_recv_buf
+            grid_values[imin:imax, -3] += E_v_recv_buf
 
         if NW_rank != MPI.PROC_NULL:
             grid_weights[1, 1] += NW_w_recv_buf
@@ -381,140 +387,13 @@ def interpolate_markers2grid(x, y, xm, ym, vals, indexing="bisect", return_weigh
 
     # Halo-exchange of normalized grid values if necessary
     if mpi:
-        # We have correctly composed the grid values, including the
-        # boundaries of the domain that are affected by particles from
-        # neighboring ranks. However, the halo regions of each rank are still
-        # not updated and only store remote writes to the boundaries of neighboring ranks.
-        # We need to perform a final halo exchange of the normalized grid values to
-        # ensure that each rank has the correct values in its halo regions.
-        comm = get_cart_comm()
-
-        # We need to perform 8-way halo exchange
-        N_rank = shift_coords(-1, 0)  # North rank coordinates
-        S_rank = shift_coords(1, 0)  # South rank coordinates
-        E_rank = shift_coords(0, 1)  # East rank coordinates
-        W_rank = shift_coords(0, -1) # West rank coordinates
-        NE_rank = shift_coords(-1, 1) # North-East rank coordinates
-        NW_rank = shift_coords(-1, -1) # North-West rank coordinates
-        SE_rank = shift_coords(1, 1)  # South-East rank coordinates
-        SW_rank = shift_coords(1, -1) # South-West rank coordinates
-
-        # Prepare source and destination buffers for halo exchange
-        reqs = []
-
-        # North halo
-        if N_rank != MPI.PROC_NULL:
-            # Post receives
-            N_recv_buf = np.empty(nx1 - 3, dtype=real)
-            reqs.append(comm.Irecv(N_recv_buf, source=N_rank))
-
-            # Post sends
-            N_send_buf = grid_values[1, 1:-2]
-            reqs.append(comm.Isend(N_send_buf, dest=N_rank))
-
-        # South halo
-        if S_rank != MPI.PROC_NULL:
-            # Post receives
-            S_recv_buf = np.empty(nx1 - 3, dtype=real)
-            reqs.append(comm.Irecv(S_recv_buf, source=S_rank))
-
-            # Post sends
-            S_send_buf = grid_values[-3, 1:-2]
-            reqs.append(comm.Isend(S_send_buf, dest=S_rank))
-
-        # West halo
-        if W_rank != MPI.PROC_NULL:
-            # Post receives
-            W_recv_buf = np.empty(ny1 - 3, dtype=real)
-            reqs.append(comm.Irecv(W_recv_buf, source=W_rank))
-
-            # Post sends
-            W_send_buf = grid_values[1:-2, 1].copy()
-            reqs.append(comm.Isend(W_send_buf, dest=W_rank))
-
-        # East halo
-        if E_rank != MPI.PROC_NULL:
-            # Post receives
-            E_recv_buf = np.empty(ny1 - 3, dtype=real)
-            reqs.append(comm.Irecv(E_recv_buf, source=E_rank))
-
-            # Post sends
-            E_send_buf = grid_values[1:-2, -3].copy()
-            reqs.append(comm.Isend(E_send_buf, dest=E_rank))
-
-        # North-West halo
-        if NW_rank != MPI.PROC_NULL:
-            # Post receives
-            NW_recv_buf = np.empty(1, dtype=real)
-            reqs.append(comm.Irecv(NW_recv_buf, source=NW_rank))
-
-            # Post sends
-            NW_send_buf = np.array([grid_values[1, 1]], dtype=real)
-            reqs.append(comm.Isend(NW_send_buf, dest=NW_rank))
-        
-        # South-West halo
-        if SW_rank != MPI.PROC_NULL:
-            # Post receives
-            SW_recv_buf = np.empty(1, dtype=real)
-            reqs.append(comm.Irecv(SW_recv_buf, source=SW_rank))
-
-            # Post sends
-            SW_send_buf = np.array([grid_values[-3, 1]], dtype=real)
-            reqs.append(comm.Isend(SW_send_buf, dest=SW_rank))
-
-        # North-East halo
-        if NE_rank != MPI.PROC_NULL:
-            # Post receives
-            NE_recv_buf = np.empty(1, dtype=real)
-            reqs.append(comm.Irecv(NE_recv_buf, source=NE_rank))
-
-            # Post sends
-            NE_send_buf = np.array([grid_values[1, -3]], dtype=real)
-            reqs.append(comm.Isend(NE_send_buf, dest=NE_rank))
-
-        # South-East halo
-        if SE_rank != MPI.PROC_NULL:
-            # Post receives
-            SE_recv_buf = np.empty(1, dtype=real)
-            reqs.append(comm.Irecv(SE_recv_buf, source=SE_rank))
-
-            # Post sends
-            SE_send_buf = np.array([grid_values[-3, -3]], dtype=real)
-            reqs.append(comm.Isend(SE_send_buf, dest=SE_rank))
-
-        # Wait for all communications to complete
-        MPI.Request.Waitall(reqs)
-
-        # Update halo regions with received data
-        if N_rank != MPI.PROC_NULL:
-            grid_values[0, 1:-2] = N_recv_buf
-        
-        if S_rank != MPI.PROC_NULL:
-            grid_values[-2, 1:-2] = S_recv_buf
-
-        if W_rank != MPI.PROC_NULL:
-            grid_values[1:-2, 0] = W_recv_buf
-
-        if E_rank != MPI.PROC_NULL:
-            grid_values[1:-2, -2] = E_recv_buf
-
-        if NW_rank != MPI.PROC_NULL:
-            grid_values[0, 0] = NW_recv_buf
-
-        if SW_rank != MPI.PROC_NULL:
-            grid_values[-2, 0] = SW_recv_buf
-
-        if NE_rank != MPI.PROC_NULL:
-            grid_values[0, -2] = NE_recv_buf
-        
-        if SE_rank != MPI.PROC_NULL:
-            grid_values[-2, -2] = SE_recv_buf
+        grid_values = halo_exchange_2D(grid_values)
     
     # All done!
     return grid_values
 
 @nb.njit(parallel=True, cache=True)
-def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values):
+def reduce_grid_values(x, y, nm, xm, ym, xidx, yidx, grid_values, marker_values):
     """
     Reduces the grid values to the markers using distance-weighted linear interpolation.
 
@@ -532,11 +411,10 @@ def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values):
     - marker_weights: 1D array of shape (n_markers,) containing accumulated weights at each marker.
     """
     # Get dimensions of tensors
-    n_markers = len(xm)
     dx, dy = x[1] - x[0], y[1] - y[0]
 
     # Loop over each marker in parallel
-    for m in nb.prange(n_markers):
+    for m in nb.prange(nm):
         # Read marker coordinates and reference node indices
         mx, my = xm[m], ym[m]
         mj, mi = xidx[m], yidx[m]
@@ -559,7 +437,7 @@ def reduce_grid_values(x, y, xm, ym, xidx, yidx, grid_values, marker_values):
     return marker_values
 
 
-def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", cont_corr = None, real=np.float64):
+def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", real=np.float64, out=None, nm_active=None, mpi=False):
     """
     Interpolates grid values to the markers using distance-weighted trilinear interpolation.
     
@@ -590,25 +468,32 @@ def interpolate_grid2markers(x, y, xm, ym, grid_values, indexing="bisect", cont_
     assert isinstance(grid_values, np.ndarray)
 
     # Grid dimensions and grid spacing
-    nx, ny = len(x), len(y)
+    nx1, ny1 = len(x), len(y)
 
     # Initialize marker values and weights
-    n_markers = len(xm)
-    marker_values = np.zeros((n_markers,), dtype=real)
+    nm = len(xm) if nm_active is None else nm_active # Number of active markers in case of MPI
+    marker_values = np.zeros((nm,), dtype=real) if out is None else out
 
-    # 1) Compute grid indices for each marker
+    # 1) Compute grid indices for each 1marker
     if indexing == "equidistant":
         xidx = compute_idx(x, xm)
         yidx = compute_idx(y, ym)
     elif indexing == "bisect":
-        xidx = bisect_idx(x, xm, nx)
-        yidx = bisect_idx(y, ym, ny)
+        xidx = bisect_idx(x, xm, nx1)
+        yidx = bisect_idx(y, ym, ny1)
     else:
         raise ValueError("Invalid indexing mode. Choose 'equidistant' or 'bisect'.")
     
+    # Perform halo exchange if in MPI mode to ensure halo regions are updated
+    # This is the same as in interpolate_markers2grid function when
+    # propagating the normalized grid values to the halos
+    if mpi:
+        grid_values = halo_exchange_2D(grid_values)
+        
+
     # 2) Loop over markers and accumulate weighted values and weights
     marker_values = reduce_grid_values(x, y,
-                                       xm, ym,
+                                       nm, xm, ym,
                                        xidx, yidx,
                                        grid_values,
                                        marker_values)
