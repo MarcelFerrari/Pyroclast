@@ -123,8 +123,7 @@ class RK42DStokes(Basic2DStokes):
                            s.yvx, 
                            xm, ym,                  # x and y coordinates of the markers
                            s.vx,                    # values to interpolate (vx)
-                           indexing="equidistant",  # equidistant grid
-                           cont_corr="x")           # x-continuity correction  
+                           indexing="equidistant")  # equidistant grid
     
     def interpolate_vy(self, xm, ym, ctx):
         """
@@ -136,8 +135,8 @@ class RK42DStokes(Basic2DStokes):
                            s.yvy,
                            xm, ym,                  # x and y coordinates of the markers
                            s.vy,                    # values to interpolate (vy)
-                           indexing="equidistant",  # equidistant grid
-                           cont_corr="y")           # y-continuity correction
+                           indexing="equidistant"   # equidistant grid
+                           )                        # y-continuity correction
 
     def advect(self, ctx):
         # Read context
