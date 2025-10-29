@@ -110,8 +110,8 @@ class Basic2DStokesMPI(BasePool): # Inherit from BasePool
                             s.yvx, 
                             s.xm, s.ym,              # x and y coordinates of the markers
                             s.vx,                    # values to interpolate (vx)
-                            indexing="equidistant"   # equidistant grid
-                            )                        # number of active markers for MPI
+                            indexing="equidistant",  # equidistant grid
+                            mpi=True)
 
         # Interpolate velocity from vy nodes of staggered grid to markers
         s.vym = interpolate(s.xvy,                   # x and y coordinates of the vy nodes
@@ -119,7 +119,8 @@ class Basic2DStokesMPI(BasePool): # Inherit from BasePool
                             s.xm, s.ym,              # x and y coordinates of the markers
                             s.vy,                    # values to interpolate (vy)
                             indexing="equidistant",  # equidistant grid
-                            )                        # number of active markers for MPI
+                            mpi=True
+                            )
     
     # Allocate outbound marker buffers for MPI exchange
     def allocate_marker_buffers(self, nm):
