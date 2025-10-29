@@ -24,6 +24,13 @@ def get_dir(x, y, xmin, xmax, ymin, ymax):
         return DIR_W
     return DIR_NO_MIGRATE
 
+@nb.njit(cache=True, parallel=True, fastmath=True)
+def euler_step(nm, xm, ym, vxm, vym, dt):
+    for m in nb.prange(nm):
+        xm[m] += vxm[m] * dt
+        ym[m] += vym[m] * dt
+    return xm, ym
+
 @nb.njit(cache=True, parallel=True)
 def flag_migrating_markers(nm, xm, ym, xmin, xmax, ymin, ymax, n_threads=nb.get_num_threads()):
     """
