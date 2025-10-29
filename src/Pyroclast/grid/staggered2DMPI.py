@@ -22,7 +22,6 @@ from Pyroclast.interpolation.linear_2D_cpu \
 from Pyroclast.logging import get_logger
 
 from Pyroclast.mpi import MPI, create_cart_comm
-from math import sqrt
 
 logger = get_logger(__name__)
 
@@ -64,9 +63,19 @@ class BasicStaggered2DMPI(BaseGrid):
         comm = MPI.COMM_WORLD
         size = comm.Get_size()
         
+        if not size > 1:
+            logger.warning("BasicStaggered2DMPI initialized with a single MPI rank. "
+                           "Consider using BasicStaggered2D for single-process runs.")
+        
         # Set up grid spacing from global grid size
         s.dx = p.xsize_global / (p.nx_global - 1)
         s.dy = p.ysize_global / (p.ny_global - 1)
+        
+        # Store global physical domain bounds
+        s.xmin_global = -s.dx
+        s.xmax_global = p.xsize_global + s.dx
+        s.ymin_global = -s.dy
+        s.ymax_global = p.ysize_global + s.dy
 
         # Set up local grid size
         # We want to approximately match the 2D process grid to the aspect ratio
@@ -192,29 +201,31 @@ class BasicStaggered2DMPI(BaseGrid):
         s, p, o = ctx
 
         rho = interpolate(s.xvy,                      # Density on y-velocity nodes
-                            s.yvy,  
-                            s.xm,                       # Marker x positions
-                            s.ym,                       # Marker y positions
-                            s.rhom,                     # Marker density
-                            indexing="equidistant",     # Equidistant grid spacing
-                            return_weights=False)       # Do not return weights
+                          s.yvy,  
+                          s.xm,                       # Marker x positions
+                          s.ym,                       # Marker y positions
+                          s.rhom,                     # Marker density
+                          indexing="equidistant",     # Equidistant grid spacing
+                          return_weights=False,       # Do not return weights
+                          mpi=True)
 
-        
         etab = interpolate(s.x,                       # Basic viscosity on grid nodes
-                             s.y,
-                             s.xm,                      # Marker x positions
-                             s.ym,                      # Marker y positions
-                             s.etam,                    # Marker viscosity
-                             indexing="equidistant",    # Equidistant grid spacing
-                             return_weights=False)      # Do not return weights
+                           s.y,
+                           s.xm,                      # Marker x positions
+                           s.ym,                      # Marker y positions
+                           s.etam,                    # Marker viscosity
+                           indexing="equidistant",    # Equidistant grid spacing
+                           return_weights=False,      # Do not return weights
+                           mpi=True)
         
         etap = interpolate(s.xp,                      # Pressure viscosity on grid nodes
-                             s.yp,
-                             s.xm,                      # Marker x positions
-                             s.ym,                      # Marker y positions
-                             s.etam,                    # Marker viscosity
-                             indexing="equidistant",    # Equidistant grid spacing
-                             return_weights=False)      # Do not return weights
+                           s.yp,
+                           s.xm,                      # Marker x positions
+                           s.ym,                      # Marker y positions
+                           s.etam,                    # Marker viscosity
+                           indexing="equidistant",    # Equidistant grid spacing
+                           return_weights=False,      # Do not return weights
+                           mpi=True)
 
         mask = np.isfinite(rho)
         s.rho[mask] = rho[mask]
