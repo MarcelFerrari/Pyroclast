@@ -31,7 +31,6 @@ class ConstantVelocityAdvection2DMPI(BaseModel):
     Constant velocity advection model in 2D.
      
     """
-
     def __init__(self, ctx):
         # At this point the grid and markers are already initialized
         s, p, o = ctx
@@ -64,18 +63,33 @@ class ConstantVelocityAdvection2DMPI(BaseModel):
 
 
         # Set up time step
-        vxmax = np.max(np.abs(s.vx))
-        vymax = np.max(np.abs(s.vy))
-        
+        vxmax_local = np.array([np.max(np.abs(s.vx))])
+        vymax_local = np.array([np.max(np.abs(s.vy))])
+
         comm = get_cart_comm()
 
-        vxmax = comm.allreduce(vxmax, op=MPI.MAX)
-        vymax = comm.allreduce(vymax, op=MPI.MAX)
+        vxmax_global = np.zeros_like(vxmax_local)
+        vymax_global = np.zeros_like(vymax_local)
+        comm.Allreduce(vxmax_local, vxmax_global, op=MPI.MAX)
+        comm.Allreduce(vymax_local, vymax_global, op=MPI.MAX)
+
+        s.vxmax_global = vxmax_global[0]
+        s.vymax_global = vymax_global[0]
+
+        vxmax = max(vxmax_global[0], 1e-12)
+        vymax = max(vymax_global[0], 1e-12)
 
         # Compute time step
-        dty = p.cfl_dispmax * p.L / vymax
-        dtx = p.cfl_dispmax * p.L / vxmax
-        self.dt = min(dtx, dty)
+        dty_phys = p.cfl_dispmax * p.L / vymax
+        dtx_phys = p.cfl_dispmax * p.L / vxmax
+        dtx_halo = p.cfl_dispmax * s.dx / vxmax
+        dty_halo = p.cfl_dispmax * s.dy / vymax
+
+        dt_local = np.array([min(dtx_phys, dty_phys, dtx_halo, dty_halo)])
+        dt_global = np.zeros_like(dt_local)
+        comm.Allreduce(dt_local, dt_global, op=MPI.MIN)
+
+        self.dt = dt_global[0]
 
         assert s.vx.shape == (s.ny1, s.nx1), "vx shape mismatch"
         assert s.vy.shape == (s.ny1, s.nx1), "vy shape mismatch"
@@ -97,7 +111,9 @@ class ConstantVelocityAdvection2DMPI(BaseModel):
         fname = get_shard_filename(fname) + f".npz"
 
         np.savez(fname, vx=s.vx, vy=s.vy,
-                 rho=s.rho, etab=s.etab, etap=s.etap)
+                 rho=s.rho, etab=s.etab, etap=s.etap,
+                 coords=(s.gi, s.gj), xm=s.xm[:s.nm],
+                 ym=s.ym[:s.nm])
 
         logger.info(f"Frame {self.frame} written to file.")
         self.frame += 1 # Increment frame counter
