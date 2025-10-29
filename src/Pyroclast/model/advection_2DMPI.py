@@ -112,8 +112,7 @@ class ConstantVelocityAdvection2DMPI(BaseModel):
 
         np.savez(fname, vx=s.vx, vy=s.vy,
                  rho=s.rho, etab=s.etab, etap=s.etap,
-                 coords=(s.gi, s.gj), xm=s.xm[:s.nm],
-                 ym=s.ym[:s.nm])
+                 coords=(s.gi, s.gj))
 
         logger.info(f"Frame {self.frame} written to file.")
         self.frame += 1 # Increment frame counter
