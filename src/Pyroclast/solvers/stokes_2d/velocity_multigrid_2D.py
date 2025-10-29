@@ -21,8 +21,6 @@ This module provides :class:`StokesMultigrid`, a concrete subclass of
 V-cycle logic to the Stokes grid hierarchy and smoothing operators.
 """
 
-from __future__ import annotations
-
 from Pyroclast.solvers.multigrid import BaseMultigrid
 from .grid_hierarchy import GridHierarchy
 
