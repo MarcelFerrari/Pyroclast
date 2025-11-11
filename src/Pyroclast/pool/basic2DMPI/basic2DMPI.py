@@ -194,14 +194,6 @@ class Basic2DStokesMPI(BasePool): # Inherit from BasePool
                 
 
         MPI.Request.Waitall(reqs)
-
-        # Allocate outbound marker buffers
-        # We use a function to make it easier to override in child classes
-        out_marker_buffs = []
-        for i in range(N_DIRS):
-            tmp = self.allocate_marker_buffers(out_m_counts[i])
-            out_marker_buffs.append(tmp)
-        out_marker_buffs = tuple(out_marker_buffs) # Convert to tuple for numba compatibility
         
         # Compute new total marker count after exchange
         nm_new = s.nm - np.sum(out_m_counts) + np.sum(in_m_counts)
@@ -213,48 +205,57 @@ class Basic2DStokesMPI(BasePool): # Inherit from BasePool
         marker_properties = self.get_marker_properties()
         new_marker_properties = self.allocate_marker_buffers(nm_new)
 
-        assert len(marker_properties) == len(out_marker_buffs[0]), \
-            "Number of marker properties and outbound buffers do not match."
-        
-        # Compact markers and copy migrating markers into outbound buffers
-        compact_markers(
-            s.nm,
-            s.xm, s.ym,
-            s.m_xmin, s.m_xmax, s.m_ymin, s.m_ymax,
-            to_nb_container(marker_properties),
-            # Append new_marker_properties for still markers
-            to_nb_container(out_marker_buffs + (new_marker_properties,)), 
-            nb.get_num_threads()
-        )
-
         # Compute offsets for incoming markers
         # We start writing after the still markers, which have been
         # moved to the beginning of the arrays during compaction
+        # 1. Prepare inbound offsets
         inbound_write_offsets = np.zeros(N_DIRS + 1, dtype=np.int64)
         inbound_write_offsets[1:] = np.cumsum(in_m_counts)
-        inbound_write_offsets += still_m_count  # Offset by number of still markers
-
+        inbound_write_offsets += still_m_count
+        
         assert inbound_write_offsets[-1] == nm_new, \
             f"Write offsets do not match new marker count: {inbound_write_offsets[-1]} != {nm_new}"
         assert inbound_write_offsets[0] == still_m_count, \
             f"First write offset does not match still marker count: {inbound_write_offsets[0]} != {still_m_count}"
 
-        # Marker data exchange
-        reqs = []
-        for dir_idx, nbr_rank in enumerate(directions):
-            if nbr_rank != MPI.PROC_NULL:
-                # Post non-blocking receives for incoming markers
+        reqs = []  # to accumulate MPI requests
+        out_buffs_list = []  # to hold outbound buffers per property
+
+        # 2. Iterate property by property
+        for tag, (prop, new_prop) in enumerate(zip(marker_properties, new_marker_properties)):
+            # out_buffs = (out_N, out_S, out_E, out_W, out_NE, out_NW, out_SE, out_SW)
+            
+            # Allocate outbound buffers
+            out_buffs = tuple(
+                np.empty(out_m_counts[dir_idx], dtype=np.float64)
+                for dir_idx in range(N_DIRS)
+            )
+            out_buffs_list.append(out_buffs) # Need to keep them alive for MPI
+
+            compact_markers(
+                s.nm,
+                s.xm, s.ym,
+                s.m_xmin, s.m_xmax, s.m_ymin, s.m_ymax,
+                prop,
+                *out_buffs,  # unpack all 8 arrays
+                new_prop,    # array for still markers
+                nb.get_num_threads()
+            )
+
+            # Start MPI communication for this property immediately
+            for dir_idx, nbr_rank in enumerate(directions):
+                if nbr_rank == MPI.PROC_NULL:
+                    continue
+
+                # Non-blocking receive
                 if in_m_counts[dir_idx] > 0:
                     start, end = inbound_write_offsets[dir_idx], inbound_write_offsets[dir_idx + 1]
-                    for tag in range(len(new_marker_properties)):
-                        buf = new_marker_properties[tag]
-                        reqs.append(comm.Irecv(buf[start:end], source=nbr_rank, tag=tag))
-                
-                # Post non-blocking sends for outgoing markers
+                    reqs.append(comm.Irecv(new_prop[start:end], source=nbr_rank, tag=tag))
+
+                # Non-blocking send
                 if out_m_counts[dir_idx] > 0:
-                    for tag in range(len(marker_properties)):
-                        buf = out_marker_buffs[dir_idx][tag]
-                        reqs.append(comm.Isend(buf, dest=nbr_rank, tag=tag))
+                    reqs.append(comm.Isend(out_buffs[dir_idx], dest=nbr_rank, tag=tag))
+
 
         MPI.Request.Waitall(reqs)
 

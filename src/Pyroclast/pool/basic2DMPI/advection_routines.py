@@ -55,11 +55,11 @@ def flag_migrating_markers(nm, xm, ym, xmin, xmax, ymin, ymax, n_threads=nb.get_
         local_n_out = np.zeros(N_DIRS, dtype=np.int64)
 
         for m in range(start, end):
-            dir_idx = get_dir(xm[m], ym[m], xmin, xmax, ymin, ymax)
-            if dir_idx == DIR_NO_MIGRATE:
+            dir = get_dir(xm[m], ym[m], xmin, xmax, ymin, ymax)
+            if dir == DIR_NO_MIGRATE:
                 local_n_still[0] += 1 # Remember this is an array of size 1
             else:
-                local_n_out[dir_idx] += 1
+                local_n_out[dir] += 1
         
         n_still[tid] = local_n_still[0]
         n_out[tid, :] = local_n_out
@@ -72,8 +72,12 @@ def flag_migrating_markers(nm, xm, ym, xmin, xmax, ymin, ymax, n_threads=nb.get_
 
 
 @nb.njit(cache=True, parallel=True)
-def compact_markers(nm, xm, ym, xmin, xmax, ymin, ymax, marker_properties,
-                    out_marker_buffs, n_threads = nb.get_num_threads()):
+def compact_markers(nm, xm, ym, xmin, xmax, ymin, ymax,
+                    marker_property, # Single marker property array to be compacted
+                    out_N_dir, out_S_dir, out_E_dir, out_W_dir, # Buffers for each direction
+                    out_NE_dir, out_NW_dir, out_SE_dir, out_SW_dir,
+                    out_no_migrate, # Buffer for still markers = compacted markers
+                    n_threads):
     # We copy and compact migrating markers into their respective buffers
     # We do this in parallel with two passes:
     # 1. Count how many markers go to each direction per thread (partial prefix sum)
@@ -94,8 +98,8 @@ def compact_markers(nm, xm, ym, xmin, xmax, ymin, ymax, marker_properties,
         # Local array to avoid false sharing
         local_offsets = np.zeros(N_DIRS + 1, dtype=np.int64)
         for m in range(start, end):
-            dir_idx = get_dir(xm[m], ym[m], xmin, xmax, ymin, ymax)
-            local_offsets[dir_idx] += 1
+            dir = get_dir(xm[m], ym[m], xmin, xmax, ymin, ymax)
+            local_offsets[dir] += 1
                 
         offsets[tid + 1, :] = local_offsets
 
@@ -113,14 +117,30 @@ def compact_markers(nm, xm, ym, xmin, xmax, ymin, ymax, marker_properties,
         ptr[:] = offsets[tid, :]
 
         for m in range(start, end):
-            dir_idx = get_dir(xm[m], ym[m], xmin, xmax, ymin, ymax)
+            dir = get_dir(xm[m], ym[m], xmin, xmax, ymin, ymax)
+            val = marker_property[m]
 
             # Copy marker properties to the appropriate buffer
-            for prop_idx in range(len(marker_properties)):
-                out_marker_buffs[dir_idx][prop_idx][ptr[dir_idx]] = \
-                                         marker_properties[prop_idx][m]
+            if dir == DIR_NO_MIGRATE:
+                out_no_migrate[ptr[DIR_NO_MIGRATE]] = val
+            elif dir == DIR_N:
+                out_N_dir[ptr[DIR_N]] = val
+            elif dir == DIR_S:
+                out_S_dir[ptr[DIR_S]] = val
+            elif dir == DIR_E:
+                out_E_dir[ptr[DIR_E]] = val
+            elif dir == DIR_W:
+                out_W_dir[ptr[DIR_W]] = val
+            elif dir == DIR_NE:
+                out_NE_dir[ptr[DIR_NE]] = val
+            elif dir == DIR_NW:
+                out_NW_dir[ptr[DIR_NW]] = val
+            elif dir == DIR_SE:
+                out_SE_dir[ptr[DIR_SE]] = val
+            elif dir == DIR_SW:
+                out_SW_dir[ptr[DIR_SW]] = val
 
-            ptr[dir_idx] += 1
+            ptr[dir] += 1
 
 def to_nb_container(nested_tuple):
     outer = List()

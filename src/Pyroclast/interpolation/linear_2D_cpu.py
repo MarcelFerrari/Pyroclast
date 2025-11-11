@@ -22,7 +22,6 @@ from Pyroclast.interpolation.utils import bisect_idx, compute_idx
 from Pyroclast.mpi import get_cart_comm, MPI, halo_exchange_2D
 
 try:
-    raise ImportError
     from Pyroclast.turbo.interpolation import reduce_marker_values_2D as reduce_parallel
 except ImportError:
     reduce_parallel = None
