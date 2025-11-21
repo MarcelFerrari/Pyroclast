@@ -15,12 +15,12 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 
 import base64
+import copy
 import hashlib
 import os.path
 import os.path
-from typing import Any
+from typing import Any, Optional
 
-import copy
 import numpy as np
 import pandas as pd
 import tabulate
