@@ -40,7 +40,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--benchmark-result",
                     type=str,
                     required=True,
-                    help="Benchmark result file (relative to results folder in config)")
+                    help="Benchmark result file (relative to results folder in config or absolute)")
 parser.add_argument("-c", "--config",
                     type=str,
                     default=None,
