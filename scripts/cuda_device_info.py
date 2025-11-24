@@ -9,3 +9,7 @@ print(f"block_dim_x * block_dim_y * block_dim_z <= Max Thread per Block")
 print(f"Max Grid Dim X: {cuda.get_current_device().MAX_GRID_DIM_X}")
 print(f"Max Grid Dim Y: {cuda.get_current_device().MAX_GRID_DIM_Y}")
 print(f"Max Grid Dim Z: {cuda.get_current_device().MAX_GRID_DIM_Z}")
+
+print(f"Number of Streaming Multiprocessors (SM): {cuda.get_current_device().MULTIPROCESSOR_COUNT}")
+print(f"Number of Threads per Warp: {cuda.get_current_device().WARP_SIZE}")
+print(f"Number of Threads per SM{cuda.get_current_device().MAX_THREADS_PER_SM}")
