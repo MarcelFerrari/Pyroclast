@@ -6,7 +6,7 @@ PCD="/home/alisot2000/Documents/02_ETH/Bachelor_Thesis/Pyroclast"
 cd $PCD
 
 # Check we have everything needed for running our stuff
-poetry install ---cache_all-groups
+poetry install --all-groups --all-extras
 source $PCD/.venv/bin/activate
 source $PCD/share/setup-env--cache_alex.sh
 
