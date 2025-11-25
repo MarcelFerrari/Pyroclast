@@ -61,6 +61,7 @@ class BaseBenchmarkValidator(BaseModel):
     cache_block_size_1: Optional[int] = Field(None, gt=0)
     cache_block_size_2: Optional[int] = Field(None, gt=0)
     iter_unroll: Optional[int] = Field(None, gt=0)
+    jitter: Optional[int] = Field(None, gt=0)
 
     # Inspection Options
     profile: bool = False
@@ -81,6 +82,25 @@ class BaseBenchmarkValidator(BaseModel):
 
         if attr_val is not None and attr_val.shape != (self.ny + 1, self.nx + 1):
             raise ValueError(f"{attr} shape must be ({self.ny + 1}, {self.nx + 1})")
+
+    @model_validator(mode="after")
+    def validate_unroll(self) -> Self:
+        if self.iter_unroll is None:
+            return self
+
+        if self.iter_unroll > self.max_iter // 2:
+            raise ValueError("iter_unroll needs to be smaller than max_iter // 2")
+        return self
+
+    @model_validator(mode="after")
+    def validate_jitter(self) -> Self:
+        # Deal with not present
+        if self.jitter is None or self.cache_block_size_1 is None:
+            return self
+
+        if self.jitter > self.cache_block_size_1 // 4:
+            raise ValueError("jitter needs to be smaller than cache_block_size_1 // 4")
+        return self
 
 
     model_config = ConfigDict(
