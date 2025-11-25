@@ -52,7 +52,20 @@ numactl --physcpubind=0-127 python3 runner.py -m base_jacobi base_rb_gs jacobi_f
     --dimension 4096 5792 8192 11585 16384
 
 
-# GPU
+# GPU small
+numactl --physcpubind=0-127 python3 runner.py -m gpu_jacobi gpu_rb_gs \
+    --cpu 8 \
+    --samples 15 \
+    --unroll 4 \
+    --cache_a 32 \
+    --cache_b 32 \
+    --iterations 1024 \
+    --test smoother \
+    --print-table \
+    --jitter 3 \
+    --dimension 64 90 128 181 256 362 512 724 1024 1448 2048
+
+# GPU big
 numactl --physcpubind=0-127 python3 runner.py -m gpu_jacobi gpu_rb_gs \
     --cpu 8 \
     --samples 15 \
@@ -63,7 +76,7 @@ numactl --physcpubind=0-127 python3 runner.py -m gpu_jacobi gpu_rb_gs \
     --test smoother \
     --print-table \
     --jitter 3 \
-    --dimension 64 90 128 181 256 362 512 724 1024 1448 2048 2896 4096
+    --dimension  2048 2896 4096 5792 8192 11585 16384 23170 32768
 
 numactl --physcpubind=0-127 python3 runner.py -m jacobi_fuse_cache rb_gs_fuse_cache \
     --cpu 8 \
