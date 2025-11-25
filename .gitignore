@@ -256,3 +256,4 @@ pyrightconfig.json
 .results/
 *benchmark_config.json
 local_scripts/
+/scripts/thesis/plots/
