@@ -537,7 +537,7 @@ def benchmark_lister() -> tuple[list[str], list[str], list[str]]:
     :returns: vx benchmarks, vy benchmarks, smoother benchmarks
     """
     smoothers_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..",
-                                                 "src", "Pyroclast", "solver", "stokes_2d", "smoothers"))
+                                                 "src", "Pyroclast", "solvers", "stokes_2d", "smoothers"))
 
     vx_benchmarks = []
     vy_benchmarks = []
