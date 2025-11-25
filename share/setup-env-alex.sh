@@ -34,11 +34,11 @@ source "${SCRIPT_PATH}/../.venv/bin/activate"
 
 # add python path
 export OLD_PYTHONPATH="${PYTHONPATH}"
-export PYTHONPATH="$( realpath "${SCRIPTPATH}/../src" ):${PYTHONPATH}"
+export PYTHONPATH="$( realpath "${SCRIPT_PATH}/../src" ):${PYTHONPATH}"
 
 # Aliases
-RUNNER_PATH="$( realpath "${SCRIPTPATH}/../src/benchmark/runner.py" )"
-PRINTER_PATH="$( realpath "${SCRIPTPATH}/../src/benchmark/printer.py" )"
+RUNNER_PATH="$( realpath "${SCRIPT_PATH}/../src/benchmark/runner.py" )"
+PRINTER_PATH="$( realpath "${SCRIPT_PATH}/../src/benchmark/printer.py" )"
 
 alias runner="python3 ${RUNNER_PATH}"
 alias printer="python3 ${PRINTER_PATH}"
