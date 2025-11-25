@@ -18,7 +18,6 @@
 # Get the current directory where the script is located
 SCRIPT_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 BIN_PATH=$(realpath "$SCRIPT_PATH/../bin/")
-export PYTHONPATH="$SCRIPT_PATH/../src/:$PYTHONPATH"
 
 # Check if the file is executable, if not, make it executable
 if [ ! -x "$BIN_PATH/pyroclast" ]; then
@@ -31,12 +30,13 @@ if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
 fi
 
 # Source poetry venv
-source "${SCRIPTPATH}/../.venv/bin/activate"
+source "${SCRIPT_PATH}/../.venv/bin/activate"
 
 # add python path
 export OLD_PYTHONPATH="${PYTHONPATH}"
 export PYTHONPATH="$( realpath "${SCRIPTPATH}/../src" ):${PYTHONPATH}"
 
+# Aliases
 RUNNER_PATH="$( realpath "${SCRIPTPATH}/../src/benchmark/runner.py" )"
 PRINTER_PATH="$( realpath "${SCRIPTPATH}/../src/benchmark/printer.py" )"
 
