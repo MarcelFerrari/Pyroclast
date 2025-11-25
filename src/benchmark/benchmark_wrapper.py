@@ -44,6 +44,7 @@ class BaseBenchmark:
     cache_block_size_1: Optional[int]
     cache_block_size_2: Optional[int]
     iter_unroll: Optional[int]
+    jitter: Optional[int]
 
     timings: list[Timing]
 
@@ -52,6 +53,7 @@ class BaseBenchmark:
     needs_cache_block_size_1: bool = False
     needs_cache_block_size_2: bool = False
     needs_iter_unroll: bool = False
+    needs_jitter: bool = False
 
     def __init__(self,
                  arguments: BaseBenchmarkValidator):
@@ -93,6 +95,9 @@ class BaseBenchmark:
 
         if self.needs_iter_unroll and self.iter_unroll is None:
             raise ValueError("iter_unroll is needed.")
+
+        if self.needs_jitter and self.jitter is None:
+            raise ValueError("jitter is needed.")
 
     def benchmark(self):
         """
