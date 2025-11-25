@@ -1,12 +1,12 @@
 #!/bin/bash
 
-PCD="TODO Pyroclast Directory"
+PCD="/home/alisot2000/Desktop/BT/Pyroclast"
 cd $PCD
 
 # Check we have everything needed for running our stuff
 poetry install --all-groups
 source $PCD/.venv/bin/activate
-source $PCD/share/setup-env.sh
+source $PCD/share/setup-env-alex.sh
 
 cd cd $PCD/src/benchmark
 
