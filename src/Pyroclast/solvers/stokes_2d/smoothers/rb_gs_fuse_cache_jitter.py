@@ -104,8 +104,6 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                                 vx=vx, vy=vy,
                                 relax_v=relax_v, BC=BC,
                                 vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
-<<<<<<< HEAD
-=======
 
 
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
@@ -170,4 +168,4 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
     # INFO: Methods can be benchmarked in other places. Here is only the full implementation.
     return BaseImplementationBenchmarkSmoother, None, None
->>>>>>> 448dce4 (+ Bugfix, didn't read max_iter)
+
