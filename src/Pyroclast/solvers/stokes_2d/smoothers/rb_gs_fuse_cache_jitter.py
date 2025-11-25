@@ -120,6 +120,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
         needs_cache_block_size_1: bool = True
+        needs_jitter: bool = True
 
         def benchmark_preamble(self):
             start = dtf()
@@ -130,7 +131,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                     relax_v=self.relax_v, BC=self.boundary_condition,
                                     max_iter=1,
                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                    cache_a=self.cache_block_size_1)
+                                    cache_a=self.cache_block_size_1, max_jitter=self.jitter)
             end = dtf()
 
             # Add the timing information
@@ -157,7 +158,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                     relax_v=self.relax_v, BC=self.boundary_condition,
                                     max_iter=self.max_iter,
                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                    cache_a=self.cache_block_size_1)
+                                    cache_a=self.cache_block_size_1, max_jitter=self.jitter)
             end = dtf()
 
             # Add the timing information
