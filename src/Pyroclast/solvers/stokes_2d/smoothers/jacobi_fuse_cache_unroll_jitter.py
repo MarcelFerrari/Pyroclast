@@ -13,7 +13,7 @@ T_INNER = 4
 
 
 @nb.njit(inline='always')
-def apply_vx_BC_ij(vx, i, j, BC):
+def apply_vx_BC_ij(vx: np.ndarray, i: int, j: int, BC: float):
     """
     Apply ONLY the boundary entries touched by interior (i,j) for vx.
     vx interior: i in [1..ny1-2], j in [1..nx1-3]
@@ -37,7 +37,7 @@ def apply_vx_BC_ij(vx, i, j, BC):
 
 
 @nb.njit(inline='always')
-def apply_vy_BC_ij(vy, i, j, BC):
+def apply_vy_BC_ij(vy: np.ndarray, i: int, j: int, BC: float):
     """
     Apply ONLY the boundary entries touched by interior (i,j) for vy.
     vy interior: i in [1..ny1-3], j in [1..nx1-2]
@@ -61,13 +61,13 @@ def apply_vy_BC_ij(vy, i, j, BC):
 
 
 @nb.njit(cache=True)
-def _vx_tile_kernel(ii, jj,
-                    nx1, ny1,
-                    dx, dy,
-                    etap, etab,
-                    vy, vx_rhs,
-                    vx_src, vx_dst,
-                    relax_v, BC):
+def _vx_tile_kernel(ii: int, jj: int,
+                    nx1: int, ny1: int,
+                    dx: float, dy: float,
+                    etap: np.ndarray, etab: np.ndarray,
+                    vy: np.ndarray, vx_rhs: np.ndarray,
+                    vx_src: np.ndarray, vx_dst: np.ndarray,
+                    relax_v: float, BC: float, iter_unroll: int ,cache_stride: int, cache_time: int):
     """
     Process one vx tile [ii:ii+TILE_I) x [jj:jj+TILE_J) with T_INNER Jacobi steps.
     Reads vy (constant for this tile pass), ping-pongs between (vx_src, vx_dst) locally.
@@ -95,13 +95,13 @@ def _vx_tile_kernel(ii, jj,
 
 
 @nb.njit(cache=True)
-def _vy_tile_kernel(ii, jj,
-                    nx1, ny1,
-                    dx, dy,
-                    etap, etab,
-                    vx, vy_rhs,
-                    vy_src, vy_dst,
-                    relax_v, BC):
+def _vy_tile_kernel(ii: int, jj: int,
+                    nx1: int, ny1: int,
+                    dx: float, dy: float,
+                    etap: np.ndarray, etab: np.ndarray,
+                    vx: np.ndarray, vy_rhs: np.ndarray,
+                    vy_src: np.ndarray, vy_dst: np.ndarray,
+                    relax_v: float, BC: float, iter_unroll: int, cache_stride: int, cache_time: int):
     """
     Process one vy tile [ii:ii+TILE_I) x [jj:jj+TILE_J) with T_INNER Jacobi steps.
     Reads vx (constant for this tile pass), ping-pongs between (vy_src, vy_dst) locally.
@@ -134,7 +134,7 @@ def ras_velocity_jacobi_smoother(nx1: int, ny1: int,
                                  vx: np.ndarray, vy: np.ndarray,
                                  relax_v: float, BC: float,
                                  vx_rhs: np.ndarray, vy_rhs: np.ndarray,
-                                 max_iter: int,
+                                 max_iter: int, cache_stride: int, cache_time: int, iter_unroll: int,
                                  vx_old:np.ndarray, vy_old:np.ndarray,
                                  th: int):
     max_iter += max_iter % 2
