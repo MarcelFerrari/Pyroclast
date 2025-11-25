@@ -225,9 +225,9 @@ if NUMBA_CUDA_AVAIL:
         timeout = cfg.burn_in_timeout if cfg is not None else 60
 
         args = BenchmarkValidatorSmoother(
-            nx=4096, ny=4096,
-            max_iter=1024,
-            profile=False, samples=15,
+            nx=1024, ny=1024,
+            max_iter=128,
+            profile=False, samples=1,
             cache_block_size_1=None,
             cache_block_size_2=None,
             iter_unroll=None
