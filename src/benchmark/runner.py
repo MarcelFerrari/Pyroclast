@@ -103,6 +103,11 @@ perf_opt.add_argument("-u", "--unroll",
                       nargs="+",
                       default=[4],
                       help=f"Number of Loop unrolls to do with second layer caching")
+perf_opt.add_argument("-j", "--jitter",
+                      type=int,
+                      nargs="+",
+                      default=[3],
+                      help=f"Amount of boundary jitter in cells. Given 3 jitter is +/- 3")
 
 # Testing Options
 bench_opt.add_argument("-p", "--profiling",
@@ -253,7 +258,7 @@ def benchmark_smoother(nx: int, ny: int,
                        module_name: str,
                        is_gpu: bool,
                        cpu_count: int,
-                       iter_unroll: int,
+                       iter_unroll: int, jitter: int,
                        benchmark: Type[BenchmarkSmoother]) -> BenchmarkResults:
     """
     Run the smoother benchmark
@@ -264,7 +269,8 @@ def benchmark_smoother(nx: int, ny: int,
         profile=profiling, samples=samples,
         cache_block_size_1=cache_block_size_1,
         cache_block_size_2=cache_block_size_2,
-        iter_unroll=iter_unroll
+        iter_unroll=iter_unroll,
+        jitter=jitter,
     )
 
     ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
@@ -294,6 +300,7 @@ def benchmark_vx(nx: int, ny: int,
                  is_gpu: bool,
                  cpu_count: int,
                  iter_unroll: int,
+                 jitter: int,
                  benchmark: Type[BenchmarkVX]) -> BenchmarkResults:
     """
     Run the smoother benchmark
@@ -304,7 +311,8 @@ def benchmark_vx(nx: int, ny: int,
         profile=profiling, samples=samples,
         cache_block_size_1=cache_block_size_1,
         cache_block_size_2=cache_block_size_2,
-        iter_unroll=iter_unroll
+        iter_unroll=iter_unroll,
+        jitter=jitter,
     )
 
     ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
@@ -334,6 +342,7 @@ def benchmark_vy(nx: int, ny: int,
                  is_gpu: bool,
                  cpu_count: int,
                  iter_unroll: int,
+                 jitter: int,
                  benchmark: Type[BenchmarkVY]) -> BenchmarkResults:
     """
     Run the smoother benchmark
@@ -344,7 +353,8 @@ def benchmark_vy(nx: int, ny: int,
         profile=profiling, samples=samples,
         cache_block_size_1=cache_block_size_1,
         cache_block_size_2=cache_block_size_2,
-        iter_unroll=iter_unroll
+        iter_unroll=iter_unroll,
+        jitter=jitter,
     )
 
     ca_str = f"Cache Size 1: {cache_block_size_1}" if benchmark.needs_cache_block_size_1 else ""
@@ -376,6 +386,7 @@ def benchmark_single_module(module_name: str,
                             cache_b: list[int],
                             cpu_count: list[int],
                             iter_unroll = list[int],
+                            jitter=list[int],
                             ) -> list[BenchmarkResults]:
     """
     Run the benchmark for a single module. Requires this module to have defined a benchmark factory.
@@ -406,12 +417,14 @@ def benchmark_single_module(module_name: str,
         caches_a = cache_a.copy() if bm_s.needs_cache_block_size_1 else [None]
         caches_b = cache_b.copy() if bm_s.needs_cache_block_size_2 else [None]
         local_iur = iter_unroll.copy() if bm_s.needs_iter_unroll else [None]
+        jitter_loc = jitter.copy() if bm_s.needs_jitter else [None]
 
-        for ca, cb, dim, cc, iu in itertools.product(sorted(caches_a),
-                                                     sorted(caches_b),
+        for ca, cb, dim, cc, iu, j in itertools.product(sorted(caches_a_loc),
+                                                     sorted(caches_b_loc),
                                                      sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
                                                      sorted(cpu_count, reverse=True),
-                                                     sorted(local_iur, reverse=True)):
+                                                     sorted(local_iur, reverse=True),
+                                                        sorted(jitter_loc)):
 
             nb.set_num_threads(cc)
             results.append(benchmark_smoother(nx=dim[0], ny=dim[1],
@@ -422,19 +435,22 @@ def benchmark_single_module(module_name: str,
                                               is_gpu=is_gpu,
                                               cpu_count=cc,
                                               benchmark=bm_s,
-                                              iter_unroll=iu))
+                                              iter_unroll=iu,
+                                              jitter=j))
 
     # Run benchmark on vx_subroutine
     if bm_vx is not None and BenchmarkType.VX in test_set:
         caches_a = cache_a.copy() if bm_vx.needs_cache_block_size_1 else [None]
         caches_b = cache_b.copy() if bm_vx.needs_cache_block_size_2 else [None]
         local_iur = iter_unroll.copy() if bm_vx.needs_iter_unroll else [None]
+        jitter_loc = jitter.copy() if bm_vx.needs_jitter else [None]
 
-        for ca, cb, dim, cc, iu in itertools.product(sorted(caches_a),
-                                                     sorted(caches_b),
+        for ca, cb, dim, cc, iu, j in itertools.product(sorted(caches_a_loc),
+                                                     sorted(caches_b_loc),
                                                      sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
                                                      sorted(cpu_count, reverse=True),
-                                                     sorted(local_iur, reverse=True)):
+                                                     sorted(local_iur, reverse=True),
+                                                     sorted(jitter_loc)):
 
             nb.set_num_threads(cc)
             results.append(benchmark_vx(nx=dim[0], ny=dim[1],
@@ -445,19 +461,22 @@ def benchmark_single_module(module_name: str,
                                         is_gpu=is_gpu,
                                         cpu_count=cc,
                                         benchmark=bm_vx,
-                                        iter_unroll=iu))
+                                        iter_unroll=iu,
+                                        jitter=j))
 
     # Run benchmark on vy_subroutine
     if bm_vy is not None and BenchmarkType.VY in test_set:
         caches_a = cache_a.copy() if bm_vy.needs_cache_block_size_1 else [None]
         caches_b = cache_b.copy() if bm_vy.needs_cache_block_size_2 else [None]
         local_iur = iter_unroll.copy() if bm_vy.needs_iter_unroll else [None]
+        jitter_loc = jitter.copy() if bm_vy.needs_jitter else [None]
 
-        for ca, cb, dim, cc, iu in itertools.product(sorted(caches_a),
-                                                     sorted(caches_b),
+        for ca, cb, dim, cc, iu, j in itertools.product(sorted(caches_a_loc),
+                                                     sorted(caches_b_loc),
                                                      sorted(dim_list, reverse=True, key=lambda d: d[0] * d[1]),
                                                      sorted(cpu_count, reverse=True),
-                                                     sorted(local_iur, reverse=True)):
+                                                     sorted(local_iur, reverse=True),
+                                                     sorted(jitter_loc)):
 
             nb.set_num_threads(cc)
             results.append(benchmark_vy(nx=dim[0], ny=dim[1],
@@ -468,7 +487,8 @@ def benchmark_single_module(module_name: str,
                                         is_gpu=is_gpu,
                                         cpu_count=cc,
                                         benchmark=bm_vy,
-                                        iter_unroll=iu))
+                                        iter_unroll=iu,
+                                        jitter=j))
 
     return results
 
@@ -638,7 +658,8 @@ def perform_benchmark_run(arg_dict: dict):
         "output",
         "list",
         "no_burn_in",
-        "unroll"
+        "unroll",
+        "jitter"
     }, "INCORRECT ARGUMENTS. Check arguments provided match expected arguments dict."
 
     # Dim in x, y tuple
@@ -715,7 +736,7 @@ def perform_benchmark_run(arg_dict: dict):
                 dim_list=dim_list, max_iter=arg_dict["iterations"],
                 profiling=arg_dict["profiling"], samples=arg_dict["samples"],
                 cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"], iter_unroll=arg_dict["unroll"],
-                test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
+                test_set=arg_dict["test"], cpu_count=arg_dict["cpu"], jitter=arg_dict["jitter"]))
 
     # Run GPU benchmarks
     if len(gpu_modules) > 0:
@@ -732,7 +753,7 @@ def perform_benchmark_run(arg_dict: dict):
                 dim_list=dim_list, max_iter=arg_dict["iterations"],
                 profiling=arg_dict["profiling"], samples=arg_dict["samples"],
                 cache_a=arg_dict["cache_a"], cache_b=arg_dict["cache_b"], iter_unroll=arg_dict["unroll"],
-                test_set=arg_dict["test"], cpu_count=arg_dict["cpu"]))
+                test_set=arg_dict["test"], cpu_count=arg_dict["cpu"], jitter=arg_dict["jitter"]))
 
     # End of overall benchmark
     end = dtf()
