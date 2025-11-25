@@ -1,9 +1,11 @@
+import os
+from typing import Type
+
 import numba as nb
 import numpy as np
-from .inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
-from Pyroclast.utils import inject_threads
-import os
 
+from Pyroclast.utils import inject_threads
+from .inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
 
 TILE_I = 32
 TILE_J = 32
