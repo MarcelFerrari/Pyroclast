@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PCD="/home/alisot2000/Desktop/BT/Pyroclast"
+PCD="/home/alisot2000/Documents/02_ETH/Bachelor_Thesis/Pyroclast"
 cd $PCD
 
 # Check we have everything needed for running our stuff
