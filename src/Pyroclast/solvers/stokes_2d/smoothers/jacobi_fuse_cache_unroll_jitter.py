@@ -65,18 +65,18 @@ def _vx_tile_kernel(ii: int, jj: int,
                     vx_src: np.ndarray, vx_dst: np.ndarray,
                     relax_v: float, BC: float, iter_unroll: int ,cache_stride: int, cache_time: int):
     """
-    Process one vx tile [ii:ii+TILE_I) x [jj:jj+TILE_J) with T_INNER Jacobi steps.
+    Process one vx tile [ii:ii+cache_time) x [jj:jj+cache_stride) with iter_unroll Jacobi steps.
     Reads vy (constant for this tile pass), ping-pongs between (vx_src, vx_dst) locally.
     """
     # vx interior: i in [1..ny1-2], j in [1..nx1-3]
-    i_max = min(ii + TILE_I, ny1 - 1)  # stop before ny1-1 -> last i = ny1-2
-    j_max = min(jj + TILE_J, nx1 - 2)  # stop before nx1-2 -> last j = nx1-3
+    i_max = min(ii + cache_time, ny1 - 1)  # stop before ny1-1 -> last i = ny1-2
+    j_max = min(jj + cache_stride, nx1 - 2)  # stop before nx1-2 -> last j = nx1-3
 
     # Local references we can swap without affecting caller
     src = vx_src
     dst = vx_dst
 
-    for _ in range(T_INNER):
+    for _ in range(iter_unroll):
         for i in range(ii, i_max):
             # ensure we don't run into the guard rows
             for j in range(jj, j_max):
@@ -87,7 +87,7 @@ def _vx_tile_kernel(ii: int, jj: int,
                 apply_vx_BC_ij(dst, i, j, BC)  # apply BCs for this tile
         src, dst = dst, src
 
-    # No return; writes already in src/dst. For even T_INNER, results end in original vx_src.
+    # No return; writes already in src/dst. For even iter_unroll, results end in original vx_src.
 
 
 @nb.njit(cache=True)
@@ -99,17 +99,17 @@ def _vy_tile_kernel(ii: int, jj: int,
                     vy_src: np.ndarray, vy_dst: np.ndarray,
                     relax_v: float, BC: float, iter_unroll: int, cache_stride: int, cache_time: int):
     """
-    Process one vy tile [ii:ii+TILE_I) x [jj:jj+TILE_J) with T_INNER Jacobi steps.
+    Process one vy tile [ii:ii+cache_time) x [jj:jj+cache_stride) with iter_unroll Jacobi steps.
     Reads vx (constant for this tile pass), ping-pongs between (vy_src, vy_dst) locally.
     """
     # vy interior: i in [1..ny1-3], j in [1..nx1-2]
-    i_max = min(ii + TILE_I, ny1 - 2)  # stop before ny1-2 -> last i = ny1-3
-    j_max = min(jj + TILE_J, nx1 - 1)  # stop before nx1-1 -> last j = nx1-2
+    i_max = min(ii + cache_time, ny1 - 2)  # stop before ny1-2 -> last i = ny1-3
+    j_max = min(jj + cache_stride, nx1 - 1)  # stop before nx1-1 -> last j = nx1-2
 
     src = vy_src
     dst = vy_dst
 
-    for _ in range(T_INNER):
+    for _ in range(iter_unroll):
         for i in range(ii, i_max):
             # inner loop is a good vectorization candidate for LLVM
             for j in range(jj, j_max):
@@ -134,16 +134,16 @@ def ras_velocity_jacobi_smoother(nx1: int, ny1: int,
                                  vx_old:np.ndarray, vy_old:np.ndarray,
                                  th: int):
     max_iter += max_iter % 2
-    outer_iters = (max_iter + T_INNER) // (T_INNER + 1)
+    outer_iters = (max_iter + iter_unroll) // (iter_unroll + 1)
 
     # coverage under half-tile shifts
     # randint(0, TILE//2 + 1) -> smax = TILE//2
-    smax_i = TILE_I
-    smax_j = TILE_J
+    smax_i = cache_time
+    smax_j = cache_stride
     Ni = (ny1 - 2)
     Nj = (nx1 - 2)
-    tiles_i = (Ni + smax_i + TILE_I - 1) // TILE_I
-    tiles_j = (Nj + smax_j + TILE_J - 1) // TILE_J
+    tiles_i = (Ni + smax_i + cache_time - 1) // cache_time
+    tiles_j = (Nj + smax_j + cache_stride - 1) // cache_stride
     total_tiles = tiles_i * tiles_j
 
     workers = th if total_tiles >= th else total_tiles
@@ -173,18 +173,20 @@ def ras_velocity_jacobi_smoother(nx1: int, ny1: int,
             tj = k - ti * tiles_j
 
             for _ in range(count):
-                ii = ii0 + ti * TILE_I
-                jj = jj0 + tj * TILE_J
+                ii = ii0 + ti * cache_time
+                jj = jj0 + tj * cache_stride
                 if ii < 1: ii = 1
                 if jj < 1: jj = 1
 
-                _vx_tile_kernel(ii, jj, nx1, ny1, dx, dy,
-                                etap, etab, vy, vx_rhs,
-                                vx, vx_old, relax_v, BC)
+                _vx_tile_kernel(ii=ii, jj=jj, nx1=nx1, ny1=ny1, dx=dx, dy=dy,
+                                etap=etap, etab=etab, vy=vy, vx_rhs=vx_rhs,
+                                vx_src=vx, vx_dst=vx_old, relax_v=relax_v, BC=BC,
+                                cache_stride=cache_stride, cache_time=cache_time, iter_unroll=iter_unroll)
 
-                _vy_tile_kernel(ii, jj, nx1, ny1, dx, dy,
-                                etap, etab, vx_old, vy_rhs,
-                                vy, vy_old, relax_v, BC)
+                _vy_tile_kernel(ii=ii, jj=jj, nx1=nx1, ny1=ny1, dx=dx, dy=dy,
+                                etap=etap, etab=etab, vx=vx_old, vy_rhs=vy_rhs,
+                                vy_src=vy, vy_dst=vy_old, relax_v=relax_v, BC=BC,
+                                cache_stride=cache_stride, cache_time=cache_time, iter_unroll=iter_unroll)
 
                 # advance to next tile, wrap across rows
                 tj += 1
