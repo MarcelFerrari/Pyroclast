@@ -156,7 +156,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                      etap=self.eta_p, etab=self.eta_b,
                                      vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
                                      relax_v=self.relax_v, BC=self.boundary_condition,
-                                     max_iter=1,
+                                     max_iter=self.max_iter,
                                      vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
                                      th=th, cache_a=self.cache_block_size_1)
             end = dtf()
