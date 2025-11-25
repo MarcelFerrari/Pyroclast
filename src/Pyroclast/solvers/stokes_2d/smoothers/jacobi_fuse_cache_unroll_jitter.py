@@ -7,10 +7,6 @@ import numpy as np
 from Pyroclast.utils import inject_threads
 from .inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
 
-TILE_I = 32
-TILE_J = 32
-T_INNER = 4
-
 
 @nb.njit(inline='always')
 def apply_vx_BC_ij(vx: np.ndarray, i: int, j: int, BC: float):
