@@ -1758,6 +1758,19 @@ files = [
 typing-extensions = {version = "*", markers = "python_version < \"3.11\""}
 
 [[package]]
+name = "nanobind"
+version = "2.9.2"
+description = "nanobind: tiny and efficient C++/Python bindings"
+optional = true
+python-versions = "*"
+groups = ["main"]
+markers = "extra == \"turbo\""
+files = [
+    {file = "nanobind-2.9.2-py3-none-any.whl", hash = "sha256:c37957ffd5eac7eda349cff3622ecd32e5ee1244ecc912c99b5bc8188bafd16e"},
+    {file = "nanobind-2.9.2.tar.gz", hash = "sha256:e7608472de99d375759814cab3e2c94aba3f9ec80e62cfef8ced495ca5c27d6e"},
+]
+
+[[package]]
 name = "nbclient"
 version = "0.10.2"
 description = "A client library for executing notebooks. Formerly nbconvert's ExecutePreprocessor."

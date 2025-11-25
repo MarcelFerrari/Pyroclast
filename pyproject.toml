@@ -26,6 +26,9 @@ cuda = [
     "numba-cuda[cu12] (>=0.20.0,<0.21.0)",
     "cupy-cuda12x (>=13.6.0,<14.0.0)",
 ]
+turbo = [
+        "nanobind (>=2.9.2,<3.0.0)",
+]
 
 
 [tool.poetry]
