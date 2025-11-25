@@ -3711,8 +3711,9 @@ test = ["websockets"]
 
 [extras]
 cuda = ["cupy-cuda12x", "numba-cuda"]
+turbo = ["nanobind"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "1d79c44f31876a05cfe5fc14cbf8c9d739229a026f9e39dba5fe34ad0e47d1b0"
+content-hash = "52740b96e92baffd4d9eb9d14a2a9e19b8e31ec4ffcc051a1bd991ff0ff92afd"
