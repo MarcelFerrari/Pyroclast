@@ -145,7 +145,9 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Copy to Device",
                                        stage=Stage.COPY_TO_DEVICE,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=None,
+                                       traceback=None))
 
             start = dtf()
             ex_str = tb = None
