@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PCD="/opt/thesis/Pyroclast"
+PCD="/home/alisot2000/Documents/02_ETH/Bachelor_Thesis/Pyroclast"
 
 # goto dir and init poetry
 cd $PCD
