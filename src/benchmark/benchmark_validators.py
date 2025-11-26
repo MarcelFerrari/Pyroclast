@@ -176,8 +176,8 @@ class Timing(BaseModel):
     Represents timing information of a single stage
     """
     name: str
-    error: Optional[str] = None
-    traceback: Optional[str] = None
+    error: Optional[str]
+    traceback: Optional[str]
 
     stage: Stage
     start: DateTimeUTC = Field(..., gt=0)

@@ -126,6 +126,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
         def benchmark_preamble(self):
             start = dtf()
+            ex_str = tb = None
             try:
                 velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1, step_size=1,
                                         dx=self.dx, dy=self.dy,
@@ -138,6 +139,8 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             except Exception as e:
                 ex_str = str(e)
                 tb = traceback.format_exc()
+                print(tb)
+
             end = dtf()
 
             # Add the timing information

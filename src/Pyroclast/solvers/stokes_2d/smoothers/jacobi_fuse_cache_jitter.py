@@ -13,7 +13,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
-
+import traceback
 import  os
 from typing import Type
 import math
@@ -125,14 +125,20 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
         def benchmark_preamble(self):
             start = dtf()
             ex_str = tb = None
-            velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
-                                     dx=self.dx, dy=self.dy,
-                                     etap=self.eta_p, etab=self.eta_b,
-                                     vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
-                                     relax_v=self.relax_v, BC=self.boundary_condition,
-                                     max_iter=1,
-                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                     cache_a=self.cache_block_size_1, max_jitter=self.jitter)
+            try:
+                velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
+                                         dx=self.dx, dy=self.dy,
+                                         etap=self.eta_p, etab=self.eta_b,
+                                         vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
+                                         relax_v=self.relax_v, BC=self.boundary_condition,
+                                         max_iter=1,
+                                         vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                         cache_a=self.cache_block_size_1, max_jitter=self.jitter)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
+                print(tb)
+
             end = dtf()
 
             # Add the timing information
@@ -155,14 +161,20 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             """
             start = dtf()
             ex_str = tb = None
-            velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
-                                     dx=self.dx, dy=self.dy,
-                                     etap=self.eta_p, etab=self.eta_b,
-                                     vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
-                                     relax_v=self.relax_v, BC=self.boundary_condition,
-                                     max_iter=self.max_iter,
-                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                     cache_a=self.cache_block_size_1, max_jitter=self.jitter)
+            try:
+                velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
+                                         dx=self.dx, dy=self.dy,
+                                         etap=self.eta_p, etab=self.eta_b,
+                                         vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
+                                         relax_v=self.relax_v, BC=self.boundary_condition,
+                                         max_iter=self.max_iter,
+                                         vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                         cache_a=self.cache_block_size_1, max_jitter=self.jitter)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
+                print(tb)
+
             end = dtf()
 
             # Add the timing information

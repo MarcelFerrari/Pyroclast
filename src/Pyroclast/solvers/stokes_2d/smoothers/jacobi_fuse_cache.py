@@ -129,6 +129,8 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             except Exception as e:
                 ex_str = str(e)
                 tb = traceback.format_exc()
+                print(tb)
+
             end = dtf()
 
             # Add the timing information
@@ -163,6 +165,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             except Exception as e:
                 ex_str = str(e)
                 tb = traceback.format_exc()
+                print(tb)
 
             end = dtf()
 

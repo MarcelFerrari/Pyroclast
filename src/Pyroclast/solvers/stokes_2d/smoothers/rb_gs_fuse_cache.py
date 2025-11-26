@@ -132,6 +132,8 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             except Exception as e:
                 ex_str = str(e)
                 tb = traceback.format_exc()
+                print(tb)
+
             end = dtf()
 
             # Add the timing information
@@ -166,13 +168,17 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             except Exception as e:
                 ex_str = str(e)
                 tb = traceback.format_exc()
+                print(tb)
+
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                        stage=Stage.BENCHMARK,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
     # INFO: Methods can be benchmarked in other places. Here is only the full implementation.
     return BaseImplementationBenchmarkSmoother, None, None
