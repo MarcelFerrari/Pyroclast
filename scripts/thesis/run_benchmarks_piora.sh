@@ -13,6 +13,7 @@ source $PCD/share/setup-env-alex.sh
 cd $PCD/src/benchmark
 
 # Run small cpu benchmarks
+python3 -u runner.py -D
 python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
     --cpu 1 2 4 8 16 32 \
     --samples 15 \
