@@ -662,8 +662,8 @@ def perform_benchmark_run(arg_dict: dict):
         "list",
         "no_burn_in",
         "unroll",
-        "jitter"
-        "dump_env"
+        "jitter",
+        "dump_env",
     }, "INCORRECT ARGUMENTS. Check arguments provided match expected arguments dict."
 
     # Dim in x, y tuple
