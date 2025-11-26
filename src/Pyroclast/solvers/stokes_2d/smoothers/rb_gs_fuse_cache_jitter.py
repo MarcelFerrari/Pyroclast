@@ -103,7 +103,7 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                                 etap=etap, etab=etab,
                                 vx=vx, vy=vy,
                                 relax_v=relax_v, BC=BC,
-                                vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
+                                vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter, step_size=1)
 
 
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
