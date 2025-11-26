@@ -40,7 +40,7 @@ def velocity_smoother_jacobi_vx(nx1: int, ny1: int,
                                                    vx=vx, vy=vy, rhs=vx_rhs)
 
 
-@nb.njit(cache=True, parallel=True, inline="always", fastmath=use_fast_math_cpu, parallel=True)
+@nb.njit(cache=True, parallel=True, inline="always", fastmath=use_fast_math_cpu)
 def velocity_smoother_jacobi_vy(nx1: int, ny1: int,
                                 dx: float, dy: float, relax_v: float,
                                 etap: np.ndarray, etab: np.ndarray,
@@ -53,7 +53,7 @@ def velocity_smoother_jacobi_vy(nx1: int, ny1: int,
                                                    vx=vx, vy=vy, rhs=vy_rhs)
 
 
-@nb.njit(cache=True, fastmath=use_fast_math_cpu)
+@nb.njit(cache=True, fastmath=use_fast_math_cpu, parallel=True)
 def velocity_smoother_jacobi(nx1: int, ny1: int,
                              dx: float, dy: float,
                              etap: np.ndarray, etab: np.ndarray,
