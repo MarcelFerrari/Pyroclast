@@ -146,9 +146,9 @@ bench_opt.add_argument("-l", "--list",
 bench_opt.add_argument(f"-B", "--no-burn-in",
                        action="store_true",
                        help="Skip Burn-In Phase base_rb_gb.vx benchmark for 60s to preheat CPU.")
-bench_opt.add_argument("-D", "--dump-env",
-                       action="store_true",
-                       help="Dump Environment and exit.")
+# bench_opt.add_argument("-D", "--dump-env",
+#                        action="store_true",
+#                        help="Dump Environment and exit.")
 
 
 # ======================================================================================================================
@@ -663,7 +663,7 @@ def perform_benchmark_run(arg_dict: dict):
         "no_burn_in",
         "unroll",
         "jitter",
-        "dump_env",
+        # "dump_env",
     }, "INCORRECT ARGUMENTS. Check arguments provided match expected arguments dict."
 
     # Dim in x, y tuple
@@ -688,10 +688,10 @@ def perform_benchmark_run(arg_dict: dict):
         print(f"Smoother Benchmarks:\n" + "\n".join(smoother) + "\n")
         return
 
-    if arg_dict["dump_env"]:
-        for k, v in os.environ.items():
-            print(f"{k}: {v}")
-            return
+    # if arg_dict["dump_env"]:
+    #     for k, v in os.environ.items():
+    #         print(f"{k}: {v}")
+    #         return
 
     if arg_dict["modules"] is None:
         raise ValueError("At least one Module is required for benchmarking.")
