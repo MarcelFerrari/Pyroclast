@@ -13,7 +13,7 @@ source $PCD/share/setup-env-alex.sh
 cd $PCD/src/benchmark
 
 # Run small cpu benchmarks
-numactl --physcpubind=0-127 python3 runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
+python3 runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
     --cpu 1 2 4 8 16 32 \
     --samples 15 \
     --unroll 4 \
@@ -26,7 +26,7 @@ numactl --physcpubind=0-127 python3 runner.py -m base_jacobi base_rb_gs jacobi_f
     --dimension 64 90 128 181 256 362 512
 
 # Medium benchmark
-numactl --physcpubind=0-127 python3 runner.py -m jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
+python3 runner.py -m jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
     --cpu 4 8 16 32 64 96 128 \
     --samples 15 \
     --unroll 4 \
@@ -39,7 +39,7 @@ numactl --physcpubind=0-127 python3 runner.py -m jacobi_fuse_cache jacobi_fuse_c
     --dimension 512 724 1024 1448 2048 2896 4096
 
 # big benchmark
-numactl --physcpubind=0-127 python3 runner.py -m jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
+python3 runner.py -m jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
     --cpu 8 16 32 64 96 128 \
     --samples 15 \
     --unroll 4 \
@@ -53,7 +53,7 @@ numactl --physcpubind=0-127 python3 runner.py -m jacobi_fuse_cache jacobi_fuse_c
 
 
 # GPU small
-numactl --physcpubind=0-127 python3 runner.py -m gpu_jacobi gpu_rb_gs \
+python3 runner.py -m gpu_jacobi gpu_rb_gs \
     --cpu 8 \
     --samples 15 \
     --unroll 4 \
@@ -66,7 +66,7 @@ numactl --physcpubind=0-127 python3 runner.py -m gpu_jacobi gpu_rb_gs \
     --dimension 64 90 128 181 256 362 512 724 1024 1448 2048
 
 # GPU big
-numactl --physcpubind=0-127 python3 runner.py -m gpu_jacobi gpu_rb_gs \
+python3 runner.py -m gpu_jacobi gpu_rb_gs \
     --cpu 8 \
     --samples 15 \
     --unroll 4 \
@@ -78,7 +78,7 @@ numactl --physcpubind=0-127 python3 runner.py -m gpu_jacobi gpu_rb_gs \
     --jitter 3 \
     --dimension  2048 2896 4096 5792 8192 11585 16384
 
-numactl --physcpubind=0-127 python3 runner.py -m jacobi_fuse_cache rb_gs_fuse_cache \
+python3 runner.py -m jacobi_fuse_cache rb_gs_fuse_cache \
     --cpu 8 \
     --samples 15 \
     --unroll 4 \
@@ -90,7 +90,7 @@ numactl --physcpubind=0-127 python3 runner.py -m jacobi_fuse_cache rb_gs_fuse_ca
     --dimension 16384
 
 # run bigger cache test.
-numactl --physcpubind=0-127 python3 runner.py -m jacobi_fuse_cache_unroll_jitter \
+python3 runner.py -m jacobi_fuse_cache_unroll_jitter \
     --cpu 8 \
     --samples 15 \
     ---unroll 4 \
