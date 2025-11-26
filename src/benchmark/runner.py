@@ -425,7 +425,7 @@ def benchmark_single_module(module_name: str,
                                                      sorted(cpu_count, reverse=True),
                                                      sorted(local_iur, reverse=True),
                                                         sorted(jitter_loc)):
-
+            print(cc)
             nb.set_num_threads(cc)
             results.append(benchmark_smoother(nx=dim[0], ny=dim[1],
                                               max_iter=max_iter,
