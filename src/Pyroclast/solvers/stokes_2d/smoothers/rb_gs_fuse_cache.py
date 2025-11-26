@@ -41,7 +41,7 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             vx_rhs: np.ndarray, vy_rhs: np.ndarray, max_iter: int,
                             th: int, cache_a: int, step_size: int):
     # Fast Implementation for big problems
-    if th * cache_a > nx1 - 2:
+    if th * cache_a <= nx1 - 2:
         for _ in range(max_iter):
             # Work Split
             for p in nb.prange(th):

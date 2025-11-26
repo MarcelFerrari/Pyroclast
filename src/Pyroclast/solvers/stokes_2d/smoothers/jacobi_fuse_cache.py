@@ -42,7 +42,7 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                              vx_new: np.ndarray, vy_new: np.ndarray,
                              th: int, cache_a: int) -> tuple[np.ndarray, np.ndarray]:
     # Fast Implementation for big problems
-    if th * cache_a > nx1 - 2:
+    if th * cache_a <= nx1 - 2:
         for _ in range(max_iter // 2 * 2):
             # Work Split
             for p in nb.prange(th):
@@ -79,7 +79,7 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
         return vx, vy
 
     else:
-        raise ValueError("Problem too small for given resources")
+        raise ValueError(f"Problem too small for given resources. Target: {th * cache_a}, given {nx1-2}")
         # velocity_smoother_jacobi_base(nx1=nx1, ny1=ny1,
         #                               dx=dx, dy=dy,
         #                               etap=etap, etab=etab,

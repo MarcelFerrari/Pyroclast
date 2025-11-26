@@ -26,7 +26,7 @@ numactl --physcpubind=0,2,4,6,8,10,12,14 python3 -u runner.py -m base_jacobi bas
     --dimension 64 90 128 181 256 362 512
 
 # Medium benchmark
-numactl --physcpubind=0,2,4,6,8,10,12,14 python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
+numactl --physcpubind=0,2,4,6,8,10,12,14 python3 -u runner.py -m jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
     --cpu 4 8 \
     --samples 15 \
     --unroll 4 \
@@ -39,7 +39,7 @@ numactl --physcpubind=0,2,4,6,8,10,12,14 python3 -u runner.py -m base_jacobi bas
     --dimension 512 724 1024 1448 2048 2896 4096
 
 # big benchmark
-numactl --physcpubind=0,2,4,6,8,10,12,14 python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
+numactl --physcpubind=0,2,4,6,8,10,12,14 python3 -u runner.py -m jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
     --cpu 8 \
     --samples 15 \
     --unroll 4 \

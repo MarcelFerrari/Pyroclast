@@ -43,7 +43,7 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
         max_jitter = cache_a // 4
 
     # Fast Implementation for big problems
-    if th * cache_a > nx1 - 2:
+    if th * cache_a <= nx1 - 2:
         for _ in range(max_iter):
             jitter = np.random.randint(-max_jitter, max_jitter, th)
 
