@@ -112,7 +112,7 @@ def _vy_red_black_gs_sweep(nx1: int, ny1: int,
     return vy
 
 
-@nb.njit(cache=True, fastmath=use_fast_math_cpu)
+@nb.njit(cache=True, fastmath=use_fast_math_cpu, parallel=True)
 def velocity_smoother_rb_gs(nx1: int, ny1: int,
                             dx: float, dy: float,
                             etap: np.ndarray, etab: np.ndarray,
