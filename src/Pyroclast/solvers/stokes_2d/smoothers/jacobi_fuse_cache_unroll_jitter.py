@@ -1,3 +1,4 @@
+import traceback
 import os
 from typing import Type
 
@@ -225,21 +226,28 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
         def benchmark_preamble(self):
             start = dtf()
-            ras_velocity_jacobi_smoother(nx1=self.nx1, ny1=self.ny1,
-                                         dx=self.dx, dy=self.dy,
-                                         etap=self.eta_p, etab=self.eta_b,
-                                         vx=self.vx, vy=self.vy, vx_old=self.vx_new, vy_old=self.vy_new,
-                                         relax_v=self.relax_v, BC=self.boundary_condition,
-                                         max_iter=1, iter_unroll=self.iter_unroll,
-                                         vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                         cache_stride=self.cache_block_size_1, cache_time=self.cache_block_size_2)
+            ex_str = tb = None
+            try:
+                ras_velocity_jacobi_smoother(nx1=self.nx1, ny1=self.ny1,
+                                             dx=self.dx, dy=self.dy,
+                                             etap=self.eta_p, etab=self.eta_b,
+                                             vx=self.vx, vy=self.vy, vx_old=self.vx_new, vy_old=self.vy_new,
+                                             relax_v=self.relax_v, BC=self.boundary_condition,
+                                             max_iter=1, iter_unroll=self.iter_unroll,
+                                             vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                             cache_stride=self.cache_block_size_1, cache_time=self.cache_block_size_2)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
         def benchmark_epilogue(self):
             """
@@ -252,21 +260,28 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
-            ras_velocity_jacobi_smoother(nx1=self.nx1, ny1=self.ny1,
-                                         dx=self.dx, dy=self.dy,
-                                         etap=self.eta_p, etab=self.eta_b,
-                                         vx=self.vx, vy=self.vy, vx_old=self.vx_new, vy_old=self.vy_new,
-                                         relax_v=self.relax_v, BC=self.boundary_condition,
-                                         max_iter=self.max_iter, iter_unroll=self.iter_unroll,
-                                         vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                         cache_stride=self.cache_block_size_1, cache_time=self.cache_block_size_2)
+            ex_str = tb = None
+            try:
+                ras_velocity_jacobi_smoother(nx1=self.nx1, ny1=self.ny1,
+                                             dx=self.dx, dy=self.dy,
+                                             etap=self.eta_p, etab=self.eta_b,
+                                             vx=self.vx, vy=self.vy, vx_old=self.vx_new, vy_old=self.vy_new,
+                                             relax_v=self.relax_v, BC=self.boundary_condition,
+                                             max_iter=self.max_iter, iter_unroll=self.iter_unroll,
+                                             vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                             cache_stride=self.cache_block_size_1, cache_time=self.cache_block_size_2)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                        stage=Stage.BENCHMARK,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
     # INFO: Methods can be benchmarked in other places. Here is only the full implementation.
     return BaseImplementationBenchmarkSmoother, None, None

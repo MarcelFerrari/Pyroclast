@@ -15,6 +15,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 
 import os.path
+import traceback
 from typing import Type
 
 import numba as nb
@@ -152,20 +153,27 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
         def benchmark_preamble(self):
             start = dtf()
-            velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1,
-                                    dx=self.dx, dy=self.dy,
-                                    etap=self.eta_p, etab=self.eta_b,
-                                    vx=self.vx, vy=self.vy,
-                                    relax_v=self.relax_v, BC=self.boundary_condition,
-                                    max_iter=1,
-                                    vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+            ex_str = tb = None
+            try:
+                velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1,
+                                        dx=self.dx, dy=self.dy,
+                                        etap=self.eta_p, etab=self.eta_b,
+                                        vx=self.vx, vy=self.vy,
+                                        relax_v=self.relax_v, BC=self.boundary_condition,
+                                        max_iter=1,
+                                        vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
         def benchmark_epilogue(self):
             """
@@ -178,77 +186,50 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
-            velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1,
-                                    dx=self.dx, dy=self.dy,
-                                    etap=self.eta_p, etab=self.eta_b,
-                                    vx=self.vx, vy=self.vy,
-                                    relax_v=self.relax_v, BC=self.boundary_condition,
-                                    max_iter=self.max_iter,
-                                    vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+            ex_str = tb = None
+            try:
+                velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1,
+                                        dx=self.dx, dy=self.dy,
+                                        etap=self.eta_p, etab=self.eta_b,
+                                        vx=self.vx, vy=self.vy,
+                                        relax_v=self.relax_v, BC=self.boundary_condition,
+                                        max_iter=self.max_iter,
+                                        vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                        stage=Stage.BENCHMARK,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
     class BaseImplementationVX(bw.BenchmarkVX):
         def benchmark_preamble(self):
             start = dtf()
-            _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
-                            dx=self.dx, dy=self.dy,
-                            etap=self.eta_p, etab=self.eta_b,
-                            vx=self.vx, vy=self.vy,
-                            relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
-            end = dtf()
-
-            # Add the timing information
-            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
-                                       stage=Stage.PREAMBLE,
-                                       start=start,
-                                       end=end))
-
-        def benchmark_epilogue(self):
-            """
-            No post-processing
-            """
-            pass
-
-        def run_benchmark(self):
-            """
-            Perform the actual run of the benchmark.
-            """
-            start = dtf()
-            for _ in range(self.args.max_iter):
+            ex_str = tb = None
+            try:
                 _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
                                 dx=self.dx, dy=self.dy,
                                 etap=self.eta_p, etab=self.eta_b,
                                 vx=self.vx, vy=self.vy,
                                 relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
-            end = dtf()
-
-            # Add the timing information
-            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
-                                       stage=Stage.BENCHMARK,
-                                       start=start,
-                                       end=end))
-
-    class BaseImplementationVY(bw.BenchmarkVY):
-        def benchmark_preamble(self):
-            start = dtf()
-            _vy_red_black_gs_sweep(nx1=self.nx1, ny1=self.ny1,
-                                   dx=self.dx, dy=self.dy,
-                                   etap=self.eta_p, etab=self.eta_b,
-                                   vx=self.vx, vy=self.vy,
-                                   relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vy_rhs)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
         def benchmark_epilogue(self):
             """
@@ -261,18 +242,81 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
-            for _ in range(self.args.max_iter):
-                _vy_red_black_gs_sweep(nx1=self.nx1, ny1=self.ny1,
-                                       dx=self.dx, dy=self.dy,
-                                       etap=self.eta_p, etab=self.eta_b,
-                                       vx=self.vx, vy=self.vy,
-                                       relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vy_rhs)
+            ex_str = tb = None
+            try:
+                for _ in range(self.args.max_iter):
+                    _vx_rb_gs_sweep(nx1=self.nx1, ny1=self.ny1,
+                                    dx=self.dx, dy=self.dy,
+                                    etap=self.eta_p, etab=self.eta_b,
+                                    vx=self.vx, vy=self.vy,
+                                    relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vx_rhs)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
+
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                        stage=Stage.BENCHMARK,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
+
+    class BaseImplementationVY(bw.BenchmarkVY):
+        def benchmark_preamble(self):
+            start = dtf()
+            ex_str = tb = None
+            try:
+                _vy_red_black_gs_sweep(nx1=self.nx1, ny1=self.ny1,
+                                       dx=self.dx, dy=self.dy,
+                                       etap=self.eta_p, etab=self.eta_b,
+                                       vx=self.vx, vy=self.vy,
+                                       relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vy_rhs)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
+            end = dtf()
+
+            # Add the timing information
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
+                                       stage=Stage.PREAMBLE,
+                                       start=start,
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
+
+        def benchmark_epilogue(self):
+            """
+            No post-processing
+            """
+            pass
+
+        def run_benchmark(self):
+            """
+            Perform the actual run of the benchmark.
+            """
+            start = dtf()
+            ex_str = tb = None
+            try:
+                for _ in range(self.args.max_iter):
+                    _vy_red_black_gs_sweep(nx1=self.nx1, ny1=self.ny1,
+                                           dx=self.dx, dy=self.dy,
+                                           etap=self.eta_p, etab=self.eta_b,
+                                           vx=self.vx, vy=self.vy,
+                                           relax_v=self.relax_v, BC=self.boundary_condition, rhs=self.vy_rhs)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
+            end = dtf()
+
+            # Add the timing information
+            self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
+                                       stage=Stage.BENCHMARK,
+                                       start=start,
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
     return BaseImplementationBenchmarkSmoother, BaseImplementationVX, BaseImplementationVY

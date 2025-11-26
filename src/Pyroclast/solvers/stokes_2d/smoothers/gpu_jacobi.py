@@ -16,6 +16,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import math
 import os
+import traceback
 from typing import Type
 
 import numba.cuda as cuda
@@ -147,21 +148,28 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                        end=end))
 
             start = dtf()
-            velocity_smoother_jacobi_cuda(nx1=self.nx1, ny1=self.ny1,
-                                          dx=self.dx, dy=self.dy,
-                                          etap_d=self.device_arrays[4], etab_d=self.device_arrays[5],
-                                          vx_d=self.device_arrays[0], vy_d=self.device_arrays[1],
-                                          vx_new_d=self.device_arrays[2], vy_new_d=self.device_arrays[3],
-                                          relax_v=self.relax_v, BC=self.boundary_condition,
-                                          max_iter=1,
-                                          vx_rhs_d=self.device_arrays[6], vy_rhs_d=self.device_arrays[7])
+            ex_str = tb = None
+            try:
+                velocity_smoother_jacobi_cuda(nx1=self.nx1, ny1=self.ny1,
+                                              dx=self.dx, dy=self.dy,
+                                              etap_d=self.device_arrays[4], etab_d=self.device_arrays[5],
+                                              vx_d=self.device_arrays[0], vy_d=self.device_arrays[1],
+                                              vx_new_d=self.device_arrays[2], vy_new_d=self.device_arrays[3],
+                                              relax_v=self.relax_v, BC=self.boundary_condition,
+                                              max_iter=1,
+                                              vx_rhs_d=self.device_arrays[6], vy_rhs_d=self.device_arrays[7])
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble - Compile",
                                        stage=Stage.PREAMBLE,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
         def benchmark_epilogue(self):
             """
@@ -174,21 +182,29 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
-            velocity_smoother_jacobi_cuda(nx1=self.nx1, ny1=self.ny1,
-                                          dx=self.dx, dy=self.dy,
-                                          etap_d=self.device_arrays[4], etab_d=self.device_arrays[5],
-                                          vx_d=self.device_arrays[0], vy_d=self.device_arrays[1],
-                                          vx_new_d=self.device_arrays[2], vy_new_d=self.device_arrays[3],
-                                          relax_v=self.relax_v, BC=self.boundary_condition,
-                                          max_iter=self.max_iter,
-                                          vx_rhs_d=self.device_arrays[6], vy_rhs_d=self.device_arrays[7])
+            ex_str = tb = None
+            try:
+                velocity_smoother_jacobi_cuda(nx1=self.nx1, ny1=self.ny1,
+                                              dx=self.dx, dy=self.dy,
+                                              etap_d=self.device_arrays[4], etab_d=self.device_arrays[5],
+                                              vx_d=self.device_arrays[0], vy_d=self.device_arrays[1],
+                                              vx_new_d=self.device_arrays[2], vy_new_d=self.device_arrays[3],
+                                              relax_v=self.relax_v, BC=self.boundary_condition,
+                                              max_iter=self.max_iter,
+                                              vx_rhs_d=self.device_arrays[6], vy_rhs_d=self.device_arrays[7])
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
+
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                        stage=Stage.BENCHMARK,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
     # INFO: Methods can be benchmarked in other places. Here is only the full implementation.
     return BaseImplementationBenchmarkSmoother, None, None

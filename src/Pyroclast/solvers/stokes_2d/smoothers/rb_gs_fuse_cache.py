@@ -15,6 +15,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 
 import math
+import traceback
 import os
 from typing import Type
 
@@ -92,12 +93,13 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
 
     #
     else:
-        base_rb_gs(nx1=nx1, ny1=ny1,
-                   dx=dx, dy=dy,
-                   etap=etap, etab=etab,
-                   vx=vx, vy=vy,
-                   relax_v=relax_v, BC=BC,
-                   vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter, step_size=1)
+        raise ValueError("Problem too small for given resources")
+        # base_rb_gs(nx1=nx1, ny1=ny1,
+        #            dx=dx, dy=dy,
+        #            etap=etap, etab=etab,
+        #            vx=vx, vy=vy,
+        #            relax_v=relax_v, BC=BC,
+        #            vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter, step_size=1)
 
 
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
@@ -117,21 +119,28 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
         def benchmark_preamble(self):
             start = dtf()
-            velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1, step_size=1,
-                                    dx=self.dx, dy=self.dy,
-                                    etap=self.eta_p, etab=self.eta_b,
-                                    vx=self.vx, vy=self.vy,
-                                    relax_v=self.relax_v, BC=self.boundary_condition,
-                                    max_iter=1,
-                                    vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                    cache_a=self.cache_block_size_1)
+            ex_str = tb = None
+            try:
+                velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1, step_size=1,
+                                        dx=self.dx, dy=self.dy,
+                                        etap=self.eta_p, etab=self.eta_b,
+                                        vx=self.vx, vy=self.vy,
+                                        relax_v=self.relax_v, BC=self.boundary_condition,
+                                        max_iter=1,
+                                        vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                        cache_a=self.cache_block_size_1)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
         def benchmark_epilogue(self):
             """
@@ -144,14 +153,19 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
-            velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1, step_size=1,
-                                    dx=self.dx, dy=self.dy,
-                                    etap=self.eta_p, etab=self.eta_b,
-                                    vx=self.vx, vy=self.vy,
-                                    relax_v=self.relax_v, BC=self.boundary_condition,
-                                    max_iter=self.max_iter,
-                                    vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                    cache_a=self.cache_block_size_1)
+            ex_str = tb = None
+            try:
+                velocity_smoother_rb_gs(nx1=self.nx1, ny1=self.ny1, step_size=1,
+                                        dx=self.dx, dy=self.dy,
+                                        etap=self.eta_p, etab=self.eta_b,
+                                        vx=self.vx, vy=self.vy,
+                                        relax_v=self.relax_v, BC=self.boundary_condition,
+                                        max_iter=self.max_iter,
+                                        vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
+                                        cache_a=self.cache_block_size_1)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
             end = dtf()
 
             # Add the timing information

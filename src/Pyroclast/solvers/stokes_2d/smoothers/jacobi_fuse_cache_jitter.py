@@ -86,14 +86,15 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
         return vx, vy
 
     else:
-        velocity_smoother_jacobi_base(nx1=nx1, ny1=ny1,
-                                      dx=dx, dy=dy,
-                                      etap=etap, etab=etab,
-                                      vx=vx, vy=vy, vx_new=vx_new, vy_new=vy_new,
-                                      relax_v=relax_v, BC=BC,
-                                      vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
-
-        return vx, vy
+        raise ValueError("Problem too small for given resources")
+        # velocity_smoother_jacobi_base(nx1=nx1, ny1=ny1,
+        #                               dx=dx, dy=dy,
+        #                               etap=etap, etab=etab,
+        #                               vx=vx, vy=vy, vx_new=vx_new, vy_new=vy_new,
+        #                               relax_v=relax_v, BC=BC,
+        #                               vx_rhs=vx_rhs, vy_rhs=vy_rhs, max_iter=max_iter)
+        #
+        # return vx, vy
 
 
 # INFO need to use string references to avoid circular imports and deal with benchmark packaged not available
@@ -123,6 +124,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
         def benchmark_preamble(self):
             start = dtf()
+            ex_str = tb = None
             velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
                                      dx=self.dx, dy=self.dy,
                                      etap=self.eta_p, etab=self.eta_b,
@@ -137,7 +139,9 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
         def benchmark_epilogue(self):
             """
@@ -150,6 +154,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
+            ex_str = tb = None
             velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
                                      dx=self.dx, dy=self.dy,
                                      etap=self.eta_p, etab=self.eta_b,
@@ -164,7 +169,9 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                        stage=Stage.BENCHMARK,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
     # INFO: Methods can be benchmarked in other places. Here is only the full implementation.
     return BaseImplementationBenchmarkSmoother, None, None

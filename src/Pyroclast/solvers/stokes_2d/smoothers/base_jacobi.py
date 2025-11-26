@@ -14,14 +14,14 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 import os
+import traceback
 from typing import Type
 
 import numba as nb
 import numpy as np
 
-from Pyroclast.solvers.stokes_2d.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
 from Pyroclast.solvers.stokes_2d.bc import cpu_apply_vx_BC, cpu_apply_vy_BC
-
+from Pyroclast.solvers.stokes_2d.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
 
 use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
 
@@ -107,20 +107,29 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
         def benchmark_preamble(self):
             start = dtf()
-            velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
-                                     dx=self.dx, dy=self.dy,
-                                     etap=self.eta_p, etab=self.eta_b,
-                                     vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
-                                     relax_v=self.relax_v, BC=self.boundary_condition,
-                                     max_iter=1,
-                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+            ex_str = tb = None
+
+            try:
+                velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
+                                         dx=self.dx, dy=self.dy,
+                                         etap=self.eta_p, etab=self.eta_b,
+                                         vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
+                                         relax_v=self.relax_v, BC=self.boundary_condition,
+                                         max_iter=1,
+                                         vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
+
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
         def benchmark_epilogue(self):
             """
@@ -133,20 +142,28 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             Perform the actual run of the benchmark.
             """
             start = dtf()
-            velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
-                                     dx=self.dx, dy=self.dy,
-                                     etap=self.eta_p, etab=self.eta_b,
-                                     vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
-                                     relax_v=self.relax_v, BC=self.boundary_condition,
-                                     max_iter=self.max_iter,
-                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+            ex_str = tb = None
+            try:
+                velocity_smoother_jacobi(nx1=self.nx1, ny1=self.ny1,
+                                         dx=self.dx, dy=self.dy,
+                                         etap=self.eta_p, etab=self.eta_b,
+                                         vx=self.vx, vy=self.vy, vx_new=self.vx_new, vy_new=self.vy_new,
+                                         relax_v=self.relax_v, BC=self.boundary_condition,
+                                         max_iter=self.max_iter,
+                                         vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs)
+            except Exception as e:
+                ex_str = str(e)
+                tb = traceback.format_exc()
+
             end = dtf()
 
             # Add the timing information
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                        stage=Stage.BENCHMARK,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=ex_str,
+                                       traceback=tb))
 
     # INFO: Methods can be benchmarked in other places. Here is only the full implementation.
     return BaseImplementationBenchmarkSmoother, None, None
