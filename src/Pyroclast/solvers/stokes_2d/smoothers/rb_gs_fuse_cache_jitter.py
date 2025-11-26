@@ -21,7 +21,7 @@ from typing import Type
 import math
 
 from Pyroclast.solvers.stokes_2d.smoothers.inline_routines import cpu_inline_loop_body_vx, cpu_inline_loop_body_vy
-from Pyroclast.solvers.stokes_2d.smoothers.rb_gs_fuse import velocity_smoother_rb_gs
+from Pyroclast.solvers.stokes_2d.smoothers.rb_gs_fuse import base_rb_gs
 from Pyroclast.solvers.stokes_2d.bc import cpu_apply_vx_BC, cpu_apply_vy_BC
 from Pyroclast.utils import inject_threads
 
@@ -98,7 +98,7 @@ def velocity_smoother_rb_gs(nx1: int, ny1: int,
 
     #
     else:
-        velocity_smoother_rb_gs(nx1=nx1, ny1=ny1,
+        base_rb_gs(nx1=nx1, ny1=ny1,
                                 dx=dx, dy=dy,
                                 etap=etap, etab=etab,
                                 vx=vx, vy=vy,
