@@ -80,7 +80,7 @@ class BaseBenchmark:
         self.cache_block_size_1 = arguments.cache_block_size_1
         self.cache_block_size_2 = arguments.cache_block_size_2
         self.iter_unroll = arguments.iter_unroll
-        self.needs_jitte = arguments.jitter
+        self.jitter = arguments.jitter
 
         self.validate_self()
 
