@@ -23,11 +23,24 @@ python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jac
     --test smoother \
     --print-table \
     --jitter 3 \
-    --dimension 64 90 128 181 256 362 512
+    --dimension 64 90 128
 
-# Medium benchmark
-python3 -u runner.py -m jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
+# medium benchmark
+python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
     --cpu 4 8 \
+    --samples 15 \
+    --unroll 4 \
+    --cache_a 32 \
+    --cache_b 32 \
+    --iterations 256 \
+    --test smoother \
+    --print-table \
+    --jitter 3 \
+    --dimension 181 256 362 512
+
+# big benchmark
+python3 -u runner.py -m jacobi_fuse_cache jacobi_fuse_cache_unroll_jitter rb_gs_fuse_cache \
+    --cpu 8 \
     --samples 15 \
     --unroll 4 \
     --cache_a 32 \
@@ -36,7 +49,7 @@ python3 -u runner.py -m jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_c
     --test smoother \
     --print-table \
     --jitter 3 \
-    --dimension 512 724 1024 1448 2048 2896 4096
+    --dimension 724 1024 1448 2048 2896 4096
 
 # GPU small
 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
@@ -49,7 +62,20 @@ python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --test smoother \
     --print-table \
     --jitter 3 \
-    --dimension 64 90 128 181 256 362 512
+    --dimension 64 90 128
+
+# gpu medium
+python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
+    --cpu 8 \
+    --samples 15 \
+    --unroll 4 \
+    --cache_a 32 \
+    --cache_b 32 \
+    --iterations 256 \
+    --test smoother \
+    --print-table \
+    --jitter 3 \
+    --dimension 181 256 362 512
 
 # GPU big
 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
@@ -62,4 +88,4 @@ python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --test smoother \
     --print-table \
     --jitter 3 \
-    --dimension 512 724 1024 1448 2048 2896 4096
+    --dimension 724 1024 1448 2048 2896 4096
