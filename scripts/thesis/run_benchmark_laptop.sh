@@ -92,7 +92,7 @@ numactl --physcpubind=0,2,4,6,8,10,12,14 python3 -u runner.py -m jacobi_fuse_cac
     --dimension 16384
 
 # run bigger cache test.
-numactl --physcpubind=0,2,4,6,8,10,12,14 -u python3 runner.py -m jacobi_fuse_cache_unroll_jitter \
+numactl --physcpubind=0,2,4,6,8,10,12,14 python3 -u runner.py -m jacobi_fuse_cache_unroll_jitter \
     --cpu 8 \
     --samples 15 \
     ---unrollnroll 4 \
