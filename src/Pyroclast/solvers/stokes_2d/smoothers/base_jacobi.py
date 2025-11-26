@@ -26,7 +26,7 @@ from Pyroclast.solvers.stokes_2d.bc import cpu_apply_vx_BC, cpu_apply_vy_BC
 use_fast_math_cpu = os.environ.get("PYROCLAST_FASTMATH_CPU", default=False)
 
 
-@nb.njit(cache=True, parallel=True, inline=True, fastmath=use_fast_math_cpu)
+@nb.njit(cache=True, parallel=True, inline="always", fastmath=use_fast_math_cpu)
 def velocity_smoother_jacobi_vx(nx1: int, ny1: int,
                                 dx: float, dy: float, relax_v: float,
                                 etap: np.ndarray, etab: np.ndarray,
@@ -40,7 +40,7 @@ def velocity_smoother_jacobi_vx(nx1: int, ny1: int,
                                                    vx=vx, vy=vy, rhs=vx_rhs)
 
 
-@nb.njit(cache=True, parallel=True, inline=True, fastmath=use_fast_math_cpu)
+@nb.njit(cache=True, parallel=True, inline="always", fastmath=use_fast_math_cpu)
 def velocity_smoother_jacobi_vy(nx1: int, ny1: int,
                                 dx: float, dy: float, relax_v: float,
                                 etap: np.ndarray, etab: np.ndarray,
