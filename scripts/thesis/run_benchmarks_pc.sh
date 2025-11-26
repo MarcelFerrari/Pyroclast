@@ -8,7 +8,7 @@ cd $PCD
 # Check we have everything needed for running our stuff
 poetry install --all-groups --all-extras
 source $PCD/.venv/bin/activate
-source $PCD/share/setup-env--cache_alex.sh
+source $PCD/share/setup-env-alex.sh
 
 cd $PCD/src/benchmark
 
