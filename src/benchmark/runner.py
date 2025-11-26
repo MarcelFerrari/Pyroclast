@@ -614,7 +614,7 @@ def partition_benchmark(modules: list[str]) -> tuple[list[str], list[str]]:
     gpu_modules = []
 
     for module_path in modules:
-        module = importlib.import_module("Pyroclast.solvers.stokes_2d.smoothers." + module_path)
+        module = importlib.import_module(f"Pyroclast.solvers.stokes_2d.smoothers.{module_path}")
 
         if not hasattr(module, "benchmark_factory"):
             continue
