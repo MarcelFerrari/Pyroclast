@@ -120,7 +120,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
                                     relax_v=self.relax_v, BC=self.boundary_condition,
                                     max_iter=self.max_iter,
                                     vx_rhs=self.vx_rhs, vy_rhs=self.vy_rhs,
-                                    th=th)
+                                    th=th, step_size=1)
             end = dtf()
 
             # Add the timing information
