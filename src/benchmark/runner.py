@@ -691,6 +691,7 @@ def perform_benchmark_run(arg_dict: dict):
     if arg_dict["dump_env"]:
         for k, v in os.environ.items():
             print(f"{k}: {v}")
+            return
 
     if arg_dict["modules"] is None:
         raise ValueError("At least one Module is required for benchmarking.")
