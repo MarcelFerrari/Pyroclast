@@ -21,7 +21,6 @@ python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jac
     --cache_b 32 \
     --iterations 1024 \
     --test smoother \
-    --print-table \
     --jitter 3 \
     --dimension 64 90 128
 
@@ -34,7 +33,6 @@ python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jac
     --cache_b 32 \
     --iterations 256 \
     --test smoother \
-    --print-table \
     --jitter 3 \
     --dimension 181 256 362 512
 
@@ -47,7 +45,6 @@ python3 -u runner.py -m jacobi_fuse_cache jacobi_fuse_cache_unroll_jitter rb_gs_
     --cache_b 32 \
     --iterations 128 \
     --test smoother \
-    --print-table \
     --jitter 3 \
     --dimension 724 1024 1448 2048 2896 4096
 
@@ -60,7 +57,6 @@ python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --cache_b 32 \
     --iterations 1024 \
     --test smoother \
-    --print-table \
     --jitter 3 \
     --dimension 64 90 128
 
@@ -73,7 +69,6 @@ python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --cache_b 32 \
     --iterations 256 \
     --test smoother \
-    --print-table \
     --jitter 3 \
     --dimension 181 256 362 512
 
@@ -86,6 +81,5 @@ python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --cache_b 32 \
     --iterations 128 \
     --test smoother \
-    --print-table \
     --jitter 3 \
     --dimension 724 1024 1448 2048 2896 4096
