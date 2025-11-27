@@ -26,7 +26,7 @@ python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jac
 
 # medium benchmark
 python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
-    --cpu 4 8 16 32 \
+    --cpu 1 2 4 8 16 32 64  \
     --samples 15 \
     --unroll 4 \
     --cache_a 32 \
