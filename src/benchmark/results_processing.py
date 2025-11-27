@@ -226,7 +226,8 @@ def create_dataframe(run: BenchmarkRun) -> pd.DataFrame:
                      "nx": result.input_model.nx,
                      "ny": result.input_model.ny,
                      "cache_bs_1": result.input_model.cache_block_size_1,
-                     "cache_bs_2": result.input_model.cache_block_size_2}
+                     "cache_bs_2": result.input_model.cache_block_size_2,
+                     "iter_unrol": result.input_model.iter_unroll}
 
         counter = 0
         for timing in result.timings:
@@ -237,11 +238,18 @@ def create_dataframe(run: BenchmarkRun) -> pd.DataFrame:
             norm_factor =  result.input_model.nx *  result.input_model.ny * result.input_model.max_iter
 
             local_dict = copy.deepcopy(base_dict)
-            local_dict.update({"sample": counter,
-                               "duration": timing.duration,
-                               "normalized_duration": timing.duration / norm_factor,
-                               "name": timing.name,})
-
+            if timing.error is None:
+                # Success, set to value
+                local_dict.update({"sample": counter,
+                                   "duration": timing.duration,
+                                   "normalized_duration": timing.duration / norm_factor,
+                                   "name": timing.name,})
+            else:
+                # Error, set to NaN
+                local_dict.update({"sample": counter,
+                                   "duration": np.nan,
+                                   "normalized_duration": np.nan,
+                                   "name": timing.name,})
             data.append(local_dict)
             counter += 1
 

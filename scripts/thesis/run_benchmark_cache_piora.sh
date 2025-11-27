@@ -13,7 +13,7 @@ source $PCD/share/setup-env-alex.sh
 cd $PCD/src/benchmark
 
 # TODO number of CPUS from previous example
-python3 -u runner.py -m jacobi_fuse_cache rb_gs_fuse_cache \
+numactl --physcpubind=0-7 python3 -u runner.py -m jacobi_fuse_cache rb_gs_fuse_cache \
      --cpu 8 \
      --samples 15 \
      --unroll 4 \
@@ -25,7 +25,7 @@ python3 -u runner.py -m jacobi_fuse_cache rb_gs_fuse_cache \
 
 #  run bigger cache test.
 # TODO number of CPUS from previous example
-python3 -u runner.py -m jacobi_fuse_cache_unroll_jitter \
+numactl --physcpubind=0-7 python3 -u runner.py -m jacobi_fuse_cache_unroll_jitter \
    --cpu 8 \
    --samples 15 \
    --unroll 4 \
@@ -37,7 +37,7 @@ python3 -u runner.py -m jacobi_fuse_cache_unroll_jitter \
    --dimension 16384
 
 
-python3 -u runner.py -m rb_gs_fuse_cache \
+numactl --physcpubind=0-7 python3 -u runner.py -m rb_gs_fuse_cache \
      --cpu 8 \
      --samples 15 \
      --unroll 4 \
