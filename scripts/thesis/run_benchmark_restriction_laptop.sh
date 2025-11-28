@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# TODO customize
 PCD="/home/alisot2000/Documents/02_ETH/Bachelor_Thesis/Pyroclast"
 
 # goto dir and init poetry
