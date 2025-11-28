@@ -35,6 +35,7 @@ import argparse
 import os
 import numpy as np
 from typing import Any
+import json
 
 import numba as nb
 from benchmark.git_checks import check_git_status, get_git_info
