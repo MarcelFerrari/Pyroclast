@@ -194,7 +194,7 @@ def run_benchmark(arg_dict: dict[str, Any]):
         scaling=arg_dict["scale"],
     )
 
-    for i in range(arg_dict["cpu"]):
+    for i in arg_dict["cpu"]:
         nb.set_num_threads(i)
         print(f"Running Restriction with {i} cores")
 
