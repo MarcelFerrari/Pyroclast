@@ -136,9 +136,9 @@ def restrict_2D_parallel_(nxh: int, nyh: int, xh: np.ndarray, yh: np.ndarray, uh
     uHw[:, :] = 0.0
 
     # Problem is too small, default back to
-    if th > nyH - 1:
-        return restrict_2D(nxh=nxh, nyh=nyh, xh=xh, yh=yh, uh=uh,
-                           nxH=nxH, nyH=nyH, xH=xH, yH=yH, uH=uH, uHw=uHw)
+    # if th > nyH - 1:
+    #     return restrict_2D(nxh=nxh, nyh=nyh, xh=xh, yh=yh, uh=uh,
+    #                        nxH=nxH, nyH=nyH, xH=xH, yH=yH, uH=uH, uHw=uHw)
 
     # MEGA IMPORTANT:
     # The loop on the fine grid should be from 0 to nyh - 1 and from 0 to nxh - 1
@@ -195,11 +195,11 @@ def restrict_2D_parallel(nxh: int, nyh: int,
                          xH: np.ndarray, yH: np.ndarray, uH: np.ndarray, uHw: np.ndarray):
 
     uH = restrict_2D_parallel_(nxh=nxh, nyh=nyh, xh=xh, yh=yh, uh=uh,
-                               nxH=nxH, nyH=nyH, xH=xH, yH=yH, uH=uH, uHw=uHw,
-                               )
-    uH1 = np.copy(uH)
-    uH2 = restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw)
-    print(np.sum(np.abs(uH1 - uH2)))
+                               nxH=nxH, nyH=nyH, xH=xH, yH=yH, uH=uH, uHw=uHw)
+    return uH
+    # uH1 = np.copy(uH)
+    # uH2 = restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw)
+    # print(np.sum(np.abs(uH1 - uH2)))
 
 
 @nb.njit(cache=True, parallel=True)
