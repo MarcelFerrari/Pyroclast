@@ -172,7 +172,7 @@ def run_benchmark(arg_dict: dict[str, Any]):
 
     # Check if we have uncommitted changes:
     stage, unstaged = check_git_status()
-    if stage or unstaged and not arg_dict["force"]:
+    if (stage or unstaged) and not arg_dict["force"]:
         raise ValueError("You have uncommitted changes in this stage. Force with -f or commit changes")
 
     # Check the size still is reasonnable
