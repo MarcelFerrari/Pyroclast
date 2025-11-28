@@ -124,7 +124,7 @@ parser.add_argument("-c", "--cpu",
                     nargs="+",
                     default=None,
                     help=f"Number of CPU cores to use. Default: {os.cpu_count()}")
-parser.add_argument("-s", "--samples",
+parser.add_argument("-S", "--samples",
                     help="Number of samples to run for a given number of cpus",
                     type=int,
                     default=15)
