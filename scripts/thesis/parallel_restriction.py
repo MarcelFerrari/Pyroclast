@@ -214,10 +214,14 @@ def run_benchmark(arg_dict: dict[str, Any]):
         "commit hash": chash,
         "commit message": msg,
         "results": results,
-        "environment": os.environ
+        "environment": dict(os.environ),
+        "dirty": unstaged or stage,
     }
 
-    print(json.dumps(document))
+    date = dtf().strftime("%Y%m%d-%H%M%S")
+
+    with open(os.path.join(arg_dict["output"], f"restriction_{date}.json"), "w") as f:
+        json.dump(document, f)
 
 
 
