@@ -112,7 +112,9 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Preamble",
                                        stage=Stage.PREAMBLE,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=None,
+                                       traceback=None))
 
         def benchmark_epilogue(self):
             """
@@ -140,7 +142,9 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
             self.timings.append(Timing(name=f"{module_name}.{self.__class__.__name__}: Benchmark",
                                        stage=Stage.BENCHMARK,
                                        start=start,
-                                       end=end))
+                                       end=end,
+                                       error=None,
+                                       traceback=None))
 
     # INFO: Methods can be benchmarked in other places. Here is only the full implementation.
     return BaseImplementationBenchmarkSmoother, None, None
