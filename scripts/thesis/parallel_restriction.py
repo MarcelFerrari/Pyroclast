@@ -145,10 +145,12 @@ def context_factory(args: dict[str, Any]) -> Context:
     rng = np.random.default_rng()
     state = ContextNamespace(
         {"nx": args["x_res"],
+         "nx1": args["x_res"] + 1,
          "ny": args["y_res"],
-         "rho": rng.random((args["y_res"], args["x_res"])),
-         "etab": rng.random((args["y_res"], args["x_res"])),
-         "etap": rng.random((args["y_res"], args["x_res"]))
+         "ny1": args["y_res"] + 1,
+         "rho": rng.random((args["y_res"]+1, args["x_res"]+1)),
+         "etab": rng.random((args["y_res"]+1, args["x_res"]+1)),
+         "etap": rng.random((args["y_res"]+1, args["x_res"]+1))
          })
     opts = ContextNamespace()
 
