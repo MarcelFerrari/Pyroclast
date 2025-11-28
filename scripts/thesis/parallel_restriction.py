@@ -113,11 +113,11 @@ parser.add_argument("-l", "--levels",
                     type=int)
 parser.add_argument("-X", "--x-res",
                     help="Size of domain in horizontal meters, default 100'000",
-                    type=float,
+                    type=int,
                     default=1024)
 parser.add_argument("-Y", "--y-res",
                     help="Size of domain in vertical meters, default 100'000",
-                    type=float,
+                    type=int,
                     default=1024)
 parser.add_argument("-c", "--cpu",
                     type=int,
@@ -148,9 +148,9 @@ def context_factory(args: dict[str, Any]) -> Context:
          "nx1": args["x_res"] + 1,
          "ny": args["y_res"],
          "ny1": args["y_res"] + 1,
-         "rho": rng.random((args["y_res"]+1, args["x_res"]+1)),
-         "etab": rng.random((args["y_res"]+1, args["x_res"]+1)),
-         "etap": rng.random((args["y_res"]+1, args["x_res"]+1))
+         "rho": rng.random((int(args["y_res"]+1), int(args["x_res"]+1))),
+         "etab": rng.random((int(args["y_res"]+1), int(args["x_res"]+1))),
+         "etap": rng.random((int(args["y_res"]+1), int(args["x_res"]+1)))
          })
     opts = ContextNamespace()
 
