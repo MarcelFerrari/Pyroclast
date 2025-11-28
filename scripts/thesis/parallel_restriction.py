@@ -231,4 +231,5 @@ if __name__ == "__main__":
     ns = parser.parse_args()
 
     arg_dict = vars(ns)
+    run_benchmark(arg_dict)
 
