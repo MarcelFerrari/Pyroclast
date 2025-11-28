@@ -54,6 +54,7 @@ class BaseBenchmark:
     needs_cache_block_size_2: bool = False
     needs_iter_unroll: bool = False
     needs_jitter: bool = False
+    even_iter: bool = False
 
     def __init__(self,
                  arguments: BaseBenchmarkValidator):
@@ -99,6 +100,9 @@ class BaseBenchmark:
 
         if self.needs_jitter and self.jitter is None:
             raise ValueError("jitter is needed.")
+
+        if self.even_iter and self.max_iter % 2 != 0:
+            raise ValueError("smoother instance needs even number of iterations.")
 
     def benchmark(self):
         """

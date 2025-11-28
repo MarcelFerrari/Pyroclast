@@ -112,6 +112,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
         needs_cache_block_size_1: bool = True
         needs_jitter: bool = True
+        even_iter: bool = True
 
         def __init__(self, arguments: bw.BenchmarkValidatorSmoother):
             super().__init__(arguments=arguments)

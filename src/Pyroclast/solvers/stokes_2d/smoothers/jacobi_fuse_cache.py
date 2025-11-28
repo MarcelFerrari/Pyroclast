@@ -43,7 +43,7 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                              th: int, cache_a: int) -> tuple[np.ndarray, np.ndarray]:
     # Fast Implementation for big problems
     if th * cache_a <= nx1 - 2:
-        for _ in range(max_iter // 2 * 2):
+        for _ in range(max_iter):
             # Work Split
             for p in nb.prange(th):
                 start_x = p * (nx1 - 2) // th + 1
@@ -104,6 +104,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
         needs_cache_block_size_1: bool = True
+        even_iter: bool = True
 
         def __init__(self, arguments: bw.BenchmarkValidatorSmoother):
             super().__init__(arguments=arguments)

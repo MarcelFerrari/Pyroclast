@@ -63,7 +63,7 @@ def velocity_smoother_jacobi(nx1: int, ny1: int,
                              vx_new: np.ndarray, vy_new: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
     # Fast Implementation for big problems
-    for _ in range(max_iter // 2 * 2):
+    for _ in range(max_iter):
         velocity_smoother_jacobi_vx(nx1=nx1, ny1=ny1,
                                     dx=dx, dy=dy, relax_v=relax_v,
                                     etap=etap, etab=etab,
@@ -95,6 +95,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
     module_name = os.path.basename(__file__).replace(".py", "")
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
+        even_iter: bool = True
 
         def __init__(self, arguments: bw.BenchmarkValidatorSmoother):
             super().__init__(arguments=arguments)

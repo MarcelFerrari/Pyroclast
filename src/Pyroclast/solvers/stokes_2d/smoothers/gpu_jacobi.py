@@ -130,6 +130,7 @@ def benchmark_factory() -> tuple[Type["BenchmarkSmoother"], Type["BenchmarkVX"],
 
     class BaseImplementationBenchmarkSmoother(bw.BenchmarkSmoother):
         device_arrays: list[DeviceNDArray] = []
+        even_iter: bool = True
 
         def benchmark_preamble(self):
             start = dtf()
