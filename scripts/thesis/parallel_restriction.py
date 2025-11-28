@@ -183,7 +183,7 @@ def run_benchmark(arg_dict: dict[str, Any]):
 
     # Defaulting CPU count if not present
     if arg_dict["cpu"] is None:
-        arg_dict["cpu"] = os.cpu_count()
+        arg_dict["cpu"] = [os.cpu_count()]
 
     bname, chash, msg = get_git_info()
     results = []
