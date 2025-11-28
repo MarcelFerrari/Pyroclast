@@ -131,6 +131,10 @@ parser.add_argument("-S", "--samples",
 parser.add_argument("-f", "--force",
                     action="store_true",
                     help="Force execution of benchmark with pending changes.")
+parser.add_argument("-o", "--output",
+                    type=str,
+                    required=True,
+                    help="Directory to write results to.")
 
 def context_factory(args: dict[str, Any]) -> Context:
     parameters = ContextNamespace({
@@ -160,7 +164,8 @@ def run_benchmark(arg_dict: dict[str, Any]):
         "y_res",
         "cpu",
         "samples",
-        "force"
+        "force",
+        "output"
     }, "Dict Keys didn't match expectation"
 
     # Check if we have uncommitted changes:
