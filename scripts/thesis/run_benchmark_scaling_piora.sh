@@ -13,7 +13,7 @@ cd $PCD/src/benchmark
 
 # Run small cpu benchmarks
 # python3 -u runner.py -D
-numactl --physcpubind=0-127 python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
+numactl --physcpubind=0-31 python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
     --cpu 1 2 4 8 16 32 \
     --samples 15 \
     --unroll 4 \
@@ -25,7 +25,7 @@ numactl --physcpubind=0-127 python3 -u runner.py -m base_jacobi base_rb_gs jacob
     --dimension 64 90 128
 
 # medium benchmark
-numactl --physcpubind=0-127 python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
+numactl --physcpubind=0-63 python3 -u runner.py -m base_jacobi base_rb_gs jacobi_fuse jacobi_fuse_cache jacobi_fuse_cache_jitter jacobi_fuse_cache_unroll_jitter rb_gs_fuse rb_gs_fuse_cache rb_gs_fuse_cache_jitter \
     --cpu 1 2 4 8 16 32 64  \
     --samples 15 \
     --unroll 4 \
@@ -49,7 +49,7 @@ numactl --physcpubind=0-127 python3 -u runner.py -m jacobi_fuse_cache jacobi_fus
     --dimension 724 1024 1448 2048 2896 4096
 
 # GPU small
-numactl --physcpubind=0-127 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
+numactl --physcpubind=0-7 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --cpu 8 \
     --samples 15 \
     --unroll 4 \
@@ -61,7 +61,7 @@ numactl --physcpubind=0-127 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --dimension 64 90 128
 
 # gpu medium
-numactl --physcpubind=0-127 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
+numactl --physcpubind=0-7 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --cpu 8 \
     --samples 15 \
     --unroll 4 \
@@ -73,7 +73,7 @@ numactl --physcpubind=0-127 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --dimension 181 256 362 512
 
 # GPU big
-numactl --physcpubind=0-127 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
+numactl --physcpubind=0-7 python3 -u runner.py -m gpu_jacobi gpu_rb_gs \
     --cpu 8 \
     --samples 15 \
     --unroll 4 \
