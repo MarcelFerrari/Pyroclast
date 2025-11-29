@@ -25,7 +25,7 @@ try:
     from Pyroclast.turbo.mg_routines import restrict_2D as restrict, prolong_2D as prolong
     print("Using Turbo mg_routines.")
 except ImportError:
-    from Pyroclast.solvers.multigrid.mg_routines import restrict_2D_parallel as restrict, prolong_2D as prolong
+    from Pyroclast.solvers.multigrid.mg_routines import restrict_2D as restrict, prolong_2D as prolong
     print("Turbo mg_routines not found, using pure Python version.")
 
 
