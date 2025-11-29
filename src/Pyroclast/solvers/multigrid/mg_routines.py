@@ -140,15 +140,19 @@ def restrict_2D_parallel(nxh: int, nyh: int, xh: np.ndarray, yh: np.ndarray, uh:
     #     return restrict_2D(nxh=nxh, nyh=nyh, xh=xh, yh=yh, uh=uh,
     #                        nxH=nxH, nyH=nyH, xH=xH, yH=yH, uH=uH, uHw=uHw)
 
+    # Raise Exception if problem too small for given resources.
+    if th > nyH -1:
+        raise ValueError("Problem too small for given resources.")
+
     # MEGA IMPORTANT:
     # The loop on the fine grid should be from 0 to nyh - 1 and from 0 to nxh - 1
     # This is because otherwise we interpolate the values at the edges of the fine grid
     # which ALWAYS correspond to ghost points in the coarse grid!!
-    thread_partition_y = (nyH - 1) // th
-    thread_partition_x = (nxH - 1) // th
+    thread_partition_y = (nyH - 1) // min(th, (nyH - 1))
+    thread_partition_x = (nxH - 1) // min(th, (nxH - 1))
 
     # Compute the bisections once in y
-    for t in nb.prange(th):
+    for t in nb.prange(min(th, (nyH - 1))):
         tsc = t * thread_partition_y
         tec = (t + 1) * thread_partition_y if t + 1 < th else nyH
 
@@ -157,7 +161,7 @@ def restrict_2D_parallel(nxh: int, nyh: int, xh: np.ndarray, yh: np.ndarray, uh:
 
 
     # Compute bisection once in x
-    for t in nb.prange(th):
+    for t in nb.prange(min(th, (nxH - 1))):
         tsc = t * thread_partition_x
         tec = (t + 1) * thread_partition_x if t + 1 < th else nxH
 
