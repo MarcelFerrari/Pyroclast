@@ -17,17 +17,22 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import importlib
 
 import numpy as np
-import numba as nb
 
 from Pyroclast.profiling import timer
 
-try:
-    from Pyroclast.turbo.mg_routines import restrict_2D as restrict, prolong_2D as prolong
-    print("Using Turbo mg_routines.")
-except ImportError:
-    from Pyroclast.solvers.multigrid.mg_routines import restrict_2D as restrict, prolong_2D as prolong
-    print("Turbo mg_routines not found, using pure Python version.")
+print(f"Turbo Routines Commented out. ")
 
+# try:
+#     from Pyroclast.turbo.mg_routines import restrict_2D as restrict, prolong_2D as prolong
+#
+#     print("Using Turbo mg_routines.")
+# except ImportError:
+#     from Pyroclast.solvers.multigrid.mg_routines import prolong_2D as prolong
+#     from Pyroclast.solvers.multigrid.mg_routines import restrict_2D_parallel, restrict_2D
+#     print("Turbo mg_routines not found, using pure Python version.")
+
+from Pyroclast.solvers.multigrid.mg_routines import prolong_2D as prolong
+from Pyroclast.solvers.multigrid.mg_routines import restrict_2D_parallel, restrict_2D
 
 from .smoother import velocity_jacobi_smoother
 from .bc import cpu_apply_vy_BC, cpu_apply_vx_BC, gpu_apply_vx_bc_kernel, gpu_apply_vy_bc_kernel
@@ -76,11 +81,13 @@ class Grid:
     vx_res: np.ndarray; vy_res: np.ndarray
 
     is_gpu: bool
+    parallel_restrict: bool
 
     # -------------------------------------------------------------------------
 
-    def __init__(self, nx: int, ny:int, level: int, ctx: "Context", is_gpu: bool) -> None:
+    def __init__(self, nx: int, ny:int, level: int, ctx: "Context", is_gpu: bool, parallel: bool = True) -> None:
         self.is_gpu = is_gpu
+        self.parallel_restrict = parallel
 
         xp = importlib.import_module("cupy") if self.is_gpu else importlib.import_module("numpy")
 
@@ -306,9 +313,14 @@ class Grid:
         # Handle operations depending on source and target
         if not self.is_gpu and not fine.is_gpu:
             # CPU to CPU
+            if self.parallel_restrict:
+                from Pyroclast.solvers.multigrid.mg_routines import restrict_2D_parallel as restrict
+            else:
+                from Pyroclast.solvers.multigrid.mg_routines import restrict_2D as restrict
+
             self.rho = restrict(
                 fine.nx1, fine.ny1,
-                fine.xvy, fine.yvy, fine.rho,
+                fine.xvy, fine.yvy, fine.rho,1,
                 self.nx1, self.ny1,
                 self.xvy, self.yvy,
                 self.rho, self._w,
@@ -391,6 +403,11 @@ class Grid:
     def restrict_residuals(self, fine: "Grid") -> None:
         if not self.is_gpu and not fine.is_gpu:
             # CPU to CPU
+            if self.parallel_restrict:
+                from Pyroclast.solvers.multigrid.mg_routines import restrict_2D_parallel as restrict
+            else:
+                from Pyroclast.solvers.multigrid.mg_routines import restrict_2D as restrict
+
             self.vx_rhs = restrict(
                 fine.nx1, fine.ny1,
                 fine.xvx, fine.yvx, fine.vx_res,
