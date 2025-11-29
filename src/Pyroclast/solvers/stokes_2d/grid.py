@@ -320,7 +320,7 @@ class Grid:
 
             self.rho = restrict(
                 fine.nx1, fine.ny1,
-                fine.xvy, fine.yvy, fine.rho,1,
+                fine.xvy, fine.yvy, fine.rho,
                 self.nx1, self.ny1,
                 self.xvy, self.yvy,
                 self.rho, self._w,
