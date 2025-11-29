@@ -60,7 +60,7 @@ class GridHierarchy:
 
         # Init grid
         x, y = state.nx1 - 1, state.ny1 - 1
-        base = Grid(x, y, 0, ctx, False)
+        base = Grid(x, y, 0, ctx, False, params.parallel)
 
 
         base.rho[:, :] = state.rho
@@ -80,7 +80,7 @@ class GridHierarchy:
             ny_coarse = int((prev.ny - 1) / scaling) + 1
 
             # Initialize the Grid
-            coarse = Grid(ny_coarse, nx_coarse, lvl, ctx, False)
+            coarse = Grid(ny_coarse, nx_coarse, lvl, ctx, False, params.parallel)
 
             # Measure restriction performance.
             start = dtf()
@@ -131,16 +131,20 @@ parser.add_argument("-S", "--samples",
 parser.add_argument("-f", "--force",
                     action="store_true",
                     help="Force execution of benchmark with pending changes.")
-parser.add_argument("-o", "--output",
+parser.add_argument("-p", "--output",
                     type=str,
                     required=True,
                     help="Directory to write results to.")
+parser.add_argument("-o", "--no-parallel",
+                    action="store_true",
+                    help="Use sequential moethod.")
 
 def context_factory(args: dict[str, Any]) -> Context:
     parameters = ContextNamespace({
         "BC": -1,
         "xsize": args["x_size"],
         "ysize": args["y_size"],
+        "parallel": not args["no_parallel"],
     })
     rng = np.random.default_rng()
     state = ContextNamespace(
@@ -167,7 +171,8 @@ def run_benchmark(arg_dict: dict[str, Any]):
         "cpu",
         "samples",
         "force",
-        "output"
+        "output",
+        "no_parallel",
     }, "Dict Keys didn't match expectation"
 
     # Check if we have uncommitted changes:
