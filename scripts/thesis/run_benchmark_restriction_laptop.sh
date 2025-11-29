@@ -89,3 +89,56 @@ numactl --physcpubind=0,2,4,6,8,10,12,14 python3 -u parallel_restriction.py \
     -c 1 2 4 8 \
     --samples 15 \
     --output $dest_dir
+
+# Algorithmic efficiency, parallel version
+numactl --physcpubind=0 python3 -u parallel_restriction.py \
+    --scale 2.5 \
+    -l 2 \
+    -X 1024 -Y 1024 \
+    -c 1 \
+    --samples 15 \
+    --output $dest_dir
+
+numactl --physcpubind=0 python3 -u parallel_restriction.py \
+    --scale 2.5 \
+    -l 2 \
+    -X 256 -Y 256 \
+    -c 1 \
+    --samples 15 \
+    --output $dest_dir
+
+numactl --physcpubind=0 python3 -u parallel_restriction.py \
+  --scale 2.5 \
+  -l 2 \
+  -X 64 -Y 64 \
+  -c 1 \
+  --samples 15 \
+  --output $dest_dir
+
+# Algorithmic efficiency, sequential version
+numactl --physcpubind=0 python3 -u parallel_restriction.py \
+    --scale 2.5 \
+    -l 2 \
+    -X 1024 -Y 1024 \
+    -c 1 \
+    --samples 15 \
+    --no-parallel \
+    --output $dest_dir
+
+numactl --physcpubind=0 python3 -u parallel_restriction.py \
+    --scale 2.5 \
+    -l 2 \
+    -X 256 -Y 256 \
+    -c 1 \
+    --samples 15 \
+    --no-parallel \
+    --output $dest_dir
+
+numactl --physcpubind=0 python3 -u parallel_restriction.py \
+  --scale 2.5 \
+  -l 2 \
+  -X 64 -Y 64 \
+  -c 1 \
+  --samples 15 \
+  --no-parallel \
+  --output $dest_dir
