@@ -111,9 +111,9 @@ def restrict_2D(nxh: int, nyh: int, xh: np.ndarray, yh: np.ndarray, uh: np.ndarr
 
 @inject_threads
 @nb.njit(cache=True, parallel=True, fastmath=use_fast_math_cpu)
-def restrict_2D_parallel_(nxh: int, nyh: int, xh: np.ndarray, yh: np.ndarray, uh: np.ndarray,
-                          nxH: int, nyH: int, xH: np.ndarray, yH: np.ndarray, uH: np.ndarray, uHw: np.ndarray,
-                          th: int):
+def restrict_2D_parallel(nxh: int, nyh: int, xh: np.ndarray, yh: np.ndarray, uh: np.ndarray,
+                         nxH: int, nyH: int, xH: np.ndarray, yH: np.ndarray, uH: np.ndarray, uHw: np.ndarray,
+                         th: int):
     """
     Restriction operator for multigrid method.
     xh: fine grid x-coordinates
@@ -123,8 +123,8 @@ def restrict_2D_parallel_(nxh: int, nyh: int, xh: np.ndarray, yh: np.ndarray, uh
     yH: coarse grid y-coordinates
     uH: coarse grid quantity
     """
-    i_fine_bounds = np.zeros((nyH), dtype=np.int32)
-    j_fine_bounds = np.zeros((nxH), dtype=np.int32)
+    i_fine_bounds = np.zeros((nyH,), dtype=np.int32)
+    j_fine_bounds = np.zeros((nxH,), dtype=np.int32)
 
     dxH = float(xH[1] - xH[0])
     dyH = float(yH[1] - yH[0])
@@ -189,14 +189,14 @@ def restrict_2D_parallel_(nxh: int, nyh: int, xh: np.ndarray, yh: np.ndarray, uh
     return uH
 
 
-def restrict_2D_parallel(nxh: int, nyh: int,
-                         xh: np.ndarray, yh: np.ndarray, uh: np.ndarray,
-                         nxH: int, nyH: int,
-                         xH: np.ndarray, yH: np.ndarray, uH: np.ndarray, uHw: np.ndarray):
-
-    uH = restrict_2D_parallel_(nxh=nxh, nyh=nyh, xh=xh, yh=yh, uh=uh,
-                               nxH=nxH, nyH=nyH, xH=xH, yH=yH, uH=uH, uHw=uHw)
-    return uH
+# def restrict_2D_parallel(nxh: int, nyh: int,
+#                          xh: np.ndarray, yh: np.ndarray, uh: np.ndarray,
+#                          nxH: int, nyH: int,
+#                          xH: np.ndarray, yH: np.ndarray, uH: np.ndarray, uHw: np.ndarray):
+#
+#     uH = restrict_2D_parallel_(nxh=nxh, nyh=nyh, xh=xh, yh=yh, uh=uh,
+#                                nxH=nxH, nyH=nyH, xH=xH, yH=yH, uH=uH, uHw=uHw)
+#     return uH
     # uH1 = np.copy(uH)
     # uH2 = restrict_2D(nxh, nyh, xh, yh, uh, nxH, nyH, xH, yH, uH, uHw)
     # print(np.sum(np.abs(uH1 - uH2)))
