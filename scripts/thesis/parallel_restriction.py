@@ -205,13 +205,19 @@ def run_benchmark(arg_dict: dict[str, Any]):
 
         for s in range(arg_dict["samples"]):
             print(f"Running Sample {s}")
-            res = GridHierarchy(
-                ctx=context_factory(arg_dict),
-                nlevels=arg_dict["levels"],
-                scaling=arg_dict["scale"],
-            )
+            try:
+                ex = None
+                res = GridHierarchy(
+                    ctx=context_factory(arg_dict),
+                    nlevels=arg_dict["levels"],
+                    scaling=arg_dict["scale"],
+                )
+                duration = res.restrict_duration
+            except Exception as e:
+                ex = str(e)
+                duration = np.nan
 
-            results.append({"cpu": i, "duration": res.restrict_duration})
+            results.append({"cpu": i, "duration": duration, "exception": ex})
 
     document = {
         "arguments": arg_dict,
