@@ -193,6 +193,7 @@ def run_benchmark(arg_dict: dict[str, Any]):
     bname, chash, msg = get_git_info()
     results = []
     print(f"First run for compilation")
+    nb.set_num_threads(1)
     GridHierarchy(
         ctx=context_factory(arg_dict),
         nlevels=arg_dict["levels"],
