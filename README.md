@@ -1,5 +1,8 @@
 # TODO complete. Is wip
 
+**Bachelor's Thesis**
+If you are looking at this document to investigate the Bachelor's Thesis that was written about it you might want to consider looking at `scripts/thesis/`. Benchmarking Scripts, Jupyter Notebooks, ... are located there. 
+
 ### Setup
 This project uses [Poetry](https://python-poetry.org/) as its dependency manager as it offers more robust and 
 reproducible dependency resolution even across platforms and ISAs.
