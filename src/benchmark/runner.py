@@ -106,7 +106,7 @@ perf_opt.add_argument("-u", "--unroll",
 perf_opt.add_argument("-j", "--jitter",
                       type=int,
                       nargs="+",
-                      default=[3],
+                      default=[None],
                       help=f"Amount of boundary jitter in cells. Given 3 jitter is +/- 3")
 
 # Testing Options
