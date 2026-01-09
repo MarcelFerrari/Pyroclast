@@ -96,6 +96,7 @@ class ConstantVelocityAdvection2DMPI(BaseModel):
 
         self.frame = 0
         self.zpad = len(str(p.max_iterations//o.framedump_interval)) + 1
+        
 
     def update_time_step(self, ctx):
         # Read the context
@@ -121,6 +122,10 @@ class ConstantVelocityAdvection2DMPI(BaseModel):
         # Nothing to do here
         pass
 
+    def finalize(self, ctx):
+        # Nothing to do here
+        self.dump(ctx)
+        
 @nb.njit(parallel=True, cache=True)
 def init_velocity_field(yvx, vx, xvy, vy, xsize_global, ysize_global):
     ny, nx = vx.shape
