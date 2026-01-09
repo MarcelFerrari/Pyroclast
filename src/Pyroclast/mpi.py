@@ -29,7 +29,7 @@ def get_shard_filename(fname):
     return f"{fname}.rank_{str(rank).zfill(zfill)}"
 
 
-def halo_exchange_2D(grid_values):
+def halo_exchange_2D(grid_values, blocking=True):
     comm = get_cart_comm()
     rank = comm.Get_rank()
     gi, gj = comm.Get_coords(rank)
@@ -166,32 +166,40 @@ def halo_exchange_2D(grid_values):
         SE_send_buf = np.array([grid_values[-3, -3]], dtype=dtype)
         reqs.append(comm.Isend(SE_send_buf, dest=SE_rank))
 
-    # Wait for all communications to complete
-    MPI.Request.Waitall(reqs)
+    class MPIFuture:
+        def wait(self):
+            # Wait for all communications to complete
+            MPI.Request.Waitall(reqs)
 
-    # Update halo regions with received data
-    if N_rank != MPI.PROC_NULL:
-        grid_values[0, jmin:jmax] = N_recv_buf
+            # Update halo regions with received data
+            if N_rank != MPI.PROC_NULL:
+                grid_values[0, jmin:jmax] = N_recv_buf
+            
+            if S_rank != MPI.PROC_NULL:
+                grid_values[-2, jmin:jmax] = S_recv_buf
+
+            if W_rank != MPI.PROC_NULL:
+                grid_values[imin:imax, 0] = W_recv_buf
+
+            if E_rank != MPI.PROC_NULL:
+                grid_values[imin:imax, -2] = E_recv_buf
+
+            if NW_rank != MPI.PROC_NULL:
+                grid_values[0, 0] = NW_recv_buf
+
+            if SW_rank != MPI.PROC_NULL:
+                grid_values[-2, 0] = SW_recv_buf
+
+            if NE_rank != MPI.PROC_NULL:
+                grid_values[0, -2] = NE_recv_buf
+            
+            if SE_rank != MPI.PROC_NULL:
+                grid_values[-2, -2] = SE_recv_buf
+
+            return grid_values
     
-    if S_rank != MPI.PROC_NULL:
-        grid_values[-2, jmin:jmax] = S_recv_buf
-
-    if W_rank != MPI.PROC_NULL:
-        grid_values[imin:imax, 0] = W_recv_buf
-
-    if E_rank != MPI.PROC_NULL:
-        grid_values[imin:imax, -2] = E_recv_buf
-
-    if NW_rank != MPI.PROC_NULL:
-        grid_values[0, 0] = NW_recv_buf
-
-    if SW_rank != MPI.PROC_NULL:
-        grid_values[-2, 0] = SW_recv_buf
-
-    if NE_rank != MPI.PROC_NULL:
-        grid_values[0, -2] = NE_recv_buf
-    
-    if SE_rank != MPI.PROC_NULL:
-        grid_values[-2, -2] = SE_recv_buf
-
-    return grid_values
+    rax = MPIFuture()
+    if blocking:
+        return rax.wait()
+    else:
+        return rax
