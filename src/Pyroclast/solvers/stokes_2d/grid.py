@@ -159,11 +159,11 @@ class Grid:
             self.apply_vx_BC = apply_vx_BC
             self.apply_vy_BC = apply_vy_BC
 
-            try:
-                from Pyroclast.turbo.mg_routines import restrict_2D as restrict, \
-                                                         prolong_2D as prolong
-            except ImportError:
-                from Pyroclast.solvers.multigrid.mg_routines import restrict_2D as restrict, \
+            # try:
+            #     from Pyroclast.turbo.mg_routines import restrict_2D as restrict, \
+            #                                              prolong_2D as prolong
+            # except ImportError:
+            from Pyroclast.solvers.multigrid.mg_routines import restrict_2D as restrict, \
                                                                     prolong_2D as prolong
             
             self.restrict = restrict
