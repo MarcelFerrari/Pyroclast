@@ -87,8 +87,12 @@ class IncompressibleStokes2DMG(IncompressibleStokes2D): # Inherit from BaseModel
         self.vy_rhs[...] = -self.gy * s.rho
 
         # Create Uzawa solver
-        solver = UzawaSolver(ctx, nlevels=6, scaling=2.0)
-        #refinement = IterativeRefinement(solver, ctx)
+        # Determine scaling such that coarsest grid is ~30x30
+        # Assume square gri
+        # n / scaling ^ 6 = 30
+        # => scaling = 1 / (30 / n)^(1/6)
+        scaling = 1/((30.0 / max(s.nx1 - 1, s.ny1 - 1))**(1/5))
+        solver = UzawaSolver(ctx, nlevels=6, scaling=scaling)
 
         # Solve the system
         s.p[...], s.vx[...], s.vy[...] = \
