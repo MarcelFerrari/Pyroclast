@@ -196,6 +196,7 @@ class UzawaSolver:
 
         # Compute energy norm residuals
         p_energy = self.compute_p_energy_norm(self.nx1, self.ny1, self.dx, self.dy, self.etap, self.p_res)
+        p_energy *= np.sqrt(1.0/(2/self.dx**2 + 2/self.dy**2))  # Scale by grid size
         vx_energy = self.compute_vx_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
                                            self.stokes_etap, self.stokes_etab, self.vx_res)
         vy_energy = self.compute_vy_energy_norm(self.nx1, self.ny1, self.dx, self.dy,
