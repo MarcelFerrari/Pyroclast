@@ -1,0 +1,62 @@
+[options]
+model = "thermo_mechanical_2D.ThermoMechanical2D"
+grid = "thermo_mechanical2D.ThermoMechanicalGrid2D"
+pool = "thermo_mechanical_inclusion2D.CircularInclusionThermoMechanical"
+checkpoint_interval = 0
+framedump_interval = 1
+seed = 42
+
+[parameters]
+# Initial time step
+dt_initial = 1e11
+
+# Time integration options
+max_iterations=5
+
+# Grid options
+xsize = 100000 # Hortizontal size, m
+ysize = 100000 # Vertical size, m
+nx = 5001       # Horizontal resolution
+ny = 5001       # Vertical resolution
+gy = 10.0      # Vertical gravity, m/s^2
+
+# Marker options
+# Boundary conditions: no slip=1, free slip=-1
+BC = -1
+cfl_dispmax = 0.5
+L = 5e3
+
+# Marker options
+nmpcx = 4 # Number of markers per cell in x direction
+nmpcy = 4 # Number of markers per cell in y direction
+
+# Inclusion options
+r = 20000 # Inclusion radius, m
+
+# Material options
+eta_plume = 1e26
+rho_plume = 3300.0
+eta_mantle = 1e18
+rho_mantle = 3200.0
+p_ref = 1e9  # Reference pressure at (i, j) = (1, 1)
+
+# Viscosity scaling
+eta_scaling = true
+eta_cycle_interval = 25
+eta_ncycles = 4
+
+# Relaxation parameters
+relax_v = 0.3
+relax_p = 0.6
+
+# Stokes solver options
+max_uzawa_iterations = 500
+uzawa_stokes_res_tol = 1e-5
+uzawa_velocity_cycles = 1
+enable_anderson = false
+anderson_m = 10
+anderson_scale_reg = false
+anderson_beta = 0.7
+anderson_reg = 1e-3
+enable_gpu = true
+gpu_threshold = 2000

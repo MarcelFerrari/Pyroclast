@@ -31,9 +31,9 @@ class CircularInclusion(RK42DStokes):
         s, p, o = ctx
 
         # Define parameters for a circular inclusion
-        x0 = p.xsize/2. # x coordinate of the center of the circle
-        y0 = p.ysize/2. # y coordinate of the center of the circle
-        r = p.r # radius of the circle
+        self.x0 = p.xsize/2. # x coordinate of the center of the circle
+        self.y0 = p.ysize/2. # y coordinate of the center of the circle
+        self.r = p.r # radius of the circle
         
 
         # Marker material properties
@@ -43,7 +43,7 @@ class CircularInclusion(RK42DStokes):
 
         s.rhom, s.etam = _init_circular_inclusion(s.nmx, s.nmy,
                                                   s.dxm, s.dym,
-                                                  x0, y0, r,
+                                                  self.x0, self.y0, self.r,
                                                   s.xm, s.ym,
                                                   p.rho_plume,
                                                   p.rho_mantle,
