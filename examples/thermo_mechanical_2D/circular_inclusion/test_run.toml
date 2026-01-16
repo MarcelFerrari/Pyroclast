@@ -1,0 +1,40 @@
+[options]
+model = "thermo_mechanical_2D.ThermoMechanical2D"
+grid = "thermo_mechanical2D.ThermoMechanicalGrid2D"
+pool = "thermo_mechanical_inclusion2D.CircularInclusionThermoMechanical"
+checkpoint_interval = 0
+framedump_interval = 0
+seed = 42
+
+[parameters]
+dt_initial = 1e11
+max_iterations = 1
+xsize = 100000
+ysize = 100000
+nx = 501
+ny = 501
+gy = 10.0
+BC = -1
+cfl_dispmax = 0.5
+L = 5e3
+nmpcx = 2
+nmpcy = 2
+r = 20000
+eta_plume = 1e26
+rho_plume = 3300.0
+eta_mantle = 1e18
+rho_mantle = 3200.0
+p_ref = 1e9
+eta_scaling = false
+eta_cycle_interval = 25
+eta_ncycles = 1
+relax_v = 0.3
+relax_p = 0.6
+max_uzawa_iterations = 100
+uzawa_stokes_res_tol = 1e-5
+uzawa_velocity_cycles = 1
+enable_anderson = false
+enable_gpu = false
+thermal_max_iter = 20
+thermal_omega = 0.8
+thermal_print_every = 5

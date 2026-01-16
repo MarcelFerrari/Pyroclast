@@ -254,3 +254,22 @@ setup-env.sh
 *.checkpoint
 
 local_scripts/
+
+
+
+# GPU kernel and benchmark files
+BENCHMARK_README.md
+GPU_IMPLEMENTATION_SUMMARY.md
+benchmark_thermal_only.py
+benchmark_thermal.sh
+quick_benchmark.sh
+test_gpu_thermal.py
+test_gpu.py
+test_thermal_simple.sh
+thermo_mechanical_2D_gpu_cupy.py
+thermo_mechanical_2D_gpu_simple.py
+thermo_mechanical_2D_gpu.py
+input_gpu.toml
+input_cpu.toml
+benchmark_gpu.toml
+gerya_book.pdf

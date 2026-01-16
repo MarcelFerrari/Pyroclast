@@ -1,0 +1,8 @@
+Pyroclast Thermal Solver Benchmark
+===================================
+Date: Tue Jan 13 22:34:04 CET 2026
+Hostname: sharedyoga
+CPU: AMD Ryzen 7 6800HS Creator Edition
+
+Grid Size | CPU Time (s) | GPU Time (s) | Speedup | Memory (GB)
+----------|--------------|--------------|---------|------------

@@ -16,8 +16,8 @@ max_iterations=5
 # Grid options
 xsize = 100000 # Hortizontal size, m
 ysize = 100000 # Vertical size, m
-nx = 5001       # Horizontal resolution
-ny = 5001       # Vertical resolution
+nx = 201       # Horizontal resolution
+ny = 201       # Vertical resolution
 gy = 10.0      # Vertical gravity, m/s^2
 
 # Marker options
@@ -58,5 +58,5 @@ anderson_m = 10
 anderson_scale_reg = false
 anderson_beta = 0.7
 anderson_reg = 1e-3
-enable_gpu = true
+enable_gpu = false
 gpu_threshold = 2000

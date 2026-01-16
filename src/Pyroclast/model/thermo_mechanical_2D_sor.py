@@ -18,17 +18,21 @@ class ThermoMechanical2D(IncompressibleStokes2DMG):
 
         # Step 2: Solve the thermal problem
         s, p, o = ctx
-        T_new = np.empty_like(s.T0) # New temperature array
-        T = s.T0.copy()             # Use previous timestep temperature as initial guess
+        T = s.T0.copy()  # Use previous timestep temperature as initial guess
 
         T_BC_TOP = 1573.0     # Top boundary condition, K
         T_BC_BOTTOM = 1573.0  # Bottom boundary condition, K
 
-        # Perform Jacobi sweeps for thermal equation
+        # SOR over-relaxation parameter
+        # Optimal omega is problem-dependent, typically 1 < omega < 2
+        # omega = 1.0 reduces to Gauss-Seidel
+        # omega < 1.0 is under-relaxation
+        omega = 1.5  # Common choice for 2D problems
+
+        # Perform SOR sweeps for thermal equation
         max_iter = 500
         for it in range(max_iter):
-            jacobi_sweep_thermal(
-                T_new,
+            sor_sweep_thermal(
                 T,
                 s.T0,
                 s.kvx,
@@ -37,10 +41,8 @@ class ThermoMechanical2D(IncompressibleStokes2DMG):
                 s.dx,
                 s.dy,
                 s.dt,
-                omega=0.8
+                omega
             )
-            # Swap references for next iteration
-            T, T_new = T_new, T
 
             # Enforce boundary conditions
             # Top boundary: (T[0, :] + T[1, :])/2 = T_BC_TOP
@@ -53,7 +55,7 @@ class ThermoMechanical2D(IncompressibleStokes2DMG):
             T[:, 0] = T[:, 1]
             T[:, -1] = T[:, -2]
 
-            # --- NEW: compute and print residual ---
+            # Compute and print residual
             res = thermal_residual(
                 T,
                 s.T0,
@@ -64,8 +66,7 @@ class ThermoMechanical2D(IncompressibleStokes2DMG):
                 s.dy,
                 s.dt
             )
-            print(f"[Thermal Jacobi] iter {it:4d}  residual = {res:.6e}")
-            # ---------------------------------------
+            print(f"[Thermal SOR ω={omega}] iter {it:4d}  residual = {res:.6e}")
 
         # Copy final result back to state
         s.T0[:, :] = T[:, :]
@@ -86,26 +87,33 @@ class ThermoMechanical2D(IncompressibleStokes2DMG):
 
 
 
-@nb.njit(cache=True, fastmath=True, parallel=True)
-def jacobi_sweep_thermal(
-    T_new,    # (ny1, nx1) output: new iterate
-    T,        # (ny1, nx1) current iterate
-    T0,    # (ny1, nx1) previous timestep solution
+@nb.njit(cache=True, fastmath=True)
+def sor_sweep_thermal(
+    T,        # (ny1, nx1) solution array (updated in-place)
+    T0,       # (ny1, nx1) previous timestep solution
     kvx,      # (ny1, nx1) conductivity at vertical faces
     kvy,      # (ny1, nx1) conductivity at horizontal faces
     rhocp,    # (ny1, nx1)
     dx, dy, dt,
-    omega     # weighted Jacobi parameter
+    omega     # SOR over-relaxation parameter (1 < omega < 2 for over-relaxation)
 ):
+    """
+    Successive Over-Relaxation (SOR) method: like Gauss-Seidel but with over-relaxation.
+    Updates T in-place with weighted update: T_new = omega * T_GS + (1-omega) * T_old
+    
+    omega = 1.0: reduces to Gauss-Seidel
+    omega > 1.0: over-relaxation (faster convergence if optimal omega is chosen)
+    omega < 1.0: under-relaxation (more stable but slower)
+    """
     ny1, nx1 = T.shape
     inv_dx2 = 1.0 / (dx * dx)
     inv_dy2 = 1.0 / (dy * dy)
 
-    # Interior update
-    for i in nb.prange(1, ny1 - 1):
+    # Interior update - sequential iteration
+    for i in range(1, ny1 - 1):
         for j in range(1, nx1 - 1):
 
-            # Face conductivities (matching Matlab indexing)
+            # Face conductivities
             kvx1 = kvx[i, j-1]
             kvx2 = kvx[i, j]
             kvy1 = kvy[i-1, j]
@@ -122,6 +130,8 @@ def jacobi_sweep_thermal(
             rhs = (rhocp[i, j] / dt) * T0[i, j]
 
             # Off-diagonal contribution
+            # Note: T[i, j-1] and T[i-1, j] are already updated (from current sweep)
+            # while T[i, j+1] and T[i+1, j] are from previous iteration
             sum_nb = (
                 (-kvx1 * inv_dx2) * T[i, j-1]
                 + (-kvx2 * inv_dx2) * T[i, j+1]
@@ -129,12 +139,11 @@ def jacobi_sweep_thermal(
                 + (-kvy2 * inv_dy2) * T[i+1, j]
             )
 
-            # Jacobi core update
-            core = (rhs - sum_nb) / A_diag
+            # Gauss-Seidel update
+            T_GS = (rhs - sum_nb) / A_diag
 
-            # Weighted Jacobi update
-            Tij = T[i, j]
-            T_new[i, j] = Tij + omega * (core - Tij)
+            # SOR update: weighted combination of old and new values
+            T[i, j] = omega * T_GS + (1.0 - omega) * T[i, j]
 
 
 
@@ -180,7 +189,7 @@ def thermal_residual(
             # Residual r = rhs - (A*T)
             r = rhs - (sum_nb + A_diag * T[i, j])
 
-            # Energy norm: weight by inverse of diagonal (approximate: r^T A^{-1} r  with  r^T D^{-1} r  (D = diag(A))
+            # Energy norm: weight by inverse of diagonal
             res2 += (r * r) / A_diag
             npts += 1
 

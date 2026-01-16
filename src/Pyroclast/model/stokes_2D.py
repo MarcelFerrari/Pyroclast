@@ -69,8 +69,11 @@ class IncompressibleStokes2D(BaseModel):
         s.vx = np.zeros((s.ny1, s.nx1))
         s.vy = np.zeros((s.ny1, s.nx1))
 
+        #original code
         self.frame = 0
         self.zpad = len(str(p.max_iterations//o.framedump_interval)) + 1
+        self.frame = 0
+
 
     def update_time_step(self, ctx):
         # Read the context
