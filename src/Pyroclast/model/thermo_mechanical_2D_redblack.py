@@ -21,6 +21,7 @@ import math
 from Pyroclast.model.stokes_2D_mg import IncompressibleStokes2DMG
 from Pyroclast.logging import get_logger
 
+
 logger = get_logger(__name__)
 
 # GPU imports
@@ -261,7 +262,7 @@ class ThermoMechanical2D(IncompressibleStokes2DMG):
         
         # Kernel launch configuration
         ny1, nx1 = T.shape
-        block_size, grid_size = launch_2D((ny1, nx1))
+        grid_size, block_size = launch_2D((ny1, nx1))
         
         # Get Numba stream for synchronization with CuPy
         stream = get_numba_stream()
@@ -296,12 +297,16 @@ class ThermoMechanical2D(IncompressibleStokes2DMG):
             # Synchronize after black sweep
             stream.synchronize()
             
-            # Apply boundary conditions
-            bc_blocks = (nx1 + 255) // 256
-            bc_threads = min(256, max(nx1, ny1))
-            apply_thermal_BC_kernel[bc_blocks, bc_threads, stream](
-                T, T_BC_TOP, T_BC_BOTTOM
-            )
+            # Enforce boundary conditions
+            # Top boundary: (T[0, :] + T[1, :])/2 = T_BC_TOP
+            T[0, :] = 2 * T_BC_TOP - T[1, :]
+
+            # Bottom boundary: (T[-1, :] + T[-2, :])/2 = T_BC_BOTTOM
+            T[-1, :] = 2 * T_BC_BOTTOM - T[-2, :]
+
+            # Left and right boundaries Neumann (insulating)
+            T[:, 0] = T[:, 1]
+            T[:, -1] = T[:, -2]
             
             stream.synchronize()
             

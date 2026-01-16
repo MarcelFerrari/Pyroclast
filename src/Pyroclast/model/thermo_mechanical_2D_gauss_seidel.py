@@ -4,7 +4,7 @@ import numba as nb
 
 from Pyroclast.model.stokes_2D_mg import IncompressibleStokes2DMG
 from Pyroclast.logging import get_logger
-
+from Pyroclast.profiling import timer
 logger = get_logger(__name__)
 
 
@@ -24,42 +24,43 @@ class ThermoMechanical2D(IncompressibleStokes2DMG):
         T_BC_BOTTOM = 1573.0  # Bottom boundary condition, K
 
         # Perform Gauss-Seidel sweeps for thermal equation
-        max_iter = 500
-        for it in range(max_iter):
-            gauss_seidel_sweep_thermal(
-                T,
-                s.T0,
-                s.kvx,
-                s.kvy,
-                s.rhocp,
-                s.dx,
-                s.dy,
-                s.dt
-            )
+        max_iter = 1000
+        with timer.time_section("Solve", "Thermal Solve"):
+            for it in range(max_iter):
+                gauss_seidel_sweep_thermal(
+                    T,
+                    s.T0,
+                    s.kvx,
+                    s.kvy,
+                    s.rhocp,
+                    s.dx,
+                    s.dy,
+                    s.dt
+                )
 
-            # Enforce boundary conditions
-            # Top boundary: (T[0, :] + T[1, :])/2 = T_BC_TOP
-            T[0, :] = 2 * T_BC_TOP - T[1, :]
+                # Enforce boundary conditions
+                # Top boundary: (T[0, :] + T[1, :])/2 = T_BC_TOP
+                T[0, :] = 2 * T_BC_TOP - T[1, :]
 
-            # Bottom boundary: (T[-1, :] + T[-2, :])/2 = T_BC_BOTTOM
-            T[-1, :] = 2 * T_BC_BOTTOM - T[-2, :]
+                # Bottom boundary: (T[-1, :] + T[-2, :])/2 = T_BC_BOTTOM
+                T[-1, :] = 2 * T_BC_BOTTOM - T[-2, :]
 
-            # Left and right boundaries Neumann (insulating)
-            T[:, 0] = T[:, 1]
-            T[:, -1] = T[:, -2]
+                # Left and right boundaries Neumann (insulating)
+                T[:, 0] = T[:, 1]
+                T[:, -1] = T[:, -2]
 
-            # Compute and print residual
-            res = thermal_residual(
-                T,
-                s.T0,
-                s.kvx,
-                s.kvy,
-                s.rhocp,
-                s.dx,
-                s.dy,
-                s.dt
-            )
-            print(f"[Thermal Gauss-Seidel] iter {it:4d}  residual = {res:.6e}")
+                # Compute and print residual
+                res = thermal_residual(
+                    T,
+                    s.T0,
+                    s.kvx,
+                    s.kvy,
+                    s.rhocp,
+                    s.dx,
+                    s.dy,
+                    s.dt
+                )
+                print(f"[Thermal Gauss-Seidel] iter {it:4d}  residual = {res:.6e}")
 
         # Copy final result back to state
         s.T0[:, :] = T[:, :]
@@ -146,6 +147,7 @@ def thermal_residual(
     inv_dy2 = 1.0 / (dy * dy)
 
     res2 = 0.0
+    rhs_norm = 0.0
     npts = 0
 
     for i in nb.prange(1, ny1 - 1):
@@ -176,9 +178,10 @@ def thermal_residual(
 
             # Energy norm: weight by inverse of diagonal
             res2 += (r * r) / A_diag
+            rhs_norm += (rhs * rhs) / A_diag
             npts += 1
 
     if npts > 0:
-        return np.sqrt(res2 / npts)
+        return np.sqrt(res2 / rhs_norm)
     else:
         return 0.0
